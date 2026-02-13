@@ -955,6 +955,47 @@ function cancelWizard(){
     <div class="modal-actions"><button class="modal-btn danger" onclick="D.settings.setupComplete=true;saveData();hideWizard();closeModal();initApp()">בטל וצא</button><button class="modal-btn cancel" onclick="closeModal()">המשך בהגדרה</button></div>`)}
 }
 
+function showWizardJoinCode(){
+  const c=document.getElementById('wizardContent');
+  c.innerHTML=`<div class="wizard-step">
+    <div style="text-align:center;font-size:3rem;margin:20px 0">🔗</div>
+    <div class="wizard-title">הצטרפות לתקציב קיים</div>
+    <div class="wizard-subtitle">הכניסו את הקוד שקיבלתם מבן/בת הזוג</div>
+    ${fbUser?'':`<div style="background:var(--warning-bg);padding:12px;border-radius:var(--radius-sm);margin-bottom:12px;font-size:.85rem;color:#92400E">⚠️ יש להתחבר עם Google תחילה כדי להצטרף לתקציב משותף.
+      <button class="btn-sm primary" style="margin-top:8px;display:block" onclick="hideWizard();showLoginScreen()">🔑 התחברות עם Google</button></div>`}
+    <div class="modal-field"><input class="modal-input ltr" id="wizJoinCode" placeholder="XXXXXX" maxlength="6" style="text-align:center;font-size:1.8rem;letter-spacing:6px;font-weight:700;text-transform:uppercase;padding:14px" ${fbUser?'':'disabled'}></div>
+    <div id="wizJoinStatus" style="margin-top:8px;font-size:.85rem;color:var(--danger);text-align:center"></div>
+    <button class="modal-btn primary" style="margin-top:16px;width:100%" onclick="wizardJoinWithCode()" ${fbUser?'':'disabled'}>הצטרף לתקציב →</button>
+    <button class="modal-btn cancel" style="margin-top:8px;width:100%" onclick="renderWizardStep()">← חזרה</button>
+  </div>`;
+  setTimeout(()=>{const i=document.getElementById('wizJoinCode');if(i)i.focus()},250);
+}
+async function wizardJoinWithCode(){
+  const code=(document.getElementById('wizJoinCode').value||'').trim().toUpperCase();
+  const status=document.getElementById('wizJoinStatus');
+  if(code.length!==6){status.textContent='הקוד חייב להיות 6 תווים';return}
+  if(!fbUser||!fbDb){status.textContent='יש להתחבר עם Google תחילה';return}
+  status.style.color='var(--primary)';status.textContent='מחפש...';
+  try{
+    const snap=await fbDb.ref('invites/'+code).once('value');
+    if(!snap.exists()){status.style.color='var(--danger)';status.textContent='קוד לא נמצא. בדקו שהועתק נכון';return}
+    fbFamilyId=snap.val();
+    let familyName='תקציב';
+    try{const ms=await fbDb.ref('families/'+fbFamilyId+'/meta/name').once('value');if(ms.exists())familyName=ms.val();}catch(e){}
+    await fbDb.ref('families/'+fbFamilyId+'/members/'+fbUser.uid).set({
+      email:fbUser.email,displayName:fbUser.displayName||'',photoURL:fbUser.photoURL||'',
+      partnerSlot:2,online:true,lastSeen:firebase.database.ServerValue.TIMESTAMP
+    });
+    await fbDb.ref('userFamilies/'+fbUser.uid+'/families/'+fbFamilyId).set({name:familyName,role:'member',joinedAt:Date.now()});
+    await fbDb.ref('userFamilies/'+fbUser.uid+'/activeFamily').set(fbFamilyId);
+    await fbDb.ref('invites/'+code).remove();
+    userFamilies.push({familyId:fbFamilyId,name:familyName,role:'member'});
+    toast('הצטרפתם לתקציב!');
+    hideWizard();
+    await connectToFamily(fbFamilyId,fbUser);
+  }catch(e){status.style.color='var(--danger)';status.textContent='שגיאה: '+e.message}
+}
+
 function renderWizardStep(){
   const bar=document.getElementById('wizardProgressBar');
   bar.style.width=((wizStep+1)/WIZ_STEPS.length*100)+'%';
@@ -1052,6 +1093,10 @@ function renderWizWelcome(){
     <div class="wizard-card" onclick="document.getElementById('importInput').click()">
       <div class="wc-icon">📥</div>
       <div><div class="wc-title">ייבוא מ-JSON</div><div class="wc-desc">טעינת גיבוי או תבנית</div></div>
+    </div>
+    <div class="wizard-card" onclick="showWizardJoinCode()">
+      <div class="wc-icon">🔗</div>
+      <div><div class="wc-title">הצטרפות עם קוד</div><div class="wc-desc">קיבלתם קוד מבן/בת הזוג? הכניסו אותו כאן</div></div>
     </div>
   </div>`;
 }
