@@ -3631,6 +3631,33 @@ function exportTemplate(){
     </div>`);
 }
 
+function checkInviteURL(){
+  const params=new URLSearchParams(window.location.search);
+  const invite=params.get('invite');
+  if(!invite)return false;
+  // Clean URL without reloading
+  window.history.replaceState({},'',window.location.pathname);
+  window._pendingInvite=invite.trim().toUpperCase();
+  return true;
+}
+function handlePendingInvite(){
+  if(!window._pendingInvite)return;
+  const code=window._pendingInvite;
+  delete window._pendingInvite;
+  if(fbUser&&fbDb){
+    // Already logged in — join directly
+    showWizardJoinCode();
+    setTimeout(()=>{const el=document.getElementById('wizJoinCode');if(el){el.value=code}},300);
+  }else{
+    // Need to login first — show wizard with join code pre-filled
+    showWizard();
+    setTimeout(()=>{
+      showWizardJoinCode();
+      setTimeout(()=>{const el=document.getElementById('wizJoinCode');if(el){el.value=code}},200);
+    },200);
+  }
+}
+
 function loadTemplateFromURL(){
   const params=new URLSearchParams(window.location.search);
   const tmpl=params.get('template');
@@ -4202,9 +4229,7 @@ function showUserMenu(){
       if(!area)return;
       if(snap.exists()){
         const code=Object.keys(snap.val())[0];
-        area.innerHTML=`<div style="font-weight:600;font-size:.88rem;margin-bottom:6px">🔗 קוד הזמנה</div>
-          <div class="invite-code-display" style="font-size:1.3rem;padding:8px">${code}</div>
-          <div style="font-size:.72rem;color:var(--text-secondary);text-align:center">שלחו את הקוד לבן/בת הזוג</div>`;
+        area.innerHTML=renderInviteDisplay(code);
       }else{
         area.innerHTML=`<div style="font-weight:600;font-size:.88rem;margin-bottom:6px">🔗 הזמנת בן/בת זוג</div>
           <button class="btn-sm primary" onclick="generateNewInvite()">צור קוד הזמנה חדש</button>`;
@@ -4222,8 +4247,18 @@ async function generateNewInvite(){
   const code=generateInviteCode();
   await fbDb.ref('invites/'+code).set(fbFamilyId);
   const area=document.getElementById('profileInviteArea');
-  if(area)area.innerHTML=`<div style="font-weight:600;font-size:.88rem;margin-bottom:6px">🔗 קוד הזמנה</div><div class="invite-code-display" style="font-size:1.3rem;padding:8px">${code}</div><div style="font-size:.72rem;color:var(--text-secondary);text-align:center">שלחו את הקוד לבן/בת הזוג</div>`;
+  if(area)area.innerHTML=renderInviteDisplay(code);
   toast('קוד הזמנה: '+code);
+}
+function renderInviteDisplay(code){
+  const link=window.location.href.split('?')[0]+'?invite='+code;
+  return `<div style="font-weight:600;font-size:.88rem;margin-bottom:6px">🔗 קוד הזמנה</div>
+    <div class="invite-code-display" style="font-size:1.3rem;padding:8px">${code}</div>
+    <div style="display:flex;gap:6px;margin-top:8px;justify-content:center;flex-wrap:wrap">
+      <button class="btn-sm primary" onclick="navigator.clipboard.writeText('${link}');toast('הקישור הועתק!')">📋 העתק קישור ישיר</button>
+      <button class="btn-sm" onclick="navigator.clipboard.writeText('${code}');toast('הקוד הועתק!')">📋 העתק קוד</button>
+    </div>
+    <div style="font-size:.68rem;color:var(--text-light);text-align:center;margin-top:6px;word-break:break-all">${esc(link)}</div>`;
 }
 
 function signOut(){
@@ -4475,6 +4510,9 @@ new MutationObserver(muts=>{
 }).observe(document.body,{childList:true,subtree:true});
 
 function init(){
+  // Check for invite URL before anything else
+  checkInviteURL();
+
   // Step 1: Load Firebase config
   fbConfig=loadFirebaseConfig();
 
@@ -4511,6 +4549,16 @@ function init(){
     fbAuth.onAuthStateChanged(user=>{
       if(user){
         fbUser=user;
+        // If pending invite from URL, handle it directly
+        if(window._pendingInvite){
+          hideLoginScreen();hideLoadingScreen();
+          showWizard();
+          setTimeout(()=>{
+            showWizardJoinCode();
+            setTimeout(()=>{const el=document.getElementById('wizJoinCode');if(el)el.value=window._pendingInvite;delete window._pendingInvite},200);
+          },200);
+          return;
+        }
         if(loginStatus)loginStatus.textContent='טוען נתוני משפחה...';
         hideLoginScreen();
         resolveFamily(user);
@@ -4529,6 +4577,7 @@ function init(){
   }else{
     // No Firebase — run in local mode
     loadDataLocal();
+    if(window._pendingInvite){showWizard();setTimeout(handlePendingInvite,500);return}
     if(loadTemplateFromURL()){showWizard();return}
     if(!D.settings.setupComplete){showWizard();return}
     initApp();
