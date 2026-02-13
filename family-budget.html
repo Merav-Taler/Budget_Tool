@@ -993,7 +993,14 @@ async function wizardJoinWithCode(){
     toast('הצטרפתם לתקציב!');
     hideWizard();
     await connectToFamily(fbFamilyId,fbUser);
-  }catch(e){status.style.color='var(--danger)';status.textContent='שגיאה: '+e.message}
+  }catch(e){
+    status.style.color='var(--danger)';
+    if(e.code==='PERMISSION_DENIED'||e.message?.includes('permission')||e.message?.includes('Permission')){
+      status.innerHTML='🔒 אין הרשאות. יש להגדיר חוקי אבטחה ב-Firebase.<br><span style="font-size:.78rem">בקונסולת Firebase → Realtime Database → Rules → הגדירו:<br><code style="font-size:.7rem">{"rules":{".read":"auth!=null",".write":"auth!=null"}}</code></span>';
+    }else{
+      status.textContent='שגיאה: '+e.message;
+    }
+  }
 }
 
 function renderWizardStep(){
