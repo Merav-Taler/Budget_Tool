@@ -734,17 +734,43 @@ function generateChildrenItems(){
   return items;
 }
 
+function findPreviousMonth(key){
+  const[y,m]=key.split('-').map(Number);
+  const prevM=m===1?12:m-1;
+  const prevY=m===1?y-1:y;
+  const prevKey=`${prevY}-${String(prevM).padStart(2,'0')}`;
+  return D.months[prevKey]?prevKey:null;
+}
 function getMonth(key){
   if(!D.months[key]){
     D.months[key]={expenses:{},income:[],misc:{'שוברים':0,'קופה קטנה':0},savingsContributions:{}};
+    // Find previous month to carry over fixed items
+    const prevKey=findPreviousMonth(key);
+    const prevMonth=prevKey?D.months[prevKey]:null;
     const cats=D.config.categories||[];
     cats.forEach(cat=>{
       if(cat.isChildrenCategory){
         D.months[key].expenses[cat.name]={items:generateChildrenItems()};
       }else{
-        D.months[key].expenses[cat.name]={
-          items:(cat.items||[]).map(it=>({name:it.name,planned:0,actual:0,isDefault:it.isDefault!==false}))
-        };
+        const defaultItems=(cat.items||[]).map(it=>({name:it.name,planned:0,actual:0,isDefault:it.isDefault!==false}));
+        // Carry over fixed items from previous month
+        if(prevMonth&&prevMonth.expenses&&prevMonth.expenses[cat.name]){
+          const prevItems=prevMonth.expenses[cat.name].items||[];
+          prevItems.forEach(pi=>{
+            if(pi.fixed){
+              const existing=defaultItems.find(di=>di.name===pi.name);
+              if(existing){
+                existing.planned=pi.planned||0;
+                existing.actual=pi.planned||0;
+                existing.fixed=true;
+                existing.owner=pi.owner;
+              }else{
+                defaultItems.push({name:pi.name,planned:pi.planned||0,actual:pi.planned||0,isDefault:false,fixed:true,owner:pi.owner});
+              }
+            }
+          });
+        }
+        D.months[key].expenses[cat.name]={items:defaultItems};
       }
     });
     // Add default income sources
@@ -1235,16 +1261,18 @@ function renderBudget(){
       bodyHtml=renderChildrenCategoryBody(catDef,catData,totalP,totalA,diff);
     }else{
       bodyHtml=`${ownerLegend()}<table class="data-table">
-        <thead><tr><th class="owner-cell"></th><th>פריט</th><th class="number-cell">מתוכנן</th><th class="number-cell">בפועל</th><th class="number-cell">הפרש</th><th class="actions-cell"></th></tr></thead>
+        <thead><tr><th class="owner-cell"></th><th>פריט</th><th class="number-cell">סכום</th><th class="number-cell">בפועל</th><th class="number-cell">הפרש</th><th class="actions-cell"></th></tr></thead>
         <tbody>${catData.items.map((item,ii)=>{
+          const isFixed=item.fixed;
           const d=(item.planned||0)-(item.actual||0);
           const cn=catDef.name.replace(/'/g,"\\'");
-          return `<tr>
+          return `<tr${isFixed?' style="background:var(--border-light)"':''}>
             <td class="owner-cell">${ownerBadge(item.owner||'shared',catDef.name,ii,'expense')}</td>
-            <td class="item-name">${item.name}</td>
-            <td class="number-cell"><input class="num-input" type="number" min="0" value="${item.planned||0}" onchange="updateItem('${cn}',${ii},'planned',this.value)" onfocus="this.select()"></td>
-            <td class="number-cell"><input class="num-input" type="number" min="0" value="${item.actual||0}" onchange="updateItem('${cn}',${ii},'actual',this.value)" onfocus="this.select()"></td>
-            <td class="number-cell ${d>=0?'diff-positive':'diff-negative'}">${fc(d)}</td>
+            <td class="item-name">${isFixed?'🔒 ':''}<span onclick="toggleFixed('${cn}',${ii})" style="cursor:pointer" title="${isFixed?'לחצי להפוך למשתנה':'לחצי לסמן כהוצאה קבועה'}">${item.name}</span></td>
+            ${isFixed?`<td class="number-cell" colspan="2"><input class="num-input" type="number" min="0" value="${item.planned||0}" onchange="updateFixedItem('${cn}',${ii},this.value)" onfocus="this.select()" style="max-width:140px"></td>`
+            :`<td class="number-cell"><input class="num-input" type="number" min="0" value="${item.planned||0}" onchange="updateItem('${cn}',${ii},'planned',this.value)" onfocus="this.select()"></td>
+            <td class="number-cell"><input class="num-input" type="number" min="0" value="${item.actual||0}" onchange="updateItem('${cn}',${ii},'actual',this.value)" onfocus="this.select()"></td>`}
+            <td class="number-cell ${d>=0?'diff-positive':'diff-negative'}">${isFixed?'🔒 קבוע':fc(d)}</td>
             <td class="actions-cell">${!item.isDefault?`<button class="delete-btn" onclick="removeItem('${cn}',${ii})">✕</button>`:''}</td>
           </tr>`;
         }).join('')}</tbody>
@@ -1394,6 +1422,26 @@ function updateTabIndexes(){
   });
 }
 
+function toggleFixed(catName,idx){
+  const key=mk(curMonth,curYear);const data=getMonth(key);
+  const item=data.expenses[catName].items[idx];
+  item.fixed=!item.fixed;
+  if(item.fixed){
+    item.actual=item.planned; // sync actual to planned
+  }
+  saveData();renderBudget();
+  toast(item.fixed?`🔒 "${item.name}" סומן כהוצאה קבועה`:`🔓 "${item.name}" הפך למשתנה`);
+}
+function updateFixedItem(catName,idx,value){
+  const key=mk(curMonth,curYear);const data=getMonth(key);
+  const amt=Math.max(0,parseInt(value)||0);
+  data.expenses[catName].items[idx].planned=amt;
+  data.expenses[catName].items[idx].actual=amt; // fixed: both are same
+  saveData();
+  updateCategoryTotals(catName);
+  updateSummary();
+  renderAlerts();
+}
 function updateItem(catName,idx,field,value){
   const key=mk(curMonth,curYear);const data=getMonth(key);
   data.expenses[catName].items[idx][field]=Math.max(0,parseInt(value)||0);
@@ -1432,23 +1480,31 @@ function addItem(catName){
     <p>קטגוריה: <strong>${catName}</strong></p>
     <div class="modal-field"><label>שם הפריט</label><input class="modal-input" type="text" id="newItemName" placeholder="לדוגמה: ביטוח דירה"></div>
     <div class="modal-field"><label>שייך ל:</label><select id="newItemOwner" class="modal-input"><option value="shared">🤝 משותף</option><option value="partner1">${p1}</option><option value="partner2">${p2}</option></select></div>
-    <div class="modal-field"><label>תקציב מתוכנן</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="newItemPlanned" min="0" placeholder="0"></div></div>
-    <div class="modal-field"><label>הוצאה בפועל</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="newItemActual" min="0" placeholder="0"></div></div>
+    <div class="modal-field"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="newItemFixed"> 🔒 הוצאה קבועה <span style="font-size:.75rem;color:var(--text-secondary)">(סכום זהה כל חודש, מועתק אוטומטית)</span></label></div>
+    <div class="modal-field"><label>סכום</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="newItemPlanned" min="0" placeholder="0"></div></div>
+    <div class="modal-field" id="actualField"><label>הוצאה בפועל</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="newItemActual" min="0" placeholder="0"></div></div>
     <div class="modal-actions"><button class="modal-btn primary" onclick="confirmAddItem('${catName.replace(/'/g,"\\'")}')">הוסף</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
-  setTimeout(()=>{const i=document.getElementById('newItemName');if(i)i.focus()},250);
+  setTimeout(()=>{
+    const i=document.getElementById('newItemName');if(i)i.focus();
+    const cb=document.getElementById('newItemFixed');
+    if(cb)cb.onchange=function(){document.getElementById('actualField').style.display=this.checked?'none':''};
+  },250);
 }
 
 function confirmAddItem(catName){
   const name=(document.getElementById('newItemName').value||'').trim();
   if(!name){document.getElementById('newItemName').style.borderColor='var(--danger)';return}
   const planned=Math.max(0,parseInt(document.getElementById('newItemPlanned').value)||0);
-  const actual=Math.max(0,parseInt(document.getElementById('newItemActual').value)||0);
+  const isFixed=document.getElementById('newItemFixed')?.checked||false;
+  const actual=isFixed?planned:Math.max(0,parseInt(document.getElementById('newItemActual').value)||0);
   const owner=(document.getElementById('newItemOwner')||{}).value||'shared';
   const key=mk(curMonth,curYear);
-  getMonth(key).expenses[catName].items.push({name,planned,actual,isDefault:false,owner});
+  const newItem={name,planned,actual,isDefault:false,owner};
+  if(isFixed)newItem.fixed=true;
+  getMonth(key).expenses[catName].items.push(newItem);
   saveData();closeModal();renderBudget();
   const card=document.querySelector(`[data-cat="${catName}"]`);if(card)card.classList.add('expanded');
-  toast(`"${name}" נוסף`);
+  toast(`"${name}" נוסף${isFixed?' (קבוע 🔒)':''}`);
 }
 
 function removeItem(catName,idx){
@@ -2401,10 +2457,15 @@ function copyBudget(){
   const tgt=getMonth(mk(curMonth,curYear));
   Object.entries(src.expenses||{}).forEach(([cn,cd])=>{
     if(tgt.expenses[cn]){
-      cd.items.forEach(si=>{
+      (cd.items||[]).forEach(si=>{
         const ti=tgt.expenses[cn].items.find(i=>i.name===si.name);
-        if(ti)ti.planned=si.planned;
-        else tgt.expenses[cn].items.push({...si,actual:0});
+        if(ti){
+          ti.planned=si.planned;
+          if(si.fixed){ti.fixed=true;ti.actual=si.planned;ti.owner=si.owner}
+        }else{
+          const newItem={...si,actual:si.fixed?si.planned:0};
+          tgt.expenses[cn].items.push(newItem);
+        }
       });
     }
   });
