@@ -82,7 +82,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);direction:rt
 .category-totals .over{color:var(--danger);font-weight:600}
 .category-totals .under{color:var(--success);font-weight:600}
 .chevron{transition:transform var(--transition);color:var(--text-light);font-size:.85rem;flex-shrink:0}
-.category-card.expanded .chevron{transform:rotate(90deg)}
+.category-card.expanded .chevron{transform:rotate(-90deg)}
 .category-progress{height:4px;background:var(--border-light);overflow:hidden}
 .category-progress-bar{height:100%;border-radius:2px;transition:width .5s ease,background .3s ease}
 .category-progress-bar.ok{background:linear-gradient(90deg,var(--success),var(--success-light))}
@@ -109,12 +109,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);direction:rt
 .num-input{width:100%;max-width:105px;padding:5px 7px;border:1px solid transparent;border-radius:var(--radius-xs);font-family:var(--font);font-size:.85rem;text-align:center;background:transparent;color:var(--text);transition:var(--transition);min-height:38px;direction:ltr}
 .num-input:hover{border-color:var(--border);background:var(--border-light)}
 .num-input:focus{outline:none;border-color:var(--primary);background:var(--primary-bg);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
-.delete-btn{width:28px;height:28px;border:none;background:none;color:var(--text-light);cursor:pointer;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.82rem;transition:var(--transition)}
+.delete-btn{width:34px;height:34px;border:none;background:none;color:var(--text-light);cursor:pointer;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.85rem;transition:var(--transition)}
 .delete-btn:hover{background:var(--danger-bg);color:var(--danger)}
-.lock-btn{width:26px;height:26px;border:none;border-radius:50%;cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center;transition:var(--transition);flex-shrink:0;background:transparent;color:var(--text-light);line-height:1}
+.lock-btn{width:32px;height:32px;border:none;border-radius:50%;cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center;transition:var(--transition);flex-shrink:0;background:transparent;color:var(--text-light);line-height:1}
 .lock-btn:hover{background:var(--border-light)}
 .lock-btn.locked{background:var(--primary-bg);color:var(--primary)}
-.add-item-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;margin:8px 12px 12px;border:1px dashed var(--border);border-radius:var(--radius-xs);background:none;font-family:var(--font);font-size:.8rem;color:var(--primary);cursor:pointer;transition:var(--transition);font-weight:500}
+.add-item-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 14px;margin:8px 12px 12px;border:1px dashed var(--border);border-radius:var(--radius-xs);background:none;font-family:var(--font);font-size:.82rem;color:var(--primary);cursor:pointer;transition:var(--transition);font-weight:500;width:calc(100% - 24px);min-height:40px}
 .add-item-btn:hover{background:var(--primary-bg);border-color:var(--primary)}
 .section-title{font-size:1.05rem;font-weight:700;margin:20px 0 10px;display:flex;align-items:center;gap:8px;color:var(--text)}
 
@@ -288,6 +288,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);direction:rt
 .income-source-input:hover{border-color:var(--border);background:var(--border-light)}
 .income-source-input:focus{outline:none;border-color:var(--primary);background:var(--primary-bg);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
 .misc-label{font-weight:500;padding-right:4px}
+.provider-text{font-size:.7rem;color:var(--text-secondary);cursor:pointer;display:none;line-height:1.2;margin-top:1px}
+.provider-text.has-provider{display:block}
+.item-name:hover .provider-text{display:block}
+.provider-text:hover{color:var(--primary);text-decoration:underline}
+.institution-text{font-size:.75rem;color:var(--text-secondary);margin-top:2px}
 
 /* Login Overlay */
 .login-overlay{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;align-items:center;justify-content:center;flex-direction:column}
@@ -352,8 +357,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);direction:rt
 .modal-btn{padding:10px 16px;min-height:44px;font-size:.88rem}
 .login-content{padding:16px}
 .owner-badge{min-width:30px;min-height:30px;font-size:.7rem}
-.delete-btn{width:36px;height:36px;font-size:.9rem}
-.lock-btn{width:34px;height:34px;font-size:.95rem}
+.delete-btn{width:40px;height:40px;font-size:.95rem}
+.lock-btn{width:38px;height:38px;font-size:1rem}
+.add-item-btn{padding:10px 14px;font-size:.85rem;min-height:44px}
 }
 @media(max-width:420px){
 .app-header h1{font-size:.9rem}
@@ -483,8 +489,10 @@ body{padding-bottom:0;background:#fff}
 </div></div>
 <div class="section-title">📦 שונות</div>
 <div class="category-card expanded"><div class="category-body" style="max-height:none">
-<table class="data-table"><thead><tr><th>פריט</th><th class="number-cell">סכום</th></tr></thead>
-<tbody id="miscBody"></tbody></table>
+<table class="data-table"><thead><tr><th>פריט</th><th class="number-cell">סכום</th><th class="actions-cell"></th></tr></thead>
+<tbody id="miscBody"></tbody>
+<tfoot><tr class="subtotal-row"><td>סה״כ שונות</td><td class="number-cell" id="miscTotalCell">₪ 0</td><td></td></tr></tfoot></table>
+<button class="add-item-btn" onclick="addMiscItem()">+ הוסף פריט שונות</button>
 </div></div>
 </div>
 
@@ -653,6 +661,7 @@ function freshData(){
       emergency:{target:0,current:0,monthlyContribution:0},
       goals:[],
       childrenSavings:[],
+      fixedSavings:[],
       completedGoals:[]
     },
     settings:{darkMode:false,setupComplete:false,currency:'₪',dismissedAlerts:[],subtitle:''}
@@ -762,7 +771,7 @@ function getMonth(key){
       if(cat.isChildrenCategory){
         D.months[key].expenses[cat.name]={items:generateChildrenItems()};
       }else{
-        const defaultItems=(cat.items||[]).map(it=>({name:it.name,planned:0,actual:0,isDefault:it.isDefault!==false}));
+        const defaultItems=(cat.items||[]).map(it=>{const o={name:it.name,planned:0,actual:0,isDefault:it.isDefault!==false};if(it.provider)o.provider=it.provider;return o});
         // Carry over fixed items from previous month
         if(prevMonth&&prevMonth.expenses&&prevMonth.expenses[cat.name]){
           const prevItems=prevMonth.expenses[cat.name].items||[];
@@ -811,6 +820,7 @@ function getMonth(key){
     }
   });
   if(!md.savingsContributions)md.savingsContributions={};
+  if(!md.misc||typeof md.misc!=='object')md.misc={};
   return md;
 }
 
@@ -1287,7 +1297,7 @@ function renderBudget(){
           const d=(item.planned||0)-(item.actual||0);
           return `<tr${isFixed?' style="background:var(--border-light)"':''}>
             <td class="owner-cell">${ownerBadge(item.owner||'shared',catDef.name,ii,'expense')}</td>
-            <td class="item-name"><div style="display:flex;align-items:center;gap:6px"><button class="lock-btn${isFixed?' locked':''}" onclick="toggleFixed(this.closest('[data-cat]').dataset.cat,${ii})" title="${isFixed?'נעול — לחצי לשחרור':'לחצי לנעול כהוצאה קבועה'}">${isFixed?'🔒':'🔓'}</button>${esc(item.name)}</div></td>
+            <td class="item-name"><div style="display:flex;align-items:center;gap:6px"><button class="lock-btn${isFixed?' locked':''}" onclick="toggleFixed(this.closest('[data-cat]').dataset.cat,${ii})" title="${isFixed?'נעול — לחצי לשחרור':'לחצי לנעול כהוצאה קבועה'}">${isFixed?'🔒':'🔓'}</button><div>${esc(item.name)}<span class="provider-text${item.provider?' has-provider':''}" onclick="setProvider(this.closest('[data-cat]').dataset.cat,${ii})">${item.provider?'🏢 '+esc(item.provider):'+ ספק'}</span></div></div></td>
             ${isFixed?`<td class="number-cell" colspan="2"><input class="num-input" type="number" min="0" value="${item.planned||0}" oninput="updateFixedItem(this.closest('[data-cat]').dataset.cat,${ii},this.value)" onfocus="this.select()" style="max-width:140px"></td>`
             :`<td class="number-cell"><input class="num-input" type="number" min="0" value="${item.planned||0}" oninput="updateItem(this.closest('[data-cat]').dataset.cat,${ii},'planned',this.value)" onfocus="this.select()"></td>
             <td class="number-cell"><input class="num-input" type="number" min="0" value="${item.actual||0}" oninput="updateItem(this.closest('[data-cat]').dataset.cat,${ii},'actual',this.value)" onfocus="this.select()"></td>`}
@@ -1339,7 +1349,7 @@ function renderChildrenCategoryBody(catDef,catData,totalP,totalA,diff){
       const d=(item.planned||0)-(item.actual||0);
       html+=`<tr>
         <td class="owner-cell">${ownerBadge(item.owner||'shared',catDef.name,idx,'expense')}</td>
-        <td class="item-name" style="padding-right:28px">${esc(item.name)}</td>
+        <td class="item-name" style="padding-right:28px"><div>${esc(item.name)}<span class="provider-text${item.provider?' has-provider':''}" onclick="setProvider(this.closest('[data-cat]').dataset.cat,${idx})">${item.provider?'🏢 '+esc(item.provider):'+ ספק'}</span></div></td>
         <td class="number-cell"><input class="num-input" type="number" min="0" value="${item.planned||0}" oninput="updateItem(this.closest('[data-cat]').dataset.cat,${idx},'planned',this.value)" onfocus="this.select()"></td>
         <td class="number-cell"><input class="num-input" type="number" min="0" value="${item.actual||0}" oninput="updateItem(this.closest('[data-cat]').dataset.cat,${idx},'actual',this.value)" onfocus="this.select()"></td>
         <td class="number-cell ${d>=0?'diff-positive':'diff-negative'}">${fc(d)}</td>
@@ -1357,7 +1367,7 @@ function renderChildrenCategoryBody(catDef,catData,totalP,totalA,diff){
       const d=(item.planned||0)-(item.actual||0);
       html+=`<tr>
         <td class="owner-cell">${ownerBadge(item.owner||'shared',catDef.name,idx,'expense')}</td>
-        <td class="item-name" style="padding-right:28px">${esc(item.name)}</td>
+        <td class="item-name" style="padding-right:28px"><div>${esc(item.name)}<span class="provider-text${item.provider?' has-provider':''}" onclick="setProvider(this.closest('[data-cat]').dataset.cat,${idx})">${item.provider?'🏢 '+esc(item.provider):'+ ספק'}</span></div></td>
         <td class="number-cell"><input class="num-input" type="number" min="0" value="${item.planned||0}" oninput="updateItem(this.closest('[data-cat]').dataset.cat,${idx},'planned',this.value)" onfocus="this.select()"></td>
         <td class="number-cell"><input class="num-input" type="number" min="0" value="${item.actual||0}" oninput="updateItem(this.closest('[data-cat]').dataset.cat,${idx},'actual',this.value)" onfocus="this.select()"></td>
         <td class="number-cell ${d>=0?'diff-positive':'diff-negative'}">${fc(d)}</td>
@@ -1401,6 +1411,9 @@ function confirmAddChildItem(){
 function renderIncome(data){
   const body=document.getElementById('incomeBody');body.innerHTML='';
   let total=0;
+  if(data.income.length===0){
+    body.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--text-secondary);padding:16px;font-size:.85rem">אין הכנסות. לחצו + להוספה</td></tr>';
+  }
   data.income.forEach((inc,idx)=>{
     total+=(inc.amount||0);
     const isFixed=inc.fixed;
@@ -1417,12 +1430,21 @@ function renderIncome(data){
 
 function renderMisc(data){
   const body=document.getElementById('miscBody');body.innerHTML='';
-  Object.entries(data.misc).forEach(([name,val])=>{
+  let total=0;
+  const entries=Object.entries(data.misc);
+  if(entries.length===0){
+    body.innerHTML='<tr><td colspan="3" style="text-align:center;color:var(--text-secondary);padding:16px;font-size:.85rem">אין פריטים. לחצו + להוספה</td></tr>';
+  }
+  entries.forEach(([name,val])=>{
+    total+=(val||0);
     const tr=document.createElement('tr');
+    tr.setAttribute('data-misc',name);
     tr.innerHTML=`<td class="misc-label">${esc(name)}</td>
-      <td class="number-cell"><input class="num-input" type="number" min="0" value="${val||0}" oninput="updateMisc('${esc(name)}',this.value)" onfocus="this.select()"></td>`;
+      <td class="number-cell"><input class="num-input" type="number" min="0" value="${val||0}" oninput="updateMisc(this.closest('[data-misc]').dataset.misc,this.value)" onfocus="this.select()"></td>
+      <td class="actions-cell"><button class="delete-btn" onclick="removeMiscItem(this.closest('[data-misc]').dataset.misc)">✕</button></td>`;
     body.appendChild(tr);
   });
+  const tc=document.getElementById('miscTotalCell');if(tc)tc.textContent=fc(total);
 }
 
 // ===== BUDGET ACTIONS =====
@@ -1489,6 +1511,43 @@ function updateFixedItem(catName,idx,value){
   updateSummary();
   renderAlerts();
 }
+function setProvider(catName,idx){
+  window._providerCat=catName;
+  window._providerIdx=idx;
+  const key=mk(curMonth,curYear);const data=getMonth(key);
+  const item=data.expenses[catName].items[idx];
+  showModal(`<h3>🏢 ספק / חברה</h3>
+    <p>פריט: <strong>${esc(item.name)}</strong></p>
+    <div class="modal-field"><label>שם הספק / חברה</label><input class="modal-input" type="text" id="providerInput" value="${esc(item.provider||'')}" placeholder="לדוגמה: בזק, חברת חשמל, סלקום"></div>
+    <div class="modal-actions"><button class="modal-btn primary" onclick="saveProvider()">שמור</button>${item.provider?`<button class="modal-btn danger" onclick="saveProvider(true)">הסר ספק</button>`:''}<button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
+  setTimeout(()=>{const i=document.getElementById('providerInput');if(i)i.focus()},250);
+}
+
+function saveProvider(remove){
+  const catName=window._providerCat;
+  const idx=window._providerIdx;
+  const key=mk(curMonth,curYear);const data=getMonth(key);
+  const item=data.expenses[catName].items[idx];
+  const val=remove?'':(document.getElementById('providerInput').value||'').trim();
+  item.provider=val;
+  // Also update config so new months inherit the provider
+  const catCfg=D.config.categories.find(c=>c.name===catName);
+  if(catCfg){
+    const cfgItem=catCfg.items.find(i=>i.name===item.name);
+    if(cfgItem)cfgItem.provider=val;
+  }
+  // Propagate to fixed items in other months
+  if(item.fixed){
+    Object.entries(D.months).forEach(([mk2,mdata])=>{
+      if(!mdata.expenses||!mdata.expenses[catName])return;
+      const match=mdata.expenses[catName].items.find(i=>i.name===item.name&&i.fixed);
+      if(match)match.provider=val;
+    });
+  }
+  saveData();closeModal();renderBudgetKeepOpen();
+  toast(val?`ספק "${val}" נשמר`:'ספק הוסר');
+}
+
 function updateItem(catName,idx,field,value){
   const key=mk(curMonth,curYear);const data=getMonth(key);
   data.expenses[catName].items[idx][field]=Math.max(0,parseInt(value)||0);
@@ -1527,6 +1586,7 @@ function addItem(catName){
   showModal(`<h3>➕ הוסף פריט חדש</h3>
     <p>קטגוריה: <strong>${esc(catName)}</strong></p>
     <div class="modal-field"><label>שם הפריט</label><input class="modal-input" type="text" id="newItemName" placeholder="לדוגמה: ביטוח דירה"></div>
+    <div class="modal-field"><label>ספק / חברה</label><input class="modal-input" type="text" id="newItemProvider" placeholder="לדוגמה: בזק, חברת חשמל (לא חובה)"></div>
     <div class="modal-field"><label>שייך ל:</label><select id="newItemOwner" class="modal-input"><option value="shared">🤝 משותף</option><option value="partner1">${esc(p1)}</option><option value="partner2">${esc(p2)}</option></select></div>
     <div class="modal-field"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="newItemFixed"> 🔒 הוצאה קבועה <span style="font-size:.75rem;color:var(--text-secondary)">(סכום זהה כל חודש, מועתק אוטומטית)</span></label></div>
     <div class="modal-field"><label>סכום</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="newItemPlanned" min="0" placeholder="0"></div></div>
@@ -1548,8 +1608,10 @@ function confirmAddItem(){
   const actual=isFixed?planned:Math.max(0,parseInt(document.getElementById('newItemActual').value)||0);
   const owner=(document.getElementById('newItemOwner')||{}).value||'shared';
   const key=mk(curMonth,curYear);
+  const provider=(document.getElementById('newItemProvider').value||'').trim();
   const newItem={name,planned,actual,isDefault:false,owner};
   if(isFixed)newItem.fixed=true;
+  if(provider)newItem.provider=provider;
   getMonth(key).expenses[catName].items.push(newItem);
   saveData();closeModal();renderBudgetKeepOpen();
   const card=document.querySelector(`[data-cat="${catName}"]`);if(card&&!card.classList.contains('expanded'))card.classList.add('expanded');
@@ -1559,8 +1621,14 @@ function confirmAddItem(){
 function removeItem(catName,idx){
   const key=mk(curMonth,curYear);const data=getMonth(key);
   const item=data.expenses[catName].items[idx];
-  if(!confirm(`למחוק את "${item.name}"?`))return;
-  data.expenses[catName].items.splice(idx,1);saveData();renderBudgetKeepOpen();
+  window._deleteItemCat=catName;window._deleteItemIdx=idx;
+  showModal(`<h3>⚠️ מחיקת פריט</h3><p>למחוק את "${esc(item.name)}"${item.provider?' ('+esc(item.provider)+')':''}?</p>
+    <div class="modal-actions"><button class="modal-btn danger" onclick="confirmRemoveItem()">מחק</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
+}
+function confirmRemoveItem(){
+  const catName=window._deleteItemCat,idx=window._deleteItemIdx;
+  getMonth(mk(curMonth,curYear)).expenses[catName].items.splice(idx,1);
+  saveData();closeModal();renderBudgetKeepOpen();toast('פריט נמחק');
 }
 
 function updateIncome(idx,field,value){
@@ -1621,10 +1689,53 @@ function confirmAddIncome(){
   saveData();closeModal();renderBudgetKeepOpen();toast(`"${source}" נוסף${isFixed?' (קבוע 🔒)':''}`);
 }
 
-function removeIncome(idx){getMonth(mk(curMonth,curYear)).income.splice(idx,1);saveData();renderBudgetKeepOpen()}
+function removeIncome(idx){
+  const inc=getMonth(mk(curMonth,curYear)).income[idx];
+  window._deleteIncIdx=idx;
+  showModal(`<h3>⚠️ מחיקת הכנסה</h3><p>למחוק את "${esc(inc.source)}"?</p>
+    <div class="modal-actions"><button class="modal-btn danger" onclick="confirmRemoveIncome()">מחק</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
+}
+function confirmRemoveIncome(){
+  getMonth(mk(curMonth,curYear)).income.splice(window._deleteIncIdx,1);
+  saveData();closeModal();renderBudgetKeepOpen();toast('הכנסה נמחקה');
+}
 
 function updateMisc(name,value){
-  getMonth(mk(curMonth,curYear)).misc[name]=Math.max(0,parseInt(value)||0);saveData();updateSummary();
+  const data=getMonth(mk(curMonth,curYear));
+  data.misc[name]=Math.max(0,parseInt(value)||0);
+  // Update misc total
+  const tc=document.getElementById('miscTotalCell');
+  if(tc){let t=0;Object.values(data.misc).forEach(v=>t+=(v||0));tc.textContent=fc(t)}
+  saveData();updateSummary();
+}
+
+function addMiscItem(){
+  showModal(`<h3>➕ הוסף פריט שונות</h3>
+    <div class="modal-field"><label>שם הפריט</label><input class="modal-input" type="text" id="newMiscName" placeholder="לדוגמה: מתנות, תרומות"></div>
+    <div class="modal-field"><label>סכום</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="newMiscAmount" min="0" placeholder="0"></div></div>
+    <div class="modal-actions"><button class="modal-btn primary" onclick="confirmAddMisc()">הוסף</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
+  setTimeout(()=>{const i=document.getElementById('newMiscName');if(i)i.focus()},250);
+}
+
+function confirmAddMisc(){
+  const name=(document.getElementById('newMiscName').value||'').trim();
+  if(!name){document.getElementById('newMiscName').style.borderColor='var(--danger)';return}
+  const amount=Math.max(0,parseInt(document.getElementById('newMiscAmount').value)||0);
+  const key=mk(curMonth,curYear);const data=getMonth(key);
+  if(data.misc[name]!=null){toast('פריט כבר קיים');return}
+  data.misc[name]=amount;
+  saveData();closeModal();renderBudgetKeepOpen();toast(`"${name}" נוסף`);
+}
+
+function removeMiscItem(name){
+  window._deleteMiscName=name;
+  showModal(`<h3>⚠️ מחיקת פריט</h3><p>למחוק את "${esc(name)}"?</p>
+    <div class="modal-actions"><button class="modal-btn danger" onclick="confirmRemoveMisc()">מחק</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
+}
+function confirmRemoveMisc(){
+  const name=window._deleteMiscName;
+  delete getMonth(mk(curMonth,curYear)).misc[name];
+  saveData();closeModal();renderBudgetKeepOpen();toast('פריט נמחק');
 }
 
 function updateSummary(){
@@ -1964,6 +2075,7 @@ function renderSavings(){
     <h3>🆘 קרן חירום</h3>
     ${avgExp>0?`<p style="font-size:.78rem;color:var(--text-secondary)">מומלץ: ${fc(Math.round(recMin))} - ${fc(Math.round(recMax))} (3-6 חודשי הוצאות)</p>`:''}
     <div class="fund-card">
+      ${ef.institution?`<div class="institution-text">🏦 ${esc(ef.institution)}</div>`:''}
       <div class="fund-amount">${fc(ef.current)} <span style="font-size:.8rem;color:var(--text-secondary)">/ ${fc(ef.target)}</span></div>
       <div class="fund-progress"><div class="fund-progress-bar" style="width:${efPct}%;background:${efColor}"></div></div>
       <div class="fund-status" style="color:${efColor}">${efStatus} (${efPct}%)</div>
@@ -1998,6 +2110,7 @@ function renderSavings(){
       <div class="fund-header"><span style="font-size:1.3rem">${esc(goal.emoji||'🎯')}</span><span class="fund-name">${esc(goal.name)}</span>
         <span style="font-size:.7rem;padding:2px 8px;border-radius:10px;background:${goal.priority==='high'?'var(--danger-bg)':goal.priority==='low'?'var(--border-light)':'var(--warning-bg)'};color:${goal.priority==='high'?'var(--danger)':'var(--text-secondary)'}">${goal.priority==='high'?'גבוהה':goal.priority==='low'?'נמוכה':'בינונית'}</span>
       </div>
+      ${goal.institution?`<div class="institution-text">🏦 ${esc(goal.institution)}</div>`:''}
       <div class="fund-amount">${fc(goal.current)} <span style="font-size:.8rem;color:var(--text-secondary)">/ ${fc(goal.target)}</span></div>
       <div class="fund-progress"><div class="fund-progress-bar" style="width:${pct}%;background:${color}"></div></div>
       <div class="fund-meta">
@@ -2030,6 +2143,7 @@ function renderSavings(){
       const needed=monthsLeft>0?Math.ceil(remaining/monthsLeft):0;
       html+=`<div class="fund-card">
         <div class="fund-header"><span style="font-size:1.3rem">${esc(child.emoji||'👶')}</span><span class="fund-name">${esc(child.name)} (גיל ${child.age})</span></div>
+        ${cs.institution?`<div class="institution-text">🏦 ${esc(cs.institution)}</div>`:''}
         <div class="fund-amount">${fc(cs.current)} <span style="font-size:.8rem;color:var(--text-secondary)">/ ${fc(cs.target)}</span></div>
         <div class="fund-progress"><div class="fund-progress-bar" style="width:${pct}%;background:var(--primary)"></div></div>
         <div class="fund-meta">
@@ -2044,6 +2158,37 @@ function renderSavings(){
     });
     html+=`</div>`;
   }
+
+  // Zone 4: Fixed Savings (pension, education fund, etc.)
+  const fs=D.savings.fixedSavings||[];
+  const fsTotalMonthly=fs.reduce((a,s)=>a+(s.amount||0),0);
+  html+=`<div class="savings-zone">
+    <h3>🔒 חסכונות קבועים</h3>
+    <p style="font-size:.78rem;color:var(--text-secondary)">הפרשות חודשיות קבועות — פנסיה, קרן השתלמות, ביטוח מנהלים וכו׳</p>`;
+  if(fs.length===0){
+    html+=`<p style="color:var(--text-secondary);font-size:.85rem;text-align:center;padding:20px">אין חסכונות קבועים עדיין</p>`;
+  }
+  fs.forEach((saving,i)=>{
+    const p1=D.config.partner1||'שותף 1',p2=D.config.partner2||'שותף 2';
+    const ownerLabel=saving.owner==='partner1'?p1:saving.owner==='partner2'?p2:'משותף';
+    html+=`<div class="fund-card">
+      <div class="fund-header">
+        <span style="font-size:1.3rem">${esc(saving.emoji||'🏦')}</span>
+        <span class="fund-name">${esc(saving.name)}</span>
+        <span style="font-size:.7rem;padding:2px 8px;border-radius:10px;background:var(--primary-bg);color:var(--primary)">${esc(ownerLabel)}</span>
+      </div>
+      ${saving.institution?`<div class="institution-text">🏦 ${esc(saving.institution)}</div>`:''}
+      <div class="fund-amount">${fc(saving.amount)} <span style="font-size:.8rem;color:var(--text-secondary)">/ חודש</span></div>
+      <div class="fund-actions">
+        <button class="btn-sm primary" onclick="editFixedSaving(${i})">✏️</button>
+        <button class="btn-sm danger" onclick="deleteFixedSaving(${i})">🗑️</button>
+      </div>
+    </div>`;
+  });
+  if(fs.length>0){
+    html+=`<div style="text-align:center;font-size:.85rem;color:var(--text-secondary);padding:8px 0;border-top:1px solid var(--border-light);margin-top:8px"><strong>סה״כ הפרשה חודשית: ${fc(fsTotalMonthly)}</strong></div>`;
+  }
+  html+=`<button class="add-item-btn" onclick="addFixedSaving()">+ הוסף חיסכון קבוע</button></div>`;
 
   // Savings Calculator
   html+=`<div class="savings-zone">
@@ -2060,7 +2205,7 @@ function renderSavings(){
   if(D.savings.completedGoals&&D.savings.completedGoals.length>0){
     html+=`<div class="savings-zone"><h3>🏆 יעדים שהושגו</h3>`;
     D.savings.completedGoals.forEach(g=>{
-      html+=`<div class="fund-card" style="opacity:.7"><div class="fund-header"><span>${esc(g.emoji||'🎯')}</span><span class="fund-name">${esc(g.name)}</span><span style="font-size:.75rem;color:var(--success)">✅ ${esc(g.completedDate||'')}</span></div><div class="fund-amount">${fc(g.target)}</div></div>`;
+      html+=`<div class="fund-card" style="opacity:.7"><div class="fund-header"><span>${esc(g.emoji||'🎯')}</span><span class="fund-name">${esc(g.name)}</span><span style="font-size:.75rem;color:var(--success)">✅ ${esc(g.completedDate||'')}</span></div>${g.institution?`<div class="institution-text">🏦 ${esc(g.institution)}</div>`:''}<div class="fund-amount">${fc(g.target)}</div></div>`;
     });
     html+=`</div>`;
   }
@@ -2070,15 +2215,33 @@ function renderSavings(){
 }
 
 function renderSavingsKPIs(){
+  const fixedSavingsMonthly=(D.savings.fixedSavings||[]).reduce((a,s)=>a+(s.amount||0),0);
   const totalSavings=(D.savings.emergency.current||0)+D.savings.goals.reduce((a,g)=>a+(g.current||0),0)+D.savings.childrenSavings.reduce((a,c)=>a+(c.current||0),0);
-  const totalMonthly=(D.savings.emergency.monthlyContribution||0)+D.savings.goals.reduce((a,g)=>a+(g.monthlyContribution||0),0)+D.savings.childrenSavings.reduce((a,c)=>a+(c.monthlyContribution||0),0);
+  const totalMonthly=(D.savings.emergency.monthlyContribution||0)+D.savings.goals.reduce((a,g)=>a+(g.monthlyContribution||0),0)+D.savings.childrenSavings.reduce((a,c)=>a+(c.monthlyContribution||0),0)+fixedSavingsMonthly;
   const completed=(D.savings.completedGoals||[]).length;
   const total=D.savings.goals.length+completed;
 
   document.getElementById('savingsKpis').innerHTML=`
     <div class="kpi-card blue"><div class="kpi-label">סה״כ חסכונות</div><div class="kpi-value">${fc(totalSavings)}</div></div>
-    <div class="kpi-card green"><div class="kpi-label">תרומה חודשית</div><div class="kpi-value">${fc(totalMonthly)}</div></div>
+    <div class="kpi-card green" style="cursor:pointer" onclick="showContributionBreakdown()"><div class="kpi-label">תרומה חודשית ℹ️</div><div class="kpi-value">${fc(totalMonthly)}</div></div>
     <div class="kpi-card amber"><div class="kpi-label">יעדים שהושגו</div><div class="kpi-value">${completed} / ${total}</div></div>`;
+}
+
+function showContributionBreakdown(){
+  const efm=D.savings.emergency.monthlyContribution||0;
+  const goalRows=D.savings.goals.filter(g=>g.monthlyContribution>0).map(g=>`<tr><td style="padding:4px 8px">🎯 ${esc(g.name)}</td><td style="padding:4px 8px;text-align:left">${fc(g.monthlyContribution)}</td></tr>`).join('');
+  const childRows=D.savings.childrenSavings.filter(c=>c.monthlyContribution>0).map(c=>`<tr><td style="padding:4px 8px">🎓 ${esc(c.childName)}</td><td style="padding:4px 8px;text-align:left">${fc(c.monthlyContribution)}</td></tr>`).join('');
+  const fixedRows=(D.savings.fixedSavings||[]).filter(s=>s.amount>0).map(s=>`<tr><td style="padding:4px 8px">🔒 ${esc(s.name)}${s.institution?' ('+esc(s.institution)+')':''}</td><td style="padding:4px 8px;text-align:left">${fc(s.amount)}</td></tr>`).join('');
+  const totalMonthly=(efm)+D.savings.goals.reduce((a,g)=>a+(g.monthlyContribution||0),0)+D.savings.childrenSavings.reduce((a,c)=>a+(c.monthlyContribution||0),0)+(D.savings.fixedSavings||[]).reduce((a,s)=>a+(s.amount||0),0);
+  showModal(`<h3>📊 פירוט תרומה חודשית</h3>
+    <p style="font-size:.82rem;color:var(--text-secondary)">הסכומים שמופרשים כל חודש לחיסכון. ניתן לערוך דרך כל אחד מהכרטיסים בטאב חיסכון.</p>
+    <table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:.88rem">
+    ${efm>0?`<tr><td style="padding:4px 8px">🆘 קרן חירום</td><td style="padding:4px 8px;text-align:left">${fc(efm)}</td></tr>`:''}
+    ${goalRows}${childRows}${fixedRows}
+    ${totalMonthly===0?'<tr><td colspan="2" style="padding:12px;text-align:center;color:var(--text-secondary)">אין הפרשות חודשיות עדיין.<br>הגדירו סכום בכרטיסי החיסכון למטה.</td></tr>':''}
+    <tr style="border-top:2px solid var(--border);font-weight:700"><td style="padding:8px">סה״כ</td><td style="padding:8px;text-align:left">${fc(totalMonthly)}</td></tr>
+    </table>
+    <div class="modal-actions"><button class="modal-btn primary" onclick="closeModal()">הבנתי</button></div>`);
 }
 
 function calcAvgMonthlyExpenses(){
@@ -2103,6 +2266,7 @@ function editEmergencyFund(){
     <div class="modal-field"><label>סכום יעד</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="efTarget" value="${ef.target}" min="0"></div></div>
     <div class="modal-field"><label>יתרה נוכחית</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="efCurrent" value="${ef.current}" min="0"></div></div>
     <div class="modal-field"><label>הפקדה חודשית</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="efMonthly" value="${ef.monthlyContribution}" min="0"></div></div>
+    <div class="modal-field"><label>מוסד / קופה</label><input class="modal-input" type="text" id="efInstitution" value="${esc(ef.institution||'')}" placeholder="לדוגמה: בנק לאומי, מגדל (לא חובה)"></div>
     <div class="modal-actions"><button class="modal-btn primary" onclick="saveEmergencyFund()">שמור</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
 }
 
@@ -2110,6 +2274,7 @@ function saveEmergencyFund(){
   D.savings.emergency.target=Math.max(0,parseInt(document.getElementById('efTarget').value)||0);
   D.savings.emergency.current=Math.max(0,parseInt(document.getElementById('efCurrent').value)||0);
   D.savings.emergency.monthlyContribution=Math.max(0,parseInt(document.getElementById('efMonthly').value)||0);
+  D.savings.emergency.institution=(document.getElementById('efInstitution').value||'').trim();
   saveData();closeModal();renderSavings();toast('קרן חירום עודכנה');
 }
 
@@ -2118,16 +2283,21 @@ function addGoal(){
     <div class="modal-field"><label>שם היעד</label><input class="modal-input" id="goalName" placeholder="לדוגמה: חופשה"></div>
     <div class="modal-field"><label>אימוג'י</label><input class="modal-input" id="goalEmoji" value="🎯" style="width:60px"></div>
     <div class="modal-field"><label>סכום יעד</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="goalTarget" min="0"></div></div>
+    <div class="modal-field"><label>מוסד / קופה</label><input class="modal-input" type="text" id="goalInstitution" placeholder="לדוגמה: בנק הפועלים, מגדל (לא חובה)"></div>
     <div class="modal-field"><label>תאריך יעד</label><input class="modal-input" type="month" id="goalDate"></div>
     <div class="modal-field"><label>הפקדה חודשית</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="goalMonthly" min="0"></div></div>
     <div class="modal-field"><label>עדיפות</label><select id="goalPriority" class="modal-input"><option value="high">גבוהה</option><option value="medium" selected>בינונית</option><option value="low">נמוכה</option></select></div>
     <div class="modal-actions"><button class="modal-btn primary" onclick="saveNewGoal()">הוסף</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
+  setTimeout(()=>{const i=document.getElementById('goalName');if(i)i.focus()},250);
 }
 
 function saveNewGoal(){
   const name=(document.getElementById('goalName').value||'').trim();
   if(!name){document.getElementById('goalName').style.borderColor='var(--danger)';return}
-  D.savings.goals.push({id:uid(),name,emoji:document.getElementById('goalEmoji').value||'🎯',target:Math.max(0,parseInt(document.getElementById('goalTarget').value)||0),current:0,targetDate:document.getElementById('goalDate').value||'',monthlyContribution:Math.max(0,parseInt(document.getElementById('goalMonthly').value)||0),priority:document.getElementById('goalPriority').value,createdDate:new Date().toISOString().slice(0,10)});
+  const institution=(document.getElementById('goalInstitution').value||'').trim();
+  const goalObj={id:uid(),name,emoji:document.getElementById('goalEmoji').value||'🎯',target:Math.max(0,parseInt(document.getElementById('goalTarget').value)||0),current:0,targetDate:document.getElementById('goalDate').value||'',monthlyContribution:Math.max(0,parseInt(document.getElementById('goalMonthly').value)||0),priority:document.getElementById('goalPriority').value,createdDate:new Date().toISOString().slice(0,10)};
+  if(institution)goalObj.institution=institution;
+  D.savings.goals.push(goalObj);
   saveData();closeModal();renderSavings();toast(`יעד "${name}" נוסף`);
 }
 
@@ -2138,6 +2308,7 @@ function editGoal(idx){
     <div class="modal-field"><label>אימוג'י</label><input class="modal-input" id="eGoalEmoji" value="${esc(g.emoji)}" style="width:60px"></div>
     <div class="modal-field"><label>סכום יעד</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="eGoalTarget" value="${g.target}" min="0"></div></div>
     <div class="modal-field"><label>יתרה נוכחית</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="eGoalCurrent" value="${g.current}" min="0"></div></div>
+    <div class="modal-field"><label>מוסד / קופה</label><input class="modal-input" type="text" id="eGoalInstitution" value="${esc(g.institution||'')}" placeholder="לדוגמה: בנק הפועלים, מגדל"></div>
     <div class="modal-field"><label>תאריך יעד</label><input class="modal-input" type="month" id="eGoalDate" value="${g.targetDate}"></div>
     <div class="modal-field"><label>הפקדה חודשית</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="eGoalMonthly" value="${g.monthlyContribution}" min="0"></div></div>
     <div class="modal-actions"><button class="modal-btn primary" onclick="saveEditGoal(${idx})">שמור</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
@@ -2149,6 +2320,7 @@ function saveEditGoal(idx){
   g.emoji=document.getElementById('eGoalEmoji').value||g.emoji;
   g.target=Math.max(0,parseInt(document.getElementById('eGoalTarget').value)||0);
   g.current=Math.max(0,parseInt(document.getElementById('eGoalCurrent').value)||0);
+  g.institution=(document.getElementById('eGoalInstitution').value||'').trim();
   g.targetDate=document.getElementById('eGoalDate').value;
   g.monthlyContribution=Math.max(0,parseInt(document.getElementById('eGoalMonthly').value)||0);
   saveData();closeModal();renderSavings();toast('יעד עודכן');
@@ -2165,9 +2337,10 @@ function completeGoal(idx){
 
 function editChildSavings(idx){
   const cs=D.savings.childrenSavings[idx];
-  showModal(`<h3>✏️ חיסכון ${cs.childName}</h3>
+  showModal(`<h3>✏️ חיסכון ${esc(cs.childName)}</h3>
     <div class="modal-field"><label>סכום יעד</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="csTarget" value="${cs.target}" min="0"></div></div>
     <div class="modal-field"><label>יתרה נוכחית</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="csCurrent" value="${cs.current}" min="0"></div></div>
+    <div class="modal-field"><label>מוסד / קופה</label><input class="modal-input" type="text" id="csInstitution" value="${esc(cs.institution||'')}" placeholder="לדוגמה: קופת גמל, בנק הפועלים"></div>
     <div class="modal-field"><label>גיל יעד</label><input class="modal-input ltr" type="number" id="csAge" value="${cs.targetAge}" min="1" max="30" style="direction:ltr;text-align:right"></div>
     <div class="modal-field"><label>הפקדה חודשית</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="csMonthly" value="${cs.monthlyContribution}" min="0"></div></div>
     <div class="modal-actions"><button class="modal-btn primary" onclick="saveChildSavings(${idx})">שמור</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
@@ -2177,9 +2350,64 @@ function saveChildSavings(idx){
   const cs=D.savings.childrenSavings[idx];
   cs.target=Math.max(0,parseInt(document.getElementById('csTarget').value)||0);
   cs.current=Math.max(0,parseInt(document.getElementById('csCurrent').value)||0);
+  cs.institution=(document.getElementById('csInstitution').value||'').trim();
   cs.targetAge=Math.max(1,parseInt(document.getElementById('csAge').value)||18);
   cs.monthlyContribution=Math.max(0,parseInt(document.getElementById('csMonthly').value)||0);
   saveData();closeModal();renderSavings();toast('חיסכון עודכן');
+}
+
+// ===== FIXED SAVINGS =====
+function addFixedSaving(){
+  const p1=D.config.partner1||'שותף 1',p2=D.config.partner2||'שותף 2';
+  showModal(`<h3>➕ חיסכון קבוע חדש</h3>
+    <div class="modal-field"><label>שם</label><input class="modal-input" id="fsName" placeholder="לדוגמה: פנסיה, קרן השתלמות, ביטוח מנהלים"></div>
+    <div class="modal-field"><label>אימוג'י</label><input class="modal-input" id="fsEmoji" value="🏦" style="width:60px"></div>
+    <div class="modal-field"><label>סכום חודשי</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="fsAmount" min="0" placeholder="0"></div></div>
+    <div class="modal-field"><label>מוסד / קופה</label><input class="modal-input" type="text" id="fsInstitution" placeholder="לדוגמה: מגדל, הראל, מנורה"></div>
+    <div class="modal-field"><label>שייך ל:</label><select id="fsOwner" class="modal-input"><option value="shared">🤝 משותף</option><option value="partner1">${esc(p1)}</option><option value="partner2">${esc(p2)}</option></select></div>
+    <div class="modal-actions"><button class="modal-btn primary" onclick="saveNewFixedSaving()">הוסף</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
+  setTimeout(()=>{const i=document.getElementById('fsName');if(i)i.focus()},250);
+}
+
+function saveNewFixedSaving(){
+  const name=(document.getElementById('fsName').value||'').trim();
+  if(!name){document.getElementById('fsName').style.borderColor='var(--danger)';return}
+  const saving={
+    id:uid(),
+    name,
+    emoji:document.getElementById('fsEmoji').value||'🏦',
+    amount:Math.max(0,parseInt(document.getElementById('fsAmount').value)||0),
+    institution:(document.getElementById('fsInstitution').value||'').trim(),
+    owner:document.getElementById('fsOwner').value||'shared'
+  };
+  D.savings.fixedSavings.push(saving);
+  saveData();closeModal();renderSavings();toast(`חיסכון קבוע "${name}" נוסף`);
+}
+
+function editFixedSaving(idx){
+  const s=D.savings.fixedSavings[idx];
+  const p1=D.config.partner1||'שותף 1',p2=D.config.partner2||'שותף 2';
+  showModal(`<h3>✏️ ערוך חיסכון קבוע</h3>
+    <div class="modal-field"><label>שם</label><input class="modal-input" id="efsName" value="${esc(s.name)}"></div>
+    <div class="modal-field"><label>אימוג'י</label><input class="modal-input" id="efsEmoji" value="${esc(s.emoji||'🏦')}" style="width:60px"></div>
+    <div class="modal-field"><label>סכום חודשי</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="efsAmount" value="${s.amount}" min="0"></div></div>
+    <div class="modal-field"><label>מוסד / קופה</label><input class="modal-input" type="text" id="efsInstitution" value="${esc(s.institution||'')}" placeholder="לדוגמה: מגדל, הראל, מנורה"></div>
+    <div class="modal-field"><label>שייך ל:</label><select id="efsOwner" class="modal-input"><option value="shared"${s.owner==='shared'?' selected':''}>🤝 משותף</option><option value="partner1"${s.owner==='partner1'?' selected':''}>${esc(p1)}</option><option value="partner2"${s.owner==='partner2'?' selected':''}>${esc(p2)}</option></select></div>
+    <div class="modal-actions"><button class="modal-btn primary" onclick="saveEditFixedSaving(${idx})">שמור</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
+}
+
+function saveEditFixedSaving(idx){
+  const s=D.savings.fixedSavings[idx];
+  s.name=document.getElementById('efsName').value.trim()||s.name;
+  s.emoji=document.getElementById('efsEmoji').value||s.emoji;
+  s.amount=Math.max(0,parseInt(document.getElementById('efsAmount').value)||0);
+  s.institution=(document.getElementById('efsInstitution').value||'').trim();
+  s.owner=document.getElementById('efsOwner').value||'shared';
+  saveData();closeModal();renderSavings();toast('חיסכון קבוע עודכן');
+}
+
+function deleteFixedSaving(idx){
+  showModal(`<h3>⚠️ מחיקת חיסכון קבוע</h3><p>למחוק את "${esc(D.savings.fixedSavings[idx].name)}"?</p><div class="modal-actions"><button class="modal-btn danger" onclick="D.savings.fixedSavings.splice(${idx},1);saveData();closeModal();renderSavings();toast('חיסכון קבוע נמחק')">מחק</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
 }
 
 function quickDeposit(goalKey,idx){
@@ -2505,7 +2733,7 @@ function importJSON(event){
       // Check if it's a full app export or just month data
       if(imported.config){
         D=imported;
-        if(!D.savings)D.savings={emergency:{target:0,current:0,monthlyContribution:0},goals:[],childrenSavings:[],completedGoals:[]};
+        if(!D.savings)D.savings={emergency:{target:0,current:0,monthlyContribution:0},goals:[],childrenSavings:[],fixedSavings:[],completedGoals:[]};
         if(!D.settings)D.settings={darkMode:false,setupComplete:true,currency:'₪',dismissedAlerts:[]};
         D.settings.setupComplete=true;
       }else{
@@ -2520,14 +2748,14 @@ function importJSON(event){
 }
 
 function exportCSV(){
-  let csv='\ufeffחודש,קטגוריה,פריט,מתוכנן,בפועל,הפרש\n';
+  let csv='\ufeffחודש,קטגוריה,פריט,ספק,מתוכנן,בפועל,הפרש\n';
   Object.keys(D.months).sort().forEach(key=>{
     const data=D.months[key];
     const ml=HM[parseInt(key.split('-')[1])-1]+' '+key.split('-')[0];
     Object.entries(data.expenses||{}).forEach(([cn,cd])=>{
-      (cd.items||[]).forEach(i=>{csv+=`${ml},${cn},${i.name},${i.planned||0},${i.actual||0},${(i.planned||0)-(i.actual||0)}\n`});
+      (cd.items||[]).forEach(i=>{csv+=`${ml},${cn},${i.name},${i.provider||''},${i.planned||0},${i.actual||0},${(i.planned||0)-(i.actual||0)}\n`});
     });
-    (data.income||[]).forEach(i=>{csv+=`${ml},הכנסות,${i.source},${i.amount||0},,\n`});
+    (data.income||[]).forEach(i=>{csv+=`${ml},הכנסות,${i.source},,${i.amount||0},,\n`});
   });
   downloadBlob(new Blob([csv],{type:'text/csv;charset=utf-8'}),'budget_all.csv');toast('CSV יוצא');
 }
@@ -2589,34 +2817,38 @@ function exportExcel(mode){
     const monthLabel=HM[curMonth]+' '+curYear;
 
     // Budget sheet
-    const rows=[['תקציב חודשי - '+monthLabel],[''],['קטגוריה','פריט','מתוכנן','בפועל','הפרש']];
+    const rows=[['תקציב חודשי - '+monthLabel],[''],['קטגוריה','פריט','ספק','מתוכנן','בפועל','הפרש']];
     (D.config.categories||[]).forEach(cat=>{
       const cd=data.expenses[cat.name];if(!cd)return;
       let catP=0,catA=0;
       cd.items.forEach(i=>{
         const p=i.planned||0,a=i.actual||0;catP+=p;catA+=a;
-        rows.push([cat.icon+' '+cat.name,i.name,p,a,p-a]);
+        rows.push([cat.icon+' '+cat.name,i.name,i.provider||'',p,a,p-a]);
       });
-      rows.push(['','סה"כ '+cat.name,catP,catA,catP-catA]);
+      rows.push(['','סה"כ '+cat.name,'',catP,catA,catP-catA]);
       rows.push(['']);
     });
     // Income
     rows.push([''],['הכנסות']);
-    (data.income||[]).forEach(i=>rows.push(['',i.source,i.amount||0]));
+    (data.income||[]).forEach(i=>rows.push(['',i.source,'',i.amount||0]));
     const{income,expenses,savings}=calcTotals(key);
-    rows.push([''],['סיכום'],['סה"כ הכנסות','',income],['סה"כ הוצאות','',expenses],['חיסכון','',savings]);
+    rows.push([''],['סיכום'],['סה"כ הכנסות','','',income],['סה"כ הוצאות','','',expenses],['חיסכון','','',savings]);
     const ws=XLSX.utils.aoa_to_sheet(rows);
-    ws['!cols']=[{wch:20},{wch:25},{wch:12},{wch:12},{wch:12}];
+    ws['!cols']=[{wch:20},{wch:25},{wch:18},{wch:12},{wch:12},{wch:12}];
     XLSX.utils.book_append_sheet(wb,ws,'תקציב');
 
     // Savings sheet
     if(D.savings){
-      const sRows=[['חסכונות'],[''],['קופה','יעד','יתרה','אחוז']];
-      sRows.push(['קרן חירום',D.savings.emergency.target,D.savings.emergency.current,D.savings.emergency.target>0?Math.round(D.savings.emergency.current/D.savings.emergency.target*100)+'%':'']);
-      D.savings.goals.forEach(g=>sRows.push([g.name,g.target,g.current,g.target>0?Math.round(g.current/g.target*100)+'%':'']));
-      D.savings.childrenSavings.forEach(cs=>sRows.push(['חיסכון '+cs.childName,cs.target,cs.current,cs.target>0?Math.round(cs.current/cs.target*100)+'%':'']));
+      const sRows=[['חסכונות'],[''],['קופה','מוסד','יעד','יתרה','אחוז']];
+      sRows.push(['קרן חירום',D.savings.emergency.institution||'',D.savings.emergency.target,D.savings.emergency.current,D.savings.emergency.target>0?Math.round(D.savings.emergency.current/D.savings.emergency.target*100)+'%':'']);
+      D.savings.goals.forEach(g=>sRows.push([g.name,g.institution||'',g.target,g.current,g.target>0?Math.round(g.current/g.target*100)+'%':'']));
+      D.savings.childrenSavings.forEach(cs=>sRows.push(['חיסכון '+cs.childName,cs.institution||'',cs.target,cs.current,cs.target>0?Math.round(cs.current/cs.target*100)+'%':'']));
+      if(D.savings.fixedSavings&&D.savings.fixedSavings.length>0){
+        sRows.push([]);sRows.push(['חסכונות קבועים','מוסד','סכום חודשי']);
+        D.savings.fixedSavings.forEach(s=>sRows.push([s.name,s.institution||'',s.amount||0]));
+      }
       const sws=XLSX.utils.aoa_to_sheet(sRows);
-      sws['!cols']=[{wch:20},{wch:12},{wch:12},{wch:10}];
+      sws['!cols']=[{wch:20},{wch:18},{wch:12},{wch:12},{wch:10}];
       XLSX.utils.book_append_sheet(wb,sws,'חסכונות');
     }
 
@@ -2642,13 +2874,13 @@ function exportExcel(mode){
     for(let m=0;m<12;m++){
       const k=mk(m,curYear);if(!D.months[k])continue;
       const data=D.months[k];
-      const rows=[['קטגוריה','פריט','מתוכנן','בפועל','הפרש']];
+      const rows=[['קטגוריה','פריט','ספק','מתוכנן','בפועל','הפרש']];
       (D.config.categories||[]).forEach(cat=>{
         const cd=data.expenses[cat.name];if(!cd)return;
-        cd.items.forEach(i=>{rows.push([cat.name,i.name,i.planned||0,i.actual||0,(i.planned||0)-(i.actual||0)])});
+        cd.items.forEach(i=>{rows.push([cat.name,i.name,i.provider||'',i.planned||0,i.actual||0,(i.planned||0)-(i.actual||0)])});
       });
       const ws=XLSX.utils.aoa_to_sheet(rows);
-      ws['!cols']=[{wch:18},{wch:22},{wch:11},{wch:11},{wch:11}];
+      ws['!cols']=[{wch:18},{wch:22},{wch:16},{wch:11},{wch:11},{wch:11}];
       XLSX.utils.book_append_sheet(wb,ws,HM[m]);
     }
 
@@ -3425,6 +3657,7 @@ function ensureDataIntegrity(d){
   if(!Array.isArray(d.savings.goals))d.savings.goals=[];
   if(!Array.isArray(d.savings.childrenSavings))d.savings.childrenSavings=[];
   if(!Array.isArray(d.savings.completedGoals))d.savings.completedGoals=[];
+  if(!Array.isArray(d.savings.fixedSavings))d.savings.fixedSavings=[];
   // Settings
   if(!d.settings||typeof d.settings!=='object')d.settings={};
   if(d.settings.darkMode===undefined)d.settings.darkMode=false;
