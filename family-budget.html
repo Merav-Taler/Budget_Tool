@@ -1273,6 +1273,7 @@ function renderBudget(){
   renderMisc(data);
   updateSummary();
   renderAlerts();
+  updateTabIndexes();
 }
 
 // ===== CHILDREN CATEGORY SPECIAL RENDER =====
@@ -1378,12 +1379,51 @@ function renderMisc(data){
 }
 
 // ===== BUDGET ACTIONS =====
-function toggleCategory(h){h.parentElement.classList.toggle('expanded')}
+function toggleCategory(h){
+  const card=h.parentElement;
+  card.classList.toggle('expanded');
+  // Update tabindex: inputs in collapsed cards should not be focusable
+  updateTabIndexes();
+}
+function updateTabIndexes(){
+  document.querySelectorAll('.category-card').forEach(card=>{
+    const isExpanded=card.classList.contains('expanded');
+    card.querySelectorAll('.category-body input, .category-body select, .category-body button').forEach(el=>{
+      el.tabIndex=isExpanded?0:-1;
+    });
+  });
+}
 
 function updateItem(catName,idx,field,value){
   const key=mk(curMonth,curYear);const data=getMonth(key);
   data.expenses[catName].items[idx][field]=Math.max(0,parseInt(value)||0);
-  saveData();renderBudget();
+  saveData();
+  // Don't re-render entire budget (loses focus) — just update totals
+  updateCategoryTotals(catName);
+  updateSummary();
+  renderAlerts();
+}
+function updateCategoryTotals(catName){
+  const key=mk(curMonth,curYear);const data=getMonth(key);
+  const cd=data.expenses[catName];if(!cd)return;
+  let p=0,a=0;cd.items.forEach(i=>{p+=(i.planned||0);a+=(i.actual||0)});
+  const diff=p-a;
+  // Find the category card and update its header totals
+  const cards=document.querySelectorAll('.category-card');
+  cards.forEach(card=>{
+    const title=card.querySelector('.category-title');
+    if(!title||title.textContent!==catName)return;
+    const totals=card.querySelector('.category-totals');
+    if(totals){
+      totals.innerHTML=`<span>תקציב: ${fc(p)}</span><span>בפועל: ${fc(a)}</span><span class="${diff<0?'over':'under'}">${diff>=0?'נותרו: '+fc(diff):'חריגה: '+fc(Math.abs(diff))}</span>`;
+    }
+    const pbar=card.querySelector('.category-progress-bar');
+    if(pbar&&p>0){
+      const pct=Math.min(Math.round(a/p*100),120);
+      pbar.style.width=Math.min(pct,100)+'%';
+      pbar.className='category-progress-bar '+(pct>100?'over':pct>80?'warn':'ok');
+    }
+  });
 }
 
 function addItem(catName){
@@ -1422,7 +1462,7 @@ function updateIncome(idx,field,value){
   const key=mk(curMonth,curYear);const data=getMonth(key);
   if(field==='amount')data.income[idx].amount=Math.max(0,parseInt(value)||0);
   else data.income[idx].source=value;
-  saveData();renderBudget();
+  saveData();updateSummary();renderAlerts();
 }
 
 function addIncomeRow(){
@@ -1767,8 +1807,11 @@ function renderChart(id,type,data,options){
 
 // ===== SAVINGS TAB =====
 function renderSavings(){
+  try{
+  ensureDataIntegrity(D);
   renderSavingsKPIs();
   const container=document.getElementById('savingsContent');
+  if(!container)return;
   let html='';
 
   // Zone 1: Emergency Fund
@@ -1886,6 +1929,7 @@ function renderSavings(){
   }
 
   container.innerHTML=html;
+  }catch(e){console.error('renderSavings error:',e);const c=document.getElementById('savingsContent');if(c)c.innerHTML=`<div style="padding:20px;text-align:center;color:var(--danger)">שגיאה בטעינת חסכונות: ${e.message}</div>`}
 }
 
 function renderSavingsKPIs(){
@@ -2027,7 +2071,10 @@ function confirmDeposit(goalKey){
 
 // ===== ADMIN PANEL =====
 function renderAdmin(){
+  try{
+  ensureDataIntegrity(D);
   const panel=document.getElementById('adminPanel');
+  if(!panel)return;
   let html='';
 
   // Personal Details
@@ -2102,6 +2149,7 @@ function renderAdmin(){
   </div>`;
 
   panel.innerHTML=html;
+  }catch(e){console.error('renderAdmin error:',e);const p=document.getElementById('adminPanel');if(p)p.innerHTML=`<div style="padding:20px;text-align:center;color:var(--danger)">שגיאה בטעינת הגדרות: ${e.message}</div>`}
 }
 
 function updatePartnerName(num,newName){
@@ -3144,22 +3192,52 @@ async function connectToFamily(familyId,user){
 }
 
 function ensureDataIntegrity(d){
-  if(!d.savings)d.savings={};
-  if(!d.savings.emergency)d.savings.emergency={target:0,current:0,monthlyContribution:0};
+  const fresh=freshData();
+  // Config
+  if(!d.config)d.config=fresh.config;
+  if(!d.config.partner1&&d.config.partner1!=='')d.config.partner1='';
+  if(!d.config.partner2&&d.config.partner2!=='')d.config.partner2='';
+  if(!d.config.pet||typeof d.config.pet!=='object')d.config.pet={name:'',enabled:false};
+  if(d.config.pet.enabled===undefined)d.config.pet.enabled=false;
+  if(!d.config.pet.name&&d.config.pet.name!=='')d.config.pet.name='';
+  if(!Array.isArray(d.config.categories)||d.config.categories.length===0)d.config.categories=fresh.config.categories;
+  if(!Array.isArray(d.config.children))d.config.children=[];
+  if(!Array.isArray(d.config.incomeSources))d.config.incomeSources=[];
+  // Ensure each category has items array
+  d.config.categories.forEach(c=>{
+    if(!Array.isArray(c.items))c.items=[];
+    c.items.forEach(item=>{
+      if(typeof item==='string'){/* handled by migration */}
+    });
+  });
+  // Months
+  if(!d.months||typeof d.months!=='object')d.months={};
+  // Ensure each month has proper structure
+  Object.values(d.months).forEach(m=>{
+    if(!m.expenses||typeof m.expenses!=='object')m.expenses={};
+    if(!Array.isArray(m.income))m.income=[];
+    if(!m.misc||typeof m.misc!=='object')m.misc={};
+    if(!m.savingsContributions||typeof m.savingsContributions!=='object')m.savingsContributions={};
+    // Ensure each expense category has items array
+    Object.keys(m.expenses).forEach(catName=>{
+      const cat=m.expenses[catName];
+      if(!cat||typeof cat!=='object'){m.expenses[catName]={items:[]};return}
+      if(!Array.isArray(cat.items))cat.items=[];
+    });
+  });
+  // Savings
+  if(!d.savings||typeof d.savings!=='object')d.savings={};
+  if(!d.savings.emergency||typeof d.savings.emergency!=='object')d.savings.emergency={target:0,current:0,monthlyContribution:0};
   if(!Array.isArray(d.savings.goals))d.savings.goals=[];
   if(!Array.isArray(d.savings.childrenSavings))d.savings.childrenSavings=[];
   if(!Array.isArray(d.savings.completedGoals))d.savings.completedGoals=[];
-  if(!d.settings)d.settings={};
+  // Settings
+  if(!d.settings||typeof d.settings!=='object')d.settings={};
   if(d.settings.darkMode===undefined)d.settings.darkMode=false;
   if(d.settings.setupComplete===undefined)d.settings.setupComplete=true;
   if(!d.settings.currency)d.settings.currency='₪';
   if(!Array.isArray(d.settings.dismissedAlerts))d.settings.dismissedAlerts=[];
-  if(!d.settings.subtitle)d.settings.subtitle='';
-  if(!d.config)d.config=freshData().config;
-  if(!Array.isArray(d.config.categories))d.config.categories=freshData().config.categories;
-  if(!Array.isArray(d.config.children))d.config.children=[];
-  if(!Array.isArray(d.config.incomeSources))d.config.incomeSources=[];
-  if(!d.months)d.months={};
+  if(d.settings.subtitle===undefined)d.settings.subtitle='';
 }
 
 // ===== FIREBASE REAL-TIME SYNC =====
