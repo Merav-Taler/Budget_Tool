@@ -109,8 +109,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);direction:rt
 .num-input{width:100%;max-width:105px;padding:5px 7px;border:1px solid transparent;border-radius:var(--radius-xs);font-family:var(--font);font-size:.85rem;text-align:center;background:transparent;color:var(--text);transition:var(--transition);min-height:38px;direction:ltr}
 .num-input:hover{border-color:var(--border);background:var(--border-light)}
 .num-input:focus{outline:none;border-color:var(--primary);background:var(--primary-bg);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
-.move-btn{width:28px;height:28px;border:none;background:none;color:var(--text-light);cursor:pointer;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;transition:var(--transition)}
-.move-btn:hover{background:var(--primary-bg);color:var(--primary)}
+.move-btn{width:30px;height:30px;border:1px solid transparent;background:none;color:var(--text-light);cursor:pointer;border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;font-size:.7rem;transition:var(--transition);opacity:.6}
+.move-btn:hover{background:var(--primary-bg);color:var(--primary);border-color:var(--primary);opacity:1}
 .delete-btn{width:34px;height:34px;border:none;background:none;color:var(--text-light);cursor:pointer;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.85rem;transition:var(--transition)}
 .delete-btn:hover{background:var(--danger-bg);color:var(--danger)}
 .lock-btn{width:32px;height:32px;border:none;border-radius:50%;cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center;transition:var(--transition);flex-shrink:0;background:transparent;color:var(--text-light);line-height:1}
@@ -1389,7 +1389,7 @@ function renderBudget(){
             <td class="owner-cell">${ownerBadge(item.owner||'shared',catDef.name,ii,'expense')}</td>
             <td class="item-name"><div style="display:flex;align-items:center;gap:6px"><button class="lock-btn${isFixed?' locked':''}" onclick="toggleFixed(this.closest('[data-cat]').dataset.cat,${ii})" title="${isFixed?'נעול — לחצי לשחרור':'לחצי לנעול כהוצאה קבועה'}">${isFixed?'🔒':'🔓'}</button><div>${esc(item.name)}<span class="provider-text${item.provider?' has-provider':''}" onclick="setProvider(this.closest('[data-cat]').dataset.cat,${ii})">${item.provider?'🏢 '+esc(item.provider):'+ ספק'}</span></div></div></td>
             <td class="number-cell"><input class="num-input" type="number" min="0" value="${item.amount||0}" oninput="updateItem(this.closest('[data-cat]').dataset.cat,${ii},this.value)" onfocus="this.select()"></td>
-            <td class="actions-cell"><button class="move-btn" onclick="moveItem(this.closest('[data-cat]').dataset.cat,${ii})" title="העבר לקטגוריה אחרת">↔</button><button class="delete-btn" onclick="removeItem(this.closest('[data-cat]').dataset.cat,${ii})">✕</button></td>
+            <td class="actions-cell"><button class="move-btn" onclick="moveItem(this.closest('[data-cat]').dataset.cat,${ii})" title="העבר לקטגוריה אחרת"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/><path d="M12 11v6m0 0l-3-3m3 3l3-3"/></svg></button><button class="delete-btn" onclick="removeItem(this.closest('[data-cat]').dataset.cat,${ii})">✕</button></td>
           </tr>`;
         }).join('')}</tbody>
         <tfoot><tr class="subtotal-row"><td></td><td>סה״כ ${esc(catDef.name)}</td><td class="number-cell">${fc(totalSpent)}</td><td></td></tr></tfoot>
@@ -1442,7 +1442,7 @@ function renderChildrenCategoryBody(catDef,catData,catBudget,totalSpent,diff){
         <td class="owner-cell">${ownerBadge(item.owner||'shared',catDef.name,idx,'expense')}</td>
         <td class="item-name" style="padding-right:28px"><div>${esc(item.name)}<span class="provider-text${item.provider?' has-provider':''}" onclick="setProvider(this.closest('[data-cat]').dataset.cat,${idx})">${item.provider?'🏢 '+esc(item.provider):'+ ספק'}</span></div></td>
         <td class="number-cell"><input class="num-input" type="number" min="0" value="${item.amount||0}" oninput="updateItem(this.closest('[data-cat]').dataset.cat,${idx},this.value)" onfocus="this.select()"></td>
-        <td class="actions-cell"><button class="delete-btn" onclick="removeItem(this.closest('[data-cat]').dataset.cat,${idx})">✕</button></td>
+        <td class="actions-cell"><button class="move-btn" onclick="moveItem(this.closest('[data-cat]').dataset.cat,${idx})" title="העבר לקטגוריה אחרת"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/><path d="M12 11v6m0 0l-3-3m3 3l3-3"/></svg></button><button class="delete-btn" onclick="removeItem(this.closest('[data-cat]').dataset.cat,${idx})">✕</button></td>
       </tr>`;
     });
     html+=`<tr><td colspan="4"><div class="child-subtotal"><span>סה״כ ${esc(child.name)}</span><span>${fc(childTotal)}</span></div></td></tr>`;
@@ -1457,7 +1457,7 @@ function renderChildrenCategoryBody(catDef,catData,catBudget,totalSpent,diff){
         <td class="owner-cell">${ownerBadge(item.owner||'shared',catDef.name,idx,'expense')}</td>
         <td class="item-name" style="padding-right:28px"><div>${esc(item.name)}<span class="provider-text${item.provider?' has-provider':''}" onclick="setProvider(this.closest('[data-cat]').dataset.cat,${idx})">${item.provider?'🏢 '+esc(item.provider):'+ ספק'}</span></div></td>
         <td class="number-cell"><input class="num-input" type="number" min="0" value="${item.amount||0}" oninput="updateItem(this.closest('[data-cat]').dataset.cat,${idx},this.value)" onfocus="this.select()"></td>
-        <td class="actions-cell"><button class="delete-btn" onclick="removeItem(this.closest('[data-cat]').dataset.cat,${idx})">✕</button></td>
+        <td class="actions-cell"><button class="move-btn" onclick="moveItem(this.closest('[data-cat]').dataset.cat,${idx})" title="העבר לקטגוריה אחרת"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/><path d="M12 11v6m0 0l-3-3m3 3l3-3"/></svg></button><button class="delete-btn" onclick="removeItem(this.closest('[data-cat]').dataset.cat,${idx})">✕</button></td>
       </tr>`;
     });
   }
@@ -1530,7 +1530,7 @@ function renderMisc(data){
       tr.setAttribute('data-misc',name);
       tr.innerHTML=`<td class="misc-label">${esc(name)}</td>
         <td class="number-cell"><input class="num-input" type="number" min="0" value="${Number(val)||0}" oninput="updateMisc(this.closest('[data-misc]').dataset.misc,this.value)" onfocus="this.select()"></td>
-        <td class="actions-cell"><button class="delete-btn" onclick="removeMiscItem(this.closest('[data-misc]').dataset.misc)">✕</button></td>`;
+        <td class="actions-cell"><button class="move-btn" onclick="moveMiscItem('${esc(name)}')" title="העבר לקטגוריה"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/><path d="M12 11v6m0 0l-3-3m3 3l3-3"/></svg></button><button class="delete-btn" onclick="removeMiscItem(this.closest('[data-misc]').dataset.misc)">✕</button></td>`;
       body.appendChild(tr);
     });
   }
@@ -1803,18 +1803,48 @@ function confirmRemoveItem(){
 function moveItem(catName,idx){
   const key=mk(curMonth,curYear);const data=getMonth(key);
   const item=data.expenses[catName].items[idx];
-  const otherCats=(D.config.categories||[]).filter(c=>c.name!==catName&&!c.isChildrenCategory);
-  if(otherCats.length===0){toast('אין קטגוריות אחרות');return}
-  const options=otherCats.map(c=>`<button class="modal-btn" style="margin:4px;text-align:right" onclick="confirmMoveItem('${esc(catName)}',${idx},'${esc(c.name)}')">${c.icon} ${esc(c.name)}</button>`).join('');
-  showModal(`<h3>↔️ העברת "${esc(item.name)}"</h3><p>בחרו קטגוריה יעד:</p><div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center">${options}</div>
+  const allCats=(D.config.categories||[]).filter(c=>c.name!==catName);
+  let options=allCats.map(c=>`<button class="modal-btn" style="margin:4px;text-align:right;min-width:120px" onclick="confirmMoveItem('${esc(catName)}',${idx},'${esc(c.name)}')">${c.icon} ${esc(c.name)}</button>`).join('');
+  // Add misc option
+  options+=`<button class="modal-btn" style="margin:4px;text-align:right;min-width:120px" onclick="confirmMoveToMisc('${esc(catName)}',${idx})">📦 הוצאות אחרות</button>`;
+  showModal(`<h3>📂 העברת "${esc(item.name)}"</h3><p>בחרו יעד:</p><div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center">${options}</div>
     <div class="modal-actions"><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
 }
 function confirmMoveItem(fromCat,idx,toCat){
   const key=mk(curMonth,curYear);const data=getMonth(key);
   const item=data.expenses[fromCat].items.splice(idx,1)[0];
+  // When moving to children category, ensure childId
+  const toCatDef=(D.config.categories||[]).find(c=>c.name===toCat);
+  if(toCatDef&&toCatDef.isChildrenCategory&&!item.childId){item.childId='shared'}
+  // When moving FROM children category, remove childId
+  if(!toCatDef||!toCatDef.isChildrenCategory){delete item.childId}
   if(!data.expenses[toCat])data.expenses[toCat]={budget:0,items:[]};
   data.expenses[toCat].items.push(item);
   saveData();closeModal();renderBudgetKeepOpen();toast(`"${item.name}" הועבר ל-${toCat}`);
+}
+function confirmMoveToMisc(fromCat,idx){
+  const key=mk(curMonth,curYear);const data=getMonth(key);
+  const item=data.expenses[fromCat].items.splice(idx,1)[0];
+  if(!data.misc)data.misc={};
+  data.misc[item.name]=item.amount||0;
+  saveData();closeModal();renderBudgetKeepOpen();toast(`"${item.name}" הועבר להוצאות אחרות`);
+}
+function moveMiscItem(itemName){
+  const allCats=(D.config.categories||[]);
+  let options=allCats.map(c=>`<button class="modal-btn" style="margin:4px;text-align:right;min-width:120px" onclick="confirmMoveMiscTo('${esc(itemName)}','${esc(c.name)}')">${c.icon} ${esc(c.name)}</button>`).join('');
+  showModal(`<h3>📂 העברת "${esc(itemName)}"</h3><p>בחרו קטגוריה יעד:</p><div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center">${options}</div>
+    <div class="modal-actions"><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
+}
+function confirmMoveMiscTo(itemName,toCat){
+  const key=mk(curMonth,curYear);const data=getMonth(key);
+  const amount=Number(data.misc[itemName])||0;
+  delete data.misc[itemName];
+  if(!data.expenses[toCat])data.expenses[toCat]={budget:0,items:[]};
+  const newItem={name:itemName,amount,isDefault:false,owner:'shared'};
+  const toCatDef=(D.config.categories||[]).find(c=>c.name===toCat);
+  if(toCatDef&&toCatDef.isChildrenCategory)newItem.childId='shared';
+  data.expenses[toCat].items.push(newItem);
+  saveData();closeModal();renderBudgetKeepOpen();toast(`"${itemName}" הועבר ל-${toCat}`);
 }
 
 function updateIncome(idx,field,value){
