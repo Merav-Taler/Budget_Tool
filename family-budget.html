@@ -121,8 +121,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);direction:rt
 .section-title{font-size:1.05rem;font-weight:700;margin:20px 0 10px;display:flex;align-items:center;gap:8px;color:var(--text)}
 .section-add-btn{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--border);background:var(--card);color:var(--primary);font-size:1.1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-right:auto;transition:var(--transition);line-height:1}
 .section-add-btn:hover{background:var(--primary-bg);border-color:var(--primary)}
-.month-notes{width:100%;box-sizing:border-box;min-height:48px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--card);font-family:var(--font);font-size:.82rem;color:var(--text);resize:vertical;direction:rtl}
-.month-notes:focus{outline:none;border-color:var(--primary)}
+.month-notes{width:100%;box-sizing:border-box;min-height:64px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);font-family:var(--font);font-size:.85rem;color:var(--text);resize:vertical;direction:rtl;line-height:1.5}
+.month-notes:focus{outline:none;border-color:var(--primary);background:var(--card)}
 .budget-field{display:inline-flex;align-items:center;gap:4px;cursor:pointer;padding:3px 10px;border-radius:var(--radius-xs);transition:var(--transition);border:1.5px dashed var(--primary);background:var(--primary-bg);font-weight:600;color:var(--primary);font-size:.78rem}
 .budget-field:hover{background:var(--primary);color:#fff;border-style:solid}
 .budget-field::after{content:'✏️';font-size:.65rem;margin-right:2px}
@@ -462,6 +462,7 @@ body{padding-bottom:0;background:#fff}
 <div class="hdr-right">
 <span id="connectionStatus" class="connection-indicator" style="display:none"></span>
 <span id="partnerStatus" class="partner-status"></span>
+<button class="dark-toggle" id="shareBtn" onclick="showShareModal()" title="שיתוף עם בן/בת זוג" style="display:none">🔗</button>
 <button class="dark-toggle" id="darkToggle" onclick="toggleDarkMode()" title="מצב כהה/בהיר">🌙</button>
 <button class="dark-toggle" id="userBtn" onclick="showUserMenu()" title="חשבון"><span id="userInitial">👤</span></button>
 </div>
@@ -533,8 +534,13 @@ body{padding-bottom:0;background:#fff}
 <div id="savingsBreakdown" style="margin-top:10px;font-size:.78rem;color:var(--text-secondary)"></div>
 </div>
 </div></div>
-<div id="monthNotesSection" style="margin-top:12px">
-<textarea id="monthNotes" class="month-notes" placeholder="הערות לחודש זה... (לדוגמה: לשלם ארנונה עד ה-15)" oninput="saveMonthNotes()"></textarea>
+<div id="monthNotesSection" style="margin-top:16px;background:var(--card);border-radius:var(--radius);padding:14px;box-shadow:var(--card-shadow)">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+  <span style="font-size:1.1rem">📝</span>
+  <span style="font-weight:700;font-size:.9rem;flex:1">הערות לחודש</span>
+  <span id="notesLastSaved" style="font-size:.7rem;color:var(--text-light)"></span>
+</div>
+<textarea id="monthNotes" class="month-notes" placeholder="כתבו הערות, תזכורות או הודעות לבן/בת הזוג...&#10;לדוגמה: לשלם ארנונה עד ה-15, חתונה של דנה בשישי" oninput="saveMonthNotes()"></textarea>
 </div>
 </div>
 
@@ -582,7 +588,6 @@ body{padding-bottom:0;background:#fff}
 <button class="dm-btn" onclick="showCopyModal()"><span class="dm-icon">📋</span><span class="dm-label">העתקת תקציב</span></button>
 <button class="dm-btn" onclick="exportTemplate()"><span class="dm-icon">🔗</span><span class="dm-label">שתף תבנית</span></button>
 <button class="dm-btn" onclick="document.getElementById('bankFileInput').click()"><span class="dm-icon">🏦</span><span class="dm-label">טעינת דף חשבון</span></button>
-<button class="dm-btn" onclick="showFirebaseSetupGuide()"><span class="dm-icon">☁️</span><span class="dm-label">הגדרת Firebase</span></button>
 </div>
 <input type="file" id="importInput" accept=".json" style="display:none" onchange="importJSON(event)">
 <input type="file" id="excelImportInput" accept=".xlsx,.xls" style="display:none" onchange="importExcel(event)">
@@ -3243,6 +3248,8 @@ function downloadFullBackup(){
 function saveMonthNotes(){
   const key=mk(curMonth,curYear);const data=getMonth(key);
   data.notes=(document.getElementById('monthNotes').value||'');
+  const ts=document.getElementById('notesLastSaved');
+  if(ts){const now=new Date();ts.textContent='נשמר '+now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0')}
   saveData();
 }
 
@@ -3892,12 +3899,17 @@ let skipFirebaseSync=false; // prevent re-render loops
 let userFamilies=[]; // [{familyId, name, role:'admin'|'member', createdAt}]
 
 // ===== FIREBASE CONFIG =====
+const FB_CONFIG={
+  apiKey:"AIzaSyBHc93GqulX-akadMy21WxkvxWyHMD6k_I",
+  authDomain:"budgettoolauth.firebaseapp.com",
+  databaseURL:"https://budgettoolauth-default-rtdb.firebaseio.com",
+  projectId:"budgettoolauth",
+  storageBucket:"budgettoolauth.firebasestorage.app",
+  messagingSenderId:"84493564363",
+  appId:"1:84493564363:web:5589784749c651faae9e4e"
+};
 function loadFirebaseConfig(){
-  try{
-    const raw=localStorage.getItem('familyBudget_firebaseConfig');
-    if(raw)return JSON.parse(raw);
-  }catch(e){}
-  return null;
+  return FB_CONFIG;
 }
 function saveFirebaseConfig(cfg){
   localStorage.setItem('familyBudget_firebaseConfig',JSON.stringify(cfg));
@@ -4182,6 +4194,7 @@ async function connectToFamily(familyId,user){
   setupPresenceListener();
   // Show user info in header
   document.getElementById('userBtn').style.display='';
+  document.getElementById('shareBtn').style.display='';
   document.getElementById('userInitial').textContent=(user.displayName||'?')[0];
   // Continue to app
   if(!D.settings.setupComplete){showWizard()}else{initApp()}
@@ -4436,6 +4449,63 @@ function showUserMenu(){
   }
 }
 
+async function showShareModal(){
+  if(!fbUser||!fbDb||!fbFamilyId){
+    showModal(`<div style="text-align:center;padding:10px">
+      <div style="font-size:2rem;margin-bottom:8px">🔗</div>
+      <h3>שיתוף עם בן/בת הזוג</h3>
+      <p style="font-size:.85rem;color:var(--text-secondary);margin:10px 0">כדי לשתף יש להתחבר עם Google ולהגדיר Firebase</p>
+      <div class="modal-actions"><button class="modal-btn cancel" onclick="closeModal()">סגור</button></div>
+    </div>`);
+    return;
+  }
+  showModal(`<div style="text-align:center;padding:10px">
+    <div style="font-size:2rem;margin-bottom:8px">🔗</div>
+    <h3>שיתוף עם בן/בת הזוג</h3>
+    <p style="font-size:.85rem;color:var(--text-secondary);margin:8px 0">שלחו קוד הזמנה כדי שבן/בת הזוג יוכלו להצטרף לתקציב</p>
+    <div id="shareInviteArea" style="margin:14px 0"><div style="font-size:.82rem;color:var(--text-light)">טוען...</div></div>
+    <div id="sharePartnerArea" style="margin:10px 0"></div>
+    <div class="modal-actions"><button class="modal-btn cancel" onclick="closeModal()">סגור</button></div>
+  </div>`);
+  // Load invite code
+  try{
+    const snap=await fbDb.ref('invites').orderByValue().equalTo(fbFamilyId).once('value');
+    const area=document.getElementById('shareInviteArea');
+    if(!area)return;
+    if(snap.exists()){
+      const code=Object.keys(snap.val())[0];
+      area.innerHTML=renderInviteDisplay(code);
+    }else{
+      area.innerHTML=`<button class="modal-btn primary" onclick="generateShareInvite()">🔗 צור קוד הזמנה</button>`;
+    }
+  }catch(e){const a=document.getElementById('shareInviteArea');if(a)a.innerHTML='<span style="color:var(--danger);font-size:.82rem">שגיאה בטעינת קוד</span>'}
+  // Load partner info
+  try{
+    const snap=await fbDb.ref('families/'+fbFamilyId+'/members').once('value');
+    const members=snap.val()||{};
+    const area=document.getElementById('sharePartnerArea');
+    if(!area)return;
+    const others=Object.entries(members).filter(([uid])=>uid!==fbUser.uid);
+    if(others.length>0){
+      area.innerHTML=others.map(([,m])=>`<div style="display:flex;align-items:center;gap:8px;justify-content:center;padding:8px;background:var(--bg);border-radius:var(--radius-sm)">
+        ${m.photoURL?`<img src="${m.photoURL}" style="width:28px;height:28px;border-radius:50%">`:`<div style="width:28px;height:28px;border-radius:50%;background:var(--primary-bg);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700">${(m.displayName||'?')[0]}</div>`}
+        <span style="font-weight:600;font-size:.85rem">${esc(m.displayName||'')}</span>
+        <span style="font-size:.72rem;color:${m.online?'var(--success)':'var(--text-light)'}">${m.online?'🟢 מחובר/ת':'⚫ לא מחובר/ת'}</span>
+      </div>`).join('');
+    }else{
+      area.innerHTML='<p style="font-size:.8rem;color:var(--text-light)">טרם הצטרף/ה בן/בת הזוג</p>';
+    }
+  }catch(e){}
+}
+
+async function generateShareInvite(){
+  const code=generateInviteCode();
+  await fbDb.ref('invites/'+code).set(fbFamilyId);
+  const area=document.getElementById('shareInviteArea');
+  if(area)area.innerHTML=renderInviteDisplay(code);
+  toast('קוד הזמנה נוצר!');
+}
+
 async function generateNewInvite(){
   const code=generateInviteCode();
   await fbDb.ref('invites/'+code).set(fbFamilyId);
@@ -4463,6 +4533,7 @@ function signOut(){
   closeModal();
   fbUser=null;fbFamilyId=null;fbRef=null;userFamilies=[];
   document.getElementById('userBtn').style.display='none';
+  document.getElementById('shareBtn').style.display='none';
   document.getElementById('partnerStatus').textContent='';
   document.getElementById('connectionStatus').style.display='none';
 }
