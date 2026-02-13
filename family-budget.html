@@ -3,13 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; frame-src https://accounts.google.com https://*.firebaseapp.com;">
 <title>תקציב משפחתי</title>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" integrity="sha384-vsrfeLOOY6KuIYKDlmVH5UiBmgIdB1oEf7p01YgWHuqmOHfZr374+odEv96n9tNC" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" integrity="sha384-ZaR6mWzmJtrRibZ1Vm7SoHFr8OXjyAuGAXalGDKqbxFT18oi/z+oZLIRFkpeNor1" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" integrity="sha384-I1LYojsZ5RM1cOda44Z2h42Qa6YfsQ1XkXxREnhp4ueYBR/4d1pG1K+NZM537Vsj" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js" integrity="sha384-g5H2aNdtgRBYOBLsuOAuHvUXWnw4bswmU+tYjmGc1G3JfKxl79uWwV4sQarJsLwu" crossorigin="anonymous"></script>
 <style>
 :root{
 --primary:#2563EB;--primary-light:#3B82F6;--primary-dark:#1D4ED8;--primary-bg:#EFF6FF;
@@ -334,7 +335,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);direction:rt
 .category-title{font-size:.88rem}
 .category-totals{font-size:.68rem;gap:6px}
 .data-table{font-size:.78rem}.data-table th,.data-table td{padding:5px 7px}
-.num-input{max-width:75px;font-size:.8rem;min-height:44px}
+.num-input{max-width:85px;font-size:.85rem;min-height:44px;padding:8px 6px}
 .kpi-grid{grid-template-columns:repeat(2,1fr)}
 .kpi-card{padding:12px 10px}
 .chart-grid{grid-template-columns:1fr}
@@ -350,7 +351,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);direction:rt
 .modal-actions{flex-wrap:wrap}
 .modal-btn{padding:10px 16px;min-height:44px;font-size:.88rem}
 .login-content{padding:16px}
-.owner-badge{min-width:24px;min-height:24px}
+.owner-badge{min-width:30px;min-height:30px;font-size:.7rem}
+.delete-btn{width:36px;height:36px;font-size:.9rem}
+.lock-btn{width:34px;height:34px;font-size:.95rem}
 }
 @media(max-width:420px){
 .app-header h1{font-size:.9rem}
@@ -362,7 +365,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);direction:rt
 .category-totals{flex-direction:column;gap:2px;align-items:flex-end}
 .data-table{font-size:.72rem}
 .data-table th,.data-table td{padding:4px 5px}
-.num-input{max-width:65px;font-size:.75rem}
+.num-input{max-width:72px;font-size:.82rem;min-height:44px;padding:8px 4px}
 .kpi-grid{grid-template-columns:1fr 1fr;gap:6px}
 .summary-bar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .dm-grid{grid-template-columns:1fr}
@@ -413,7 +416,7 @@ body{padding-bottom:0;background:#fff}
 
 <!-- Firebase Config Overlay -->
 <div class="login-overlay hidden" id="fbConfigOverlay">
-<div class="login-content" style="max-width:560px;text-align:right" id="fbConfigContent"></div>
+<div class="login-content" style="max-width:680px;text-align:right;overflow-y:auto;max-height:90vh" id="fbConfigContent"></div>
 </div>
 
 <!-- Wizard Overlay -->
@@ -597,6 +600,7 @@ function closeModal(){document.getElementById('modalOverlay').classList.remove('
 document.getElementById('modalOverlay').addEventListener('click',function(e){if(e.target===this)closeModal()});
 
 function uid(){return 'id_'+Math.random().toString(36).substr(2,9)}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 
 // ===== OWNER HELPERS =====
 function ownerBadge(owner, catName, idx, type){
@@ -604,13 +608,12 @@ function ownerBadge(owner, catName, idx, type){
   const p2i=(D.config.partner2||'?')[0];
   const cls=owner==='partner1'?'p1':owner==='partner2'?'p2':'shared';
   const label=owner==='partner1'?p1i:owner==='partner2'?p2i:'🤝';
-  const cn=catName?catName.replace(/'/g,"\\'"):'';
   const onclick=type==='expense'
-    ?`cycleOwner('${cn}',${idx})`
+    ?`cycleOwner(this.closest('[data-cat]').dataset.cat,${idx})`
     :type==='income'
     ?`cycleIncOwner(${idx})`
     :'';
-  return `<span class="owner-badge ${cls}" onclick="${onclick}" title="${ownerName(owner)}">${label}</span>`;
+  return `<span class="owner-badge ${cls}" onclick="${onclick}" title="${esc(ownerName(owner))}">${label}</span>`;
 }
 function ownerName(o){return o==='partner1'?(D.config.partner1||'שותף 1'):o==='partner2'?(D.config.partner2||'שותף 2'):'משותף'}
 function nextOwner(o){return o==='shared'?'partner1':o==='partner1'?'partner2':'shared'}
@@ -783,6 +786,16 @@ function getMonth(key){
     // Add default income sources
     if(D.config.incomeSources&&D.config.incomeSources.length>0){
       D.months[key].income=D.config.incomeSources.map(s=>({source:s.name,amount:s.defaultAmount||0}));
+    }
+    // Carry over fixed income from previous month
+    if(prevMonth&&prevMonth.income){
+      prevMonth.income.forEach(pi=>{
+        if(pi.fixed){
+          const existing=D.months[key].income.find(i=>i.source===pi.source);
+          if(existing){existing.amount=pi.amount||0;existing.fixed=true;existing.owner=pi.owner}
+          else{D.months[key].income.push({source:pi.source,amount:pi.amount||0,owner:pi.owner,fixed:true})}
+        }
+      });
     }
     saveData();
   }
@@ -1272,26 +1285,25 @@ function renderBudget(){
         <tbody>${catData.items.map((item,ii)=>{
           const isFixed=item.fixed;
           const d=(item.planned||0)-(item.actual||0);
-          const cn=catDef.name.replace(/'/g,"\\'");
           return `<tr${isFixed?' style="background:var(--border-light)"':''}>
             <td class="owner-cell">${ownerBadge(item.owner||'shared',catDef.name,ii,'expense')}</td>
-            <td class="item-name"><div style="display:flex;align-items:center;gap:6px"><button class="lock-btn${isFixed?' locked':''}" onclick="toggleFixed('${cn}',${ii})" title="${isFixed?'נעול — לחצי לשחרור':'לחצי לנעול כהוצאה קבועה'}">${isFixed?'🔒':'🔓'}</button>${item.name}</div></td>
-            ${isFixed?`<td class="number-cell" colspan="2"><input class="num-input" type="number" min="0" value="${item.planned||0}" onchange="updateFixedItem('${cn}',${ii},this.value)" onfocus="this.select()" style="max-width:140px"></td>`
-            :`<td class="number-cell"><input class="num-input" type="number" min="0" value="${item.planned||0}" onchange="updateItem('${cn}',${ii},'planned',this.value)" onfocus="this.select()"></td>
-            <td class="number-cell"><input class="num-input" type="number" min="0" value="${item.actual||0}" onchange="updateItem('${cn}',${ii},'actual',this.value)" onfocus="this.select()"></td>`}
+            <td class="item-name"><div style="display:flex;align-items:center;gap:6px"><button class="lock-btn${isFixed?' locked':''}" onclick="toggleFixed(this.closest('[data-cat]').dataset.cat,${ii})" title="${isFixed?'נעול — לחצי לשחרור':'לחצי לנעול כהוצאה קבועה'}">${isFixed?'🔒':'🔓'}</button>${esc(item.name)}</div></td>
+            ${isFixed?`<td class="number-cell" colspan="2"><input class="num-input" type="number" min="0" value="${item.planned||0}" oninput="updateFixedItem(this.closest('[data-cat]').dataset.cat,${ii},this.value)" onfocus="this.select()" style="max-width:140px"></td>`
+            :`<td class="number-cell"><input class="num-input" type="number" min="0" value="${item.planned||0}" oninput="updateItem(this.closest('[data-cat]').dataset.cat,${ii},'planned',this.value)" onfocus="this.select()"></td>
+            <td class="number-cell"><input class="num-input" type="number" min="0" value="${item.actual||0}" oninput="updateItem(this.closest('[data-cat]').dataset.cat,${ii},'actual',this.value)" onfocus="this.select()"></td>`}
             <td class="number-cell ${d>=0?'diff-positive':'diff-negative'}">${isFixed?'🔒 קבוע':fc(d)}</td>
-            <td class="actions-cell"><button class="delete-btn" onclick="removeItem('${cn}',${ii})">✕</button></td>
+            <td class="actions-cell"><button class="delete-btn" onclick="removeItem(this.closest('[data-cat]').dataset.cat,${ii})">✕</button></td>
           </tr>`;
         }).join('')}</tbody>
-        <tfoot><tr class="subtotal-row"><td></td><td>סה״כ ${catDef.name}</td><td class="number-cell">${fc(totalP)}</td><td class="number-cell">${fc(totalA)}</td><td class="number-cell ${diff>=0?'diff-positive':'diff-negative'}">${fc(diff)}</td><td></td></tr></tfoot>
+        <tfoot><tr class="subtotal-row"><td></td><td>סה״כ ${esc(catDef.name)}</td><td class="number-cell">${fc(totalP)}</td><td class="number-cell">${fc(totalA)}</td><td class="number-cell ${diff>=0?'diff-positive':'diff-negative'}">${fc(diff)}</td><td></td></tr></tfoot>
       </table>
-      <button class="add-item-btn" onclick="addItem('${catDef.name.replace(/'/g,"\\'")}')">+ הוסף פריט</button>`;
+      <button class="add-item-btn" onclick="addItem(this.closest('[data-cat]').dataset.cat)">+ הוסף פריט</button>`;
     }
 
     card.innerHTML=`
       <div class="category-header" onclick="toggleCategory(this)">
         <span class="category-icon">${catDef.icon}</span>
-        <span class="category-title">${catDef.name}</span>
+        <span class="category-title">${esc(catDef.name)}</span>
         <div class="category-totals">
           <span>תוכנן: ${fc(totalP)}</span>
           <span>בפועל: ${fc(totalA)}</span>
@@ -1314,32 +1326,29 @@ function renderBudget(){
 // ===== CHILDREN CATEGORY SPECIAL RENDER =====
 function renderChildrenCategoryBody(catDef,catData,totalP,totalA,diff){
   const children=D.config.children||[];
-  const cn=catDef.name.replace(/'/g,"\\'");
   let html=ownerLegend()+'<table class="data-table"><thead><tr><th class="owner-cell"></th><th>פריט</th><th class="number-cell">מתוכנן</th><th class="number-cell">בפועל</th><th class="number-cell">הפרש</th><th class="actions-cell"></th></tr></thead><tbody>';
 
-  // Group items by childId
   children.forEach(child=>{
     const childItems=catData.items.filter(i=>i.childId===child.id);
     if(childItems.length===0)return;
     let childP=0,childA=0;
     childItems.forEach(i=>{childP+=(i.planned||0);childA+=(i.actual||0)});
-    html+=`<tr><td colspan="6"><div class="child-subheader">${child.emoji||'👶'} ${child.name}</div></td></tr>`;
+    html+=`<tr><td colspan="6"><div class="child-subheader">${esc(child.emoji||'👶')} ${esc(child.name)}</div></td></tr>`;
     childItems.forEach(item=>{
       const idx=catData.items.indexOf(item);
       const d=(item.planned||0)-(item.actual||0);
       html+=`<tr>
         <td class="owner-cell">${ownerBadge(item.owner||'shared',catDef.name,idx,'expense')}</td>
-        <td class="item-name" style="padding-right:28px">${item.name}</td>
-        <td class="number-cell"><input class="num-input" type="number" min="0" value="${item.planned||0}" onchange="updateItem('${cn}',${idx},'planned',this.value)" onfocus="this.select()"></td>
-        <td class="number-cell"><input class="num-input" type="number" min="0" value="${item.actual||0}" onchange="updateItem('${cn}',${idx},'actual',this.value)" onfocus="this.select()"></td>
+        <td class="item-name" style="padding-right:28px">${esc(item.name)}</td>
+        <td class="number-cell"><input class="num-input" type="number" min="0" value="${item.planned||0}" oninput="updateItem(this.closest('[data-cat]').dataset.cat,${idx},'planned',this.value)" onfocus="this.select()"></td>
+        <td class="number-cell"><input class="num-input" type="number" min="0" value="${item.actual||0}" oninput="updateItem(this.closest('[data-cat]').dataset.cat,${idx},'actual',this.value)" onfocus="this.select()"></td>
         <td class="number-cell ${d>=0?'diff-positive':'diff-negative'}">${fc(d)}</td>
-        <td class="actions-cell"><button class="delete-btn" onclick="removeItem('${cn}',${idx})">✕</button></td>
+        <td class="actions-cell"><button class="delete-btn" onclick="removeItem(this.closest('[data-cat]').dataset.cat,${idx})">✕</button></td>
       </tr>`;
     });
-    html+=`<tr><td colspan="6"><div class="child-subtotal"><span>סה״כ ${child.name}</span><span>${fc(childA)} / ${fc(childP)}</span></div></td></tr>`;
+    html+=`<tr><td colspan="6"><div class="child-subtotal"><span>סה״כ ${esc(child.name)}</span><span>${fc(childA)} / ${fc(childP)}</span></div></td></tr>`;
   });
 
-  // Shared items
   const shared=catData.items.filter(i=>i.childId==='shared'||!i.childId);
   if(shared.length>0){
     html+=`<tr><td colspan="6"><div class="child-subheader">👥 משותף ילדים</div></td></tr>`;
@@ -1348,11 +1357,11 @@ function renderChildrenCategoryBody(catDef,catData,totalP,totalA,diff){
       const d=(item.planned||0)-(item.actual||0);
       html+=`<tr>
         <td class="owner-cell">${ownerBadge(item.owner||'shared',catDef.name,idx,'expense')}</td>
-        <td class="item-name" style="padding-right:28px">${item.name}</td>
-        <td class="number-cell"><input class="num-input" type="number" min="0" value="${item.planned||0}" onchange="updateItem('${cn}',${idx},'planned',this.value)" onfocus="this.select()"></td>
-        <td class="number-cell"><input class="num-input" type="number" min="0" value="${item.actual||0}" onchange="updateItem('${cn}',${idx},'actual',this.value)" onfocus="this.select()"></td>
+        <td class="item-name" style="padding-right:28px">${esc(item.name)}</td>
+        <td class="number-cell"><input class="num-input" type="number" min="0" value="${item.planned||0}" oninput="updateItem(this.closest('[data-cat]').dataset.cat,${idx},'planned',this.value)" onfocus="this.select()"></td>
+        <td class="number-cell"><input class="num-input" type="number" min="0" value="${item.actual||0}" oninput="updateItem(this.closest('[data-cat]').dataset.cat,${idx},'actual',this.value)" onfocus="this.select()"></td>
         <td class="number-cell ${d>=0?'diff-positive':'diff-negative'}">${fc(d)}</td>
-        <td class="actions-cell"><button class="delete-btn" onclick="removeItem('${cn}',${idx})">✕</button></td>
+        <td class="actions-cell"><button class="delete-btn" onclick="removeItem(this.closest('[data-cat]').dataset.cat,${idx})">✕</button></td>
       </tr>`;
     });
   }
@@ -1365,18 +1374,19 @@ function renderChildrenCategoryBody(catDef,catData,totalP,totalA,diff){
 function addChildItem(){
   const children=D.config.children;
   const catName=(D.config.categories.find(c=>c.isChildrenCategory)||{}).name||'ילדים';
-  const opts=children.map(c=>`<option value="${c.id}">${c.name}</option>`).join('')+`<option value="shared">משותף</option>`;
+  const opts=children.map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join('')+`<option value="shared">משותף</option>`;
   showModal(`<h3>➕ הוסף פריט לילדים</h3>
     <div class="modal-field"><label>שייך ל:</label><select id="childItemFor">${opts}</select></div>
     <div class="modal-field"><label>שם הפריט</label><input class="modal-input" id="childItemName" placeholder="לדוגמה: חוג שחייה"></div>
     <div class="modal-field"><label>תקציב מתוכנן</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="childItemPlanned" min="0" placeholder="0"></div></div>
     <div class="modal-actions">
-      <button class="modal-btn primary" onclick="confirmAddChildItem('${catName.replace(/'/g,"\\'")}')">הוסף</button>
+      <button class="modal-btn primary" onclick="confirmAddChildItem()">הוסף</button>
       <button class="modal-btn cancel" onclick="closeModal()">ביטול</button>
     </div>`);
 }
 
-function confirmAddChildItem(catName){
+function confirmAddChildItem(){
+  const catName=(D.config.categories.find(c=>c.isChildrenCategory)||{}).name||'ילדים';
   const childId=document.getElementById('childItemFor').value;
   const name=document.getElementById('childItemName').value.trim();
   if(!name){document.getElementById('childItemName').style.borderColor='var(--danger)';return}
@@ -1393,10 +1403,12 @@ function renderIncome(data){
   let total=0;
   data.income.forEach((inc,idx)=>{
     total+=(inc.amount||0);
+    const isFixed=inc.fixed;
     const tr=document.createElement('tr');
+    if(isFixed)tr.style.background='var(--border-light)';
     tr.innerHTML=`<td class="owner-cell">${ownerBadge(inc.owner||'shared','',idx,'income')}</td>
-      <td><input class="income-source-input" type="text" value="${inc.source}" onchange="updateIncome(${idx},'source',this.value)" placeholder="מקור"></td>
-      <td class="number-cell"><input class="num-input" type="number" min="0" value="${inc.amount||0}" onchange="updateIncome(${idx},'amount',this.value)" onfocus="this.select()"></td>
+      <td><div style="display:flex;align-items:center;gap:6px"><button class="lock-btn${isFixed?' locked':''}" onclick="toggleFixedIncome(${idx})" title="${isFixed?'נעול — לחצי לשחרור':'לחצי לנעול כהכנסה קבועה'}">${isFixed?'🔒':'🔓'}</button><input class="income-source-input" type="text" value="${esc(inc.source)}" onchange="updateIncome(${idx},'source',this.value)" placeholder="מקור"></div></td>
+      <td class="number-cell"><input class="num-input" type="number" min="0" value="${inc.amount||0}" oninput="${isFixed?`updateFixedIncome(${idx},this.value)`:`updateIncome(${idx},'amount',this.value)`}" onfocus="this.select()"></td>
       <td class="actions-cell"><button class="delete-btn" onclick="removeIncome(${idx})">✕</button></td>`;
     body.appendChild(tr);
   });
@@ -1407,8 +1419,8 @@ function renderMisc(data){
   const body=document.getElementById('miscBody');body.innerHTML='';
   Object.entries(data.misc).forEach(([name,val])=>{
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td class="misc-label">${name}</td>
-      <td class="number-cell"><input class="num-input" type="number" min="0" value="${val||0}" onchange="updateMisc('${name}',this.value)" onfocus="this.select()"></td>`;
+    tr.innerHTML=`<td class="misc-label">${esc(name)}</td>
+      <td class="number-cell"><input class="num-input" type="number" min="0" value="${val||0}" oninput="updateMisc('${esc(name)}',this.value)" onfocus="this.select()"></td>`;
     body.appendChild(tr);
   });
 }
@@ -1445,8 +1457,9 @@ function renderBudgetKeepOpen(){
   }
 }
 function propagateFixed(itemName,catName,isFixed,amount){
-  // Update fixed status in all future months that already exist
+  const currentKey=mk(curMonth,curYear);
   Object.entries(D.months).forEach(([mk2,mdata])=>{
+    if(mk2<currentKey)return; // Only current month and forward
     if(!mdata.expenses||!mdata.expenses[catName])return;
     const items=mdata.expenses[catName].items||[];
     const match=items.find(i=>i.name===itemName);
@@ -1509,15 +1522,16 @@ function updateCategoryTotals(catName){
 }
 
 function addItem(catName){
+  window._addItemCat=catName;
   const p1=D.config.partner1||'שותף 1',p2=D.config.partner2||'שותף 2';
   showModal(`<h3>➕ הוסף פריט חדש</h3>
-    <p>קטגוריה: <strong>${catName}</strong></p>
+    <p>קטגוריה: <strong>${esc(catName)}</strong></p>
     <div class="modal-field"><label>שם הפריט</label><input class="modal-input" type="text" id="newItemName" placeholder="לדוגמה: ביטוח דירה"></div>
-    <div class="modal-field"><label>שייך ל:</label><select id="newItemOwner" class="modal-input"><option value="shared">🤝 משותף</option><option value="partner1">${p1}</option><option value="partner2">${p2}</option></select></div>
+    <div class="modal-field"><label>שייך ל:</label><select id="newItemOwner" class="modal-input"><option value="shared">🤝 משותף</option><option value="partner1">${esc(p1)}</option><option value="partner2">${esc(p2)}</option></select></div>
     <div class="modal-field"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="newItemFixed"> 🔒 הוצאה קבועה <span style="font-size:.75rem;color:var(--text-secondary)">(סכום זהה כל חודש, מועתק אוטומטית)</span></label></div>
     <div class="modal-field"><label>סכום</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="newItemPlanned" min="0" placeholder="0"></div></div>
     <div class="modal-field" id="actualField"><label>הוצאה בפועל</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="newItemActual" min="0" placeholder="0"></div></div>
-    <div class="modal-actions"><button class="modal-btn primary" onclick="confirmAddItem('${catName.replace(/'/g,"\\'")}')">הוסף</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
+    <div class="modal-actions"><button class="modal-btn primary" onclick="confirmAddItem()">הוסף</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
   setTimeout(()=>{
     const i=document.getElementById('newItemName');if(i)i.focus();
     const cb=document.getElementById('newItemFixed');
@@ -1525,7 +1539,8 @@ function addItem(catName){
   },250);
 }
 
-function confirmAddItem(catName){
+function confirmAddItem(){
+  const catName=window._addItemCat;
   const name=(document.getElementById('newItemName').value||'').trim();
   if(!name){document.getElementById('newItemName').style.borderColor='var(--danger)';return}
   const planned=Math.max(0,parseInt(document.getElementById('newItemPlanned').value)||0);
@@ -1554,12 +1569,41 @@ function updateIncome(idx,field,value){
   else data.income[idx].source=value;
   saveData();updateSummary();renderAlerts();
 }
+function toggleFixedIncome(idx){
+  const key=mk(curMonth,curYear);const data=getMonth(key);
+  const inc=data.income[idx];
+  inc.fixed=!inc.fixed;
+  propagateFixedIncome(inc.source,inc.fixed,inc.fixed?inc.amount:null,inc.owner);
+  saveData();renderBudgetKeepOpen();
+  toast(inc.fixed?`🔒 "${inc.source}" — הכנסה קבועה בכל החודשים`:`🔓 "${inc.source}" — הכנסה משתנה`);
+}
+function updateFixedIncome(idx,value){
+  const key=mk(curMonth,curYear);const data=getMonth(key);
+  const amt=Math.max(0,parseInt(value)||0);
+  data.income[idx].amount=amt;
+  propagateFixedIncome(data.income[idx].source,true,amt,data.income[idx].owner);
+  saveData();updateSummary();renderAlerts();
+}
+function propagateFixedIncome(sourceName,isFixed,amount,owner){
+  const currentKey=mk(curMonth,curYear);
+  Object.entries(D.months).forEach(([mk2,mdata])=>{
+    if(mk2<currentKey)return;
+    if(!mdata.income)return;
+    const match=mdata.income.find(i=>i.source===sourceName);
+    if(match){
+      match.fixed=isFixed;
+      if(isFixed&&amount!=null)match.amount=amount;
+      if(owner)match.owner=owner;
+    }
+  });
+}
 
 function addIncomeRow(){
   const p1=D.config.partner1||'שותף 1',p2=D.config.partner2||'שותף 2';
   showModal(`<h3>➕ הוסף מקור הכנסה</h3>
     <div class="modal-field"><label>שם המקור</label><input class="modal-input" type="text" id="newIncSource" placeholder="לדוגמה: משכורת"></div>
-    <div class="modal-field"><label>שייך ל:</label><select id="newIncOwner" class="modal-input"><option value="shared">🤝 משותף</option><option value="partner1">${p1}</option><option value="partner2">${p2}</option></select></div>
+    <div class="modal-field"><label>שייך ל:</label><select id="newIncOwner" class="modal-input"><option value="shared">🤝 משותף</option><option value="partner1">${esc(p1)}</option><option value="partner2">${esc(p2)}</option></select></div>
+    <div class="modal-field"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="newIncFixed"> 🔒 הכנסה קבועה <span style="font-size:.75rem;color:var(--text-secondary)">(סכום זהה כל חודש, מועתק אוטומטית)</span></label></div>
     <div class="modal-field"><label>סכום</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="newIncAmount" min="0" placeholder="0"></div></div>
     <div class="modal-actions"><button class="modal-btn primary" onclick="confirmAddIncome()">הוסף</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
   setTimeout(()=>{const i=document.getElementById('newIncSource');if(i)i.focus()},250);
@@ -1570,8 +1614,11 @@ function confirmAddIncome(){
   if(!source){document.getElementById('newIncSource').style.borderColor='var(--danger)';return}
   const amount=Math.max(0,parseInt(document.getElementById('newIncAmount').value)||0);
   const owner=(document.getElementById('newIncOwner')||{}).value||'shared';
-  getMonth(mk(curMonth,curYear)).income.push({source,amount,owner});
-  saveData();closeModal();renderBudgetKeepOpen();toast(`"${source}" נוסף`);
+  const isFixed=document.getElementById('newIncFixed')?.checked||false;
+  const newInc={source,amount,owner};
+  if(isFixed)newInc.fixed=true;
+  getMonth(mk(curMonth,curYear)).income.push(newInc);
+  saveData();closeModal();renderBudgetKeepOpen();toast(`"${source}" נוסף${isFixed?' (קבוע 🔒)':''}`);
 }
 
 function removeIncome(idx){getMonth(mk(curMonth,curYear)).income.splice(idx,1);saveData();renderBudgetKeepOpen()}
@@ -1948,7 +1995,7 @@ function renderSavings(){
       }
     }
     html+=`<div class="fund-card">
-      <div class="fund-header"><span style="font-size:1.3rem">${goal.emoji||'🎯'}</span><span class="fund-name">${goal.name}</span>
+      <div class="fund-header"><span style="font-size:1.3rem">${esc(goal.emoji||'🎯')}</span><span class="fund-name">${esc(goal.name)}</span>
         <span style="font-size:.7rem;padding:2px 8px;border-radius:10px;background:${goal.priority==='high'?'var(--danger-bg)':goal.priority==='low'?'var(--border-light)':'var(--warning-bg)'};color:${goal.priority==='high'?'var(--danger)':'var(--text-secondary)'}">${goal.priority==='high'?'גבוהה':goal.priority==='low'?'נמוכה':'בינונית'}</span>
       </div>
       <div class="fund-amount">${fc(goal.current)} <span style="font-size:.8rem;color:var(--text-secondary)">/ ${fc(goal.target)}</span></div>
@@ -1962,7 +2009,7 @@ function renderSavings(){
       ${pct>=100?`<div class="fund-status" style="color:var(--success)">✅ היעד הושג!</div>`:''}
       <div class="fund-actions">
         <button class="btn-sm primary" onclick="editGoal(${i})">✏️</button>
-        <button class="btn-sm" onclick="quickDeposit('goal_${goal.id}','${goal.name.replace(/'/g,"\\'")}')">+₪</button>
+        <button class="btn-sm" onclick="quickDeposit('goal_${goal.id}',${i})">+₪</button>
         <button class="btn-sm danger" onclick="deleteGoal(${i})">🗑️</button>
         ${pct>=100?`<button class="btn-sm" style="color:var(--success)" onclick="completeGoal(${i})">🎉 סיים</button>`:''}
       </div>
@@ -1982,7 +2029,7 @@ function renderSavings(){
       const remaining=cs.target-cs.current;
       const needed=monthsLeft>0?Math.ceil(remaining/monthsLeft):0;
       html+=`<div class="fund-card">
-        <div class="fund-header"><span style="font-size:1.3rem">${child.emoji||'👶'}</span><span class="fund-name">${child.name} (גיל ${child.age})</span></div>
+        <div class="fund-header"><span style="font-size:1.3rem">${esc(child.emoji||'👶')}</span><span class="fund-name">${esc(child.name)} (גיל ${child.age})</span></div>
         <div class="fund-amount">${fc(cs.current)} <span style="font-size:.8rem;color:var(--text-secondary)">/ ${fc(cs.target)}</span></div>
         <div class="fund-progress"><div class="fund-progress-bar" style="width:${pct}%;background:var(--primary)"></div></div>
         <div class="fund-meta">
@@ -1991,7 +2038,7 @@ function renderSavings(){
         </div>
         <div class="fund-actions">
           <button class="btn-sm primary" onclick="editChildSavings(${i})">✏️</button>
-          <button class="btn-sm" onclick="quickDeposit('child_${cs.childId}','חיסכון ${child.name}')">+₪</button>
+          <button class="btn-sm" onclick="quickDepositChild('child_${cs.childId}',${i})">+₪</button>
         </div>
       </div>`;
     });
@@ -2013,7 +2060,7 @@ function renderSavings(){
   if(D.savings.completedGoals&&D.savings.completedGoals.length>0){
     html+=`<div class="savings-zone"><h3>🏆 יעדים שהושגו</h3>`;
     D.savings.completedGoals.forEach(g=>{
-      html+=`<div class="fund-card" style="opacity:.7"><div class="fund-header"><span>${g.emoji||'🎯'}</span><span class="fund-name">${g.name}</span><span style="font-size:.75rem;color:var(--success)">✅ ${g.completedDate||''}</span></div><div class="fund-amount">${fc(g.target)}</div></div>`;
+      html+=`<div class="fund-card" style="opacity:.7"><div class="fund-header"><span>${esc(g.emoji||'🎯')}</span><span class="fund-name">${esc(g.name)}</span><span style="font-size:.75rem;color:var(--success)">✅ ${esc(g.completedDate||'')}</span></div><div class="fund-amount">${fc(g.target)}</div></div>`;
     });
     html+=`</div>`;
   }
@@ -2087,8 +2134,8 @@ function saveNewGoal(){
 function editGoal(idx){
   const g=D.savings.goals[idx];
   showModal(`<h3>✏️ ערוך יעד</h3>
-    <div class="modal-field"><label>שם</label><input class="modal-input" id="eGoalName" value="${g.name}"></div>
-    <div class="modal-field"><label>אימוג'י</label><input class="modal-input" id="eGoalEmoji" value="${g.emoji}" style="width:60px"></div>
+    <div class="modal-field"><label>שם</label><input class="modal-input" id="eGoalName" value="${esc(g.name)}"></div>
+    <div class="modal-field"><label>אימוג'י</label><input class="modal-input" id="eGoalEmoji" value="${esc(g.emoji)}" style="width:60px"></div>
     <div class="modal-field"><label>סכום יעד</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="eGoalTarget" value="${g.target}" min="0"></div></div>
     <div class="modal-field"><label>יתרה נוכחית</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="eGoalCurrent" value="${g.current}" min="0"></div></div>
     <div class="modal-field"><label>תאריך יעד</label><input class="modal-input" type="month" id="eGoalDate" value="${g.targetDate}"></div>
@@ -2107,7 +2154,7 @@ function saveEditGoal(idx){
   saveData();closeModal();renderSavings();toast('יעד עודכן');
 }
 
-function deleteGoal(idx){showModal(`<h3>⚠️ מחיקת יעד</h3><p>למחוק את "${D.savings.goals[idx].name}"?</p><div class="modal-actions"><button class="modal-btn danger" onclick="D.savings.goals.splice(${idx},1);saveData();closeModal();renderSavings();toast('יעד נמחק')">מחק</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`)}
+function deleteGoal(idx){showModal(`<h3>⚠️ מחיקת יעד</h3><p>למחוק את "${esc(D.savings.goals[idx].name)}"?</p><div class="modal-actions"><button class="modal-btn danger" onclick="D.savings.goals.splice(${idx},1);saveData();closeModal();renderSavings();toast('יעד נמחק')">מחק</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`)}
 
 function completeGoal(idx){
   const g=D.savings.goals.splice(idx,1)[0];
@@ -2135,8 +2182,18 @@ function saveChildSavings(idx){
   saveData();closeModal();renderSavings();toast('חיסכון עודכן');
 }
 
-function quickDeposit(goalKey,goalName){
-  showModal(`<h3>+₪ הפקדה ל${goalName}</h3>
+function quickDeposit(goalKey,idx){
+  const g=D.savings.goals[idx];
+  const displayName=g?esc(g.name||''):'';
+  showModal(`<h3>+₪ הפקדה ל${displayName}</h3>
+    <div class="modal-field"><label>סכום להפקדה</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="depositAmt" min="0" placeholder="0"></div></div>
+    <div class="modal-actions"><button class="modal-btn primary" onclick="confirmDeposit('${goalKey}')">הפקד</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
+}
+function quickDepositChild(goalKey,idx){
+  const cs=D.savings.childrenSavings[idx];
+  const child=cs?D.config.children.find(c=>c.id===cs.childId):null;
+  const displayName=child?esc(child.name):'';
+  showModal(`<h3>+₪ הפקדה לחיסכון ${displayName}</h3>
     <div class="modal-field"><label>סכום להפקדה</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="depositAmt" min="0" placeholder="0"></div></div>
     <div class="modal-actions"><button class="modal-btn primary" onclick="confirmDeposit('${goalKey}')">הפקד</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
 }
@@ -2171,13 +2228,13 @@ function renderAdmin(){
   html+=`<div class="admin-section">
     <h3>👫 פרטים אישיים</h3>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
-      <div class="wizard-field" style="flex:1;min-width:140px"><label>בן/בת זוג 1</label><input class="admin-input" value="${D.config.partner1}" onchange="updatePartnerName(1,this.value)" style="width:100%"></div>
-      <div class="wizard-field" style="flex:1;min-width:140px"><label>בן/בת זוג 2</label><input class="admin-input" value="${D.config.partner2}" onchange="updatePartnerName(2,this.value)" style="width:100%"></div>
+      <div class="wizard-field" style="flex:1;min-width:140px"><label>בן/בת זוג 1</label><input class="admin-input" value="${esc(D.config.partner1)}" onchange="updatePartnerName(1,this.value)" style="width:100%"></div>
+      <div class="wizard-field" style="flex:1;min-width:140px"><label>בן/בת זוג 2</label><input class="admin-input" value="${esc(D.config.partner2)}" onchange="updatePartnerName(2,this.value)" style="width:100%"></div>
     </div>
-    <div class="wizard-field" style="margin-bottom:10px"><label>כותרת משנה (ריק = אוטומטי)</label><input class="admin-input" value="${D.settings.subtitle||''}" placeholder="${D.config.partner1} ו${D.config.partner2} — ניהול פיננסי חכם" onchange="D.settings.subtitle=this.value;saveData();initApp()" style="width:100%"></div>
+    <div class="wizard-field" style="margin-bottom:10px"><label>כותרת משנה (ריק = אוטומטי)</label><input class="admin-input" value="${esc(D.settings.subtitle||'')}" placeholder="${esc(D.config.partner1)} ו${esc(D.config.partner2)} — ניהול פיננסי חכם" onchange="D.settings.subtitle=this.value;saveData();initApp()" style="width:100%"></div>
     <div style="display:flex;gap:10px;align-items:center">
       <label style="font-size:.85rem"><input type="checkbox" ${D.config.pet.enabled?'checked':''} onchange="D.config.pet.enabled=this.checked;saveData();renderAdmin()"> 🐕 חיית מחמד</label>
-      ${D.config.pet.enabled?`<input class="admin-input" value="${D.config.pet.name}" placeholder="שם" onchange="updatePetName(this.value)" style="width:120px">`:''}
+      ${D.config.pet.enabled?`<input class="admin-input" value="${esc(D.config.pet.name)}" placeholder="שם" onchange="updatePetName(this.value)" style="width:120px">`:''}
     </div>
   </div>`;
 
@@ -2187,8 +2244,8 @@ function renderAdmin(){
     <ul class="admin-list">
       ${D.config.children.map((child,i)=>`
         <li>
-          <span style="font-size:1.2rem">${child.emoji||'👶'}</span>
-          <input class="admin-input" value="${child.name}" onchange="updateChildName(${i},this.value)" style="flex:1">
+          <span style="font-size:1.2rem">${esc(child.emoji||'👶')}</span>
+          <input class="admin-input" value="${esc(child.name)}" onchange="updateChildName(${i},this.value)" style="flex:1">
           <input class="admin-input ltr" type="number" value="${child.age}" min="0" max="18" onchange="D.config.children[${i}].age=parseInt(this.value)||0;saveData()" style="width:55px;direction:ltr;text-align:center" title="גיל">
           <button class="btn-sm danger" onclick="removeChild(${i})">✕</button>
         </li>
@@ -2204,8 +2261,8 @@ function renderAdmin(){
     <ul class="admin-list">
       ${(D.config.categories||[]).map((cat,i)=>`
         <li>
-          <input class="admin-input" value="${cat.icon}" style="width:40px;text-align:center" onchange="D.config.categories[${i}].icon=this.value;saveData()">
-          <input class="admin-input" value="${cat.name}" style="flex:1" onchange="renameCat(${i},this.value)">
+          <input class="admin-input" value="${esc(cat.icon)}" style="width:40px;text-align:center" onchange="D.config.categories[${i}].icon=this.value;saveData()">
+          <input class="admin-input" value="${esc(cat.name)}" style="flex:1" onchange="renameCat(${i},this.value)">
           <span style="font-size:.72rem;color:var(--text-light)">${(cat.items||[]).length} פריטים</span>
           ${!cat.isChildrenCategory?`<button class="btn-sm danger" onclick="removeCat(${i})">✕</button>`:''}
         </li>
@@ -2220,7 +2277,7 @@ function renderAdmin(){
     <ul class="admin-list">
       ${(D.config.incomeSources||[]).map((src,i)=>`
         <li>
-          <input class="admin-input" value="${src.name}" style="flex:1" onchange="D.config.incomeSources[${i}].name=this.value;saveData()">
+          <input class="admin-input" value="${esc(src.name)}" style="flex:1" onchange="D.config.incomeSources[${i}].name=this.value;saveData()">
           <input class="admin-input ltr" type="number" value="${src.defaultAmount||0}" min="0" style="width:100px;direction:ltr;text-align:right" onchange="D.config.incomeSources[${i}].defaultAmount=parseInt(this.value)||0;saveData()">
           <button class="btn-sm danger" onclick="D.config.incomeSources.splice(${i},1);saveData();renderAdmin()">✕</button>
         </li>
@@ -2239,7 +2296,7 @@ function renderAdmin(){
   </div>`;
 
   panel.innerHTML=html;
-  }catch(e){console.error('renderAdmin error:',e);const p=document.getElementById('adminPanel');if(p)p.innerHTML=`<div style="padding:20px;text-align:center;color:var(--danger)">שגיאה בטעינת הגדרות: ${e.message}</div>`}
+  }catch(e){console.error('renderAdmin error:',e);const p=document.getElementById('adminPanel');if(p)p.innerHTML=`<div style="padding:20px;text-align:center;color:var(--danger)">שגיאה בטעינת הגדרות: ${esc(e.message)}</div>`}
 }
 
 function updatePartnerName(num,newName){
@@ -2397,8 +2454,14 @@ function renameCat(idx,newName){
 
 function removeCat(idx){
   const cat=D.config.categories[idx];
-  showModal(`<h3>⚠️ מחיקת קטגוריה</h3><p>למחוק את "${cat.name}"? נתוני ההוצאות ימחקו.</p>
-    <div class="modal-actions"><button class="modal-btn danger" onclick="D.config.categories.splice(${idx},1);Object.values(D.months).forEach(m=>{delete m.expenses['${cat.name.replace(/'/g,"\\'")}']});saveData();closeModal();renderAdmin();renderBudget();toast('קטגוריה נמחקה')">מחק</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
+  showModal(`<h3>⚠️ מחיקת קטגוריה</h3><p>למחוק את "${esc(cat.name)}"? נתוני ההוצאות ימחקו.</p>
+    <div class="modal-actions"><button class="modal-btn danger" onclick="confirmRemoveCat(${idx})">מחק</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
+}
+function confirmRemoveCat(idx){
+  const catName=D.config.categories[idx].name;
+  D.config.categories.splice(idx,1);
+  Object.values(D.months).forEach(m=>{delete m.expenses[catName]});
+  saveData();closeModal();renderAdmin();renderBudget();toast('קטגוריה נמחקה');
 }
 
 function showFullResetModal(){
@@ -2503,6 +2566,16 @@ function copyBudget(){
       });
     }
   });
+  // Copy fixed income
+  if(src.income){
+    src.income.forEach(si=>{
+      if(si.fixed){
+        const existing=tgt.income.find(i=>i.source===si.source);
+        if(existing){existing.amount=si.amount;existing.fixed=true;existing.owner=si.owner}
+        else{tgt.income.push({...si})}
+      }
+    });
+  }
   saveData();renderBudget();closeModal();toast('תקציב הועתק');
 }
 
@@ -3046,13 +3119,15 @@ function showFirebaseSetupGuide(){
     </div>
     <div style="background:var(--card);border-radius:var(--radius);padding:14px;box-shadow:var(--card-shadow)">
       <h4 style="margin-bottom:10px;font-size:.9rem">🔑 פרטי Firebase Config</h4>
-      <div class="modal-field"><label>API Key</label><input class="modal-input ltr" id="fbApiKey" value="${existing?.apiKey||''}" placeholder="AIzaSy..."></div>
-      <div class="modal-field"><label>Auth Domain</label><input class="modal-input ltr" id="fbAuthDomain" value="${existing?.authDomain||''}" placeholder="your-project.firebaseapp.com"></div>
-      <div class="modal-field"><label>Database URL</label><input class="modal-input ltr" id="fbDatabaseURL" value="${existing?.databaseURL||''}" placeholder="https://your-project-default-rtdb.firebaseio.com"></div>
-      <div class="modal-field"><label>Project ID</label><input class="modal-input ltr" id="fbProjectId" value="${existing?.projectId||''}" placeholder="your-project-id"></div>
-      <div class="modal-field"><label>Storage Bucket</label><input class="modal-input ltr" id="fbStorageBucket" value="${existing?.storageBucket||''}" placeholder="your-project.appspot.com"></div>
-      <div class="modal-field"><label>Messaging Sender ID</label><input class="modal-input ltr" id="fbSenderId" value="${existing?.messagingSenderId||''}" placeholder="123456789"></div>
-      <div class="modal-field"><label>App ID</label><input class="modal-input ltr" id="fbAppId" value="${existing?.appId||''}" placeholder="1:123:web:abc"></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:0 16px">
+      <div class="modal-field"><label>API Key</label><input class="modal-input ltr" id="fbApiKey" value="${esc(existing?.apiKey||'')}" placeholder="AIzaSy..."></div>
+      <div class="modal-field"><label>Auth Domain</label><input class="modal-input ltr" id="fbAuthDomain" value="${esc(existing?.authDomain||'')}" placeholder="your-project.firebaseapp.com"></div>
+      <div class="modal-field"><label>Database URL</label><input class="modal-input ltr" id="fbDatabaseURL" value="${esc(existing?.databaseURL||'')}" placeholder="https://your-project-default-rtdb.firebaseio.com"></div>
+      <div class="modal-field"><label>Project ID</label><input class="modal-input ltr" id="fbProjectId" value="${esc(existing?.projectId||'')}" placeholder="your-project-id"></div>
+      <div class="modal-field"><label>Storage Bucket</label><input class="modal-input ltr" id="fbStorageBucket" value="${esc(existing?.storageBucket||'')}" placeholder="your-project.appspot.com"></div>
+      <div class="modal-field"><label>Messaging Sender ID</label><input class="modal-input ltr" id="fbSenderId" value="${esc(existing?.messagingSenderId||'')}" placeholder="123456789"></div>
+      <div class="modal-field"><label>App ID</label><input class="modal-input ltr" id="fbAppId" value="${esc(existing?.appId||'')}" placeholder="1:123:web:abc"></div>
+      </div>
       <div class="modal-actions" style="margin-top:16px">
         <button class="modal-btn primary" onclick="saveFirebaseConfigFromForm()">💾 שמור והתחבר</button>
         ${existing?'<button class="modal-btn danger" onclick="removeFirebaseConfig()">🗑️ הסר Firebase</button>':''}
@@ -3118,7 +3193,8 @@ function hideLoginScreen(){
 // ===== FIREBASE FAMILY =====
 function generateInviteCode(){
   const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code='';for(let i=0;i<6;i++)code+=chars[Math.floor(Math.random()*chars.length)];
+  const arr=new Uint8Array(6);crypto.getRandomValues(arr);
+  let code='';for(let i=0;i<6;i++)code+=chars[arr[i]%chars.length];
   return code;
 }
 
@@ -3762,6 +3838,16 @@ function loadDataLocal(){
   }catch(e){console.error('Load error:',e)}
   D=freshData();
 }
+
+// Auto-add inputmode to number inputs for better mobile keyboards
+new MutationObserver(muts=>{
+  muts.forEach(mut=>{mut.addedNodes.forEach(node=>{
+    if(node.nodeType!==1)return;
+    const fix=el=>{el.setAttribute('inputmode','numeric');el.setAttribute('pattern','[0-9]*')};
+    if(node.matches&&node.matches('input[type="number"]:not([inputmode])'))fix(node);
+    if(node.querySelectorAll)node.querySelectorAll('input[type="number"]:not([inputmode])').forEach(fix);
+  })});
+}).observe(document.body,{childList:true,subtree:true});
 
 function init(){
   // Step 1: Load Firebase config
