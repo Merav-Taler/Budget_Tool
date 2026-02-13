@@ -540,11 +540,11 @@ body{padding-bottom:0;background:#fff}
 <select id="monthSelect" onchange="changeMonth()"></select>
 <input type="number" id="yearInput" min="2020" max="2040" onchange="changeMonth()">
 <div class="month-nav-btns">
-<button class="month-nav-btn" onclick="navMonth(1)" title="חודש הבא">◀</button>
-<button class="month-nav-btn" onclick="navMonth(-1)" title="חודש קודם">▶</button>
-<button class="month-nav-btn" onclick="showCopyStructure()" title="העתק מבנה מחודש קודם" style="font-size:.8rem">📋</button>
-<button class="month-nav-btn" onclick="showRecommendedBudget()" title="תקציב מומלץ" style="font-size:.8rem">🎯</button>
-<button class="month-nav-btn" onclick="showCrossSearch()" title="חיפוש חוצה חודשים" style="font-size:.8rem">🔍</button>
+<button class="month-nav-btn hdr-tooltip" onclick="navMonth(1)" data-tip="חודש הבא">◀</button>
+<button class="month-nav-btn hdr-tooltip" onclick="navMonth(-1)" data-tip="חודש קודם">▶</button>
+<button class="month-nav-btn hdr-tooltip" onclick="showCopyStructure()" data-tip="העתק מבנה מחודש" style="font-size:.8rem">📋</button>
+<button class="month-nav-btn hdr-tooltip" onclick="showRecommendedBudget()" data-tip="תקציב מומלץ" style="font-size:.8rem">🎯</button>
+<button class="month-nav-btn hdr-tooltip" onclick="showCrossSearch()" data-tip="חיפוש חוצה חודשים" style="font-size:.8rem">🔍</button>
 </div>
 </div>
 <div class="section-title">💳 הוצאות <button class="section-add-btn" onclick="addCategory()" title="הוסף קטגוריה">+</button></div>
