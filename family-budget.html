@@ -112,7 +112,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);direction:rt
 .num-input{width:100%;max-width:105px;padding:5px 7px;border:1px solid transparent;border-radius:var(--radius-xs);font-family:var(--font);font-size:.85rem;text-align:center;background:transparent;color:var(--text);transition:var(--transition);min-height:38px;direction:ltr}
 .num-input:hover{border-color:var(--border);background:var(--border-light)}
 .num-input:focus{outline:none;border-color:var(--primary);background:var(--primary-bg);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
-.add-row-btn{width:28px;height:28px;border:1px solid transparent;background:none;color:var(--text-light);cursor:pointer;border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;font-size:.75rem;transition:var(--transition);opacity:.5;padding:0}
+.add-row-btn{width:26px;height:26px;border:1px solid transparent;background:none;color:var(--text-light);cursor:pointer;border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;font-size:.65rem;transition:var(--transition);opacity:.4;padding:0}
 .add-row-btn:hover{background:var(--success-bg,rgba(22,163,74,.1));color:var(--success);border-color:var(--success);opacity:1}
 .move-btn{width:30px;height:30px;border:1px solid transparent;background:none;color:var(--text-light);cursor:pointer;border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;font-size:.7rem;transition:var(--transition);opacity:.6}
 .move-btn:hover{background:var(--primary-bg);color:var(--primary);border-color:var(--primary);opacity:1}
@@ -313,6 +313,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);direction:rt
 .provider-text.has-provider{display:block}
 .item-name:hover .provider-text{display:block}
 .provider-text:hover{color:var(--primary);text-decoration:underline}
+.grouped-sub .provider-text{display:block}
 .institution-text{font-size:.75rem;color:var(--text-secondary);margin-top:2px}
 
 /* Login Overlay */
@@ -339,14 +340,15 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);direction:rt
 .owner-badge.p2{background:#FCE7F3;color:#BE185D;border-color:#F9A8D4}
 .owner-badge.shared{background:#D1FAE5;color:#059669;border-color:#6EE7B7}
 .owner-cell{width:36px;text-align:center}
-.owner-legend{display:flex;gap:8px;align-items:center;font-size:.72rem;color:var(--text-secondary);margin-bottom:10px;flex-wrap:wrap}
+.owner-legend{display:flex;gap:8px;align-items:center;font-size:.72rem;color:var(--text-secondary);margin-bottom:10px;flex-wrap:wrap;justify-content:center;padding:4px 12px}
 .owner-legend .owner-badge{width:20px;height:20px;font-size:.55rem;cursor:default}
 .edit-meta{font-size:.6rem;color:var(--text-light);font-style:italic;display:block;margin-top:1px}
 
 /* Utilities */
 .hidden{display:none!important}
 .text-center{text-align:center}
-.actions-cell{width:36px;text-align:center}
+.actions-cell{width:auto;white-space:nowrap;text-align:center}
+.actions-cell-inner{display:inline-flex;align-items:center;gap:2px}
 .confetti{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999}
 
 /* Responsive */
@@ -1688,15 +1690,16 @@ function renderBudget(){
     }else{
       bodyHtml=`${ownerLegend()}<table class="data-table">
         <thead><tr><th class="owner-cell"></th><th>פריט</th><th class="number-cell">סכום</th><th class="actions-cell"></th></tr></thead>
-        <tbody>${(catData.items||[]).map((item,ii)=>{
+        <tbody>${(()=>{const items=catData.items||[];return items.map((item,ii)=>{
           const isFixed=item.fixed;const isEvt=item.isEvent;
-          return `<tr${isFixed?' style="background:var(--border-light)"':''}${isEvt?' style="background:var(--warning-bg)"':''}>
+          const prevSame=ii>0&&items[ii-1].name===item.name;
+          return `<tr style="${isFixed?'background:var(--border-light);':''}${isEvt?'background:var(--warning-bg);':''}${prevSame?'border-top:1px dashed var(--border);':''}">
             <td class="owner-cell">${ownerBadge(item.owner||'shared',catDef.name,ii,'expense')}</td>
-            <td class="item-name"><div style="display:flex;align-items:center;gap:6px">${isEvt?'<span style="font-size:.85rem;cursor:help" title="אירוע שנתי">📅</span>':`<button class="lock-btn${isFixed?' locked':''}" onclick="toggleFixed(this.closest('[data-cat]').dataset.cat,${ii})" title="${isFixed?'נעול — לחצי לשחרור':'לחצי לנעול כהוצאה קבועה'}">${isFixed?'🔒':'🔓'}</button>`}<div>${esc(item.name)}<span class="provider-text${item.provider?' has-provider':''}" onclick="setProvider(this.closest('[data-cat]').dataset.cat,${ii})">${item.provider?'🏢 '+esc(item.provider):'+ ספק'}</span></div></div></td>
+            <td class="item-name"><div style="display:flex;align-items:center;gap:6px">${isEvt?'<span style="font-size:.85rem;cursor:help" title="אירוע שנתי">📅</span>':(prevSame?'<span style="width:32px;flex-shrink:0"></span>':`<button class="lock-btn${isFixed?' locked':''}" onclick="toggleFixed(this.closest('[data-cat]').dataset.cat,${ii})" title="${isFixed?'נעול — לחצי לשחרור':'לחצי לנעול כהוצאה קבועה'}">${isFixed?'🔒':'🔓'}</button>`)}<div>${prevSame?`<span style="color:var(--text-light);font-size:.78rem">┗ </span><span class="provider-text has-provider" onclick="setProvider(this.closest('[data-cat]').dataset.cat,${ii})">${item.provider?'🏢 '+esc(item.provider):'+ פירוט'}</span>`:`${esc(item.name)}<span class="provider-text${item.provider?' has-provider':''}" onclick="setProvider(this.closest('[data-cat]').dataset.cat,${ii})">${item.provider?'🏢 '+esc(item.provider):'+ ספק'}</span>`}</div></div></td>
             <td class="number-cell"><input class="num-input" type="number" min="0" value="${item.amount||0}" oninput="updateItem(this.closest('[data-cat]').dataset.cat,${ii},this.value)" onfocus="this.select()"></td>
-            <td class="actions-cell"><button class="add-row-btn" onclick="quickAddRow(this.closest('[data-cat]').dataset.cat,${ii})" title="הוסף שורה נוספת">➕</button><button class="move-btn" onclick="moveItem(this.closest('[data-cat]').dataset.cat,${ii})" title="העבר לקטגוריה אחרת"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/><path d="M12 11v6m0 0l-3-3m3 3l3-3"/></svg></button><button class="delete-btn" onclick="removeItem(this.closest('[data-cat]').dataset.cat,${ii})">✕</button></td>
+            <td class="actions-cell"><div class="actions-cell-inner"><button class="add-row-btn" onclick="quickAddRow(this.closest('[data-cat]').dataset.cat,${ii})" title="שכפל שורה">➕</button><button class="move-btn" onclick="moveItem(this.closest('[data-cat]').dataset.cat,${ii})" title="העבר לקטגוריה אחרת"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/><path d="M12 11v6m0 0l-3-3m3 3l3-3"/></svg></button><button class="delete-btn" onclick="removeItem(this.closest('[data-cat]').dataset.cat,${ii})">✕</button></div></td>
           </tr>`;
-        }).join('')}</tbody>
+        }).join('')})()}</tbody>
         <tfoot><tr class="subtotal-row"><td></td><td>סה״כ ${esc(catDef.name)}</td><td class="number-cell">${fc(totalSpent)}</td><td></td></tr></tfoot>
       </table>
       <button class="add-item-btn" onclick="addItem(this.closest('[data-cat]').dataset.cat)">+ הוסף פריט</button>`;
@@ -2094,28 +2097,14 @@ function confirmAddItem(){
 
 function quickAddRow(catName,idx){
   const key=mk(curMonth,curYear);const data=getMonth(key);
-  const item=data.expenses[catName].items[idx];
+  const item=data.expenses[catName]?.items[idx];
   if(!item)return;
-  window._quickCat=catName;window._quickName=item.name;
-  showModal(`<h3>➕ שורה נוספת — ${esc(item.name)}</h3>
-    <p style="font-size:.82rem;color:var(--text-secondary)">הוספת הוצאה נוספת תחת "${esc(item.name)}" בקטגוריית ${esc(catName)}</p>
-    <div class="modal-field"><label>בית עסק / פירוט</label><input class="modal-input" type="text" id="qrProvider" placeholder="לדוגמה: שם המסעדה, שם החנות"></div>
-    <div class="modal-field"><label>סכום</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="qrAmount" min="0" placeholder="0"></div></div>
-    <div class="modal-actions"><button class="modal-btn primary" onclick="confirmQuickRow()">הוסף</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
-  setTimeout(()=>{const i=document.getElementById('qrProvider');if(i)i.focus()},250);
-}
-function confirmQuickRow(){
-  const catName=window._quickCat;const name=window._quickName;
-  const provider=(document.getElementById('qrProvider').value||'').trim();
-  const amount=Math.max(0,parseInt(document.getElementById('qrAmount').value)||0);
-  if(!amount&&!provider){toast('נא להזין סכום או פירוט');return}
   pushUndo();
-  const key=mk(curMonth,curYear);
-  const newItem={name,amount,isDefault:false,owner:'shared'};
-  if(provider)newItem.provider=provider;
-  getMonth(key).expenses[catName].items.push(newItem);
-  saveData();closeModal();renderBudgetKeepOpen();
-  toast(`שורה נוספת ל"${name}" — ${provider||fc(amount)}`);
+  const newItem={name:item.name,amount:0,isDefault:false,owner:item.owner||'shared'};
+  // Insert right after the source item
+  data.expenses[catName].items.splice(idx+1,0,newItem);
+  saveData();renderBudgetKeepOpen();
+  toast(`שורה נוספת ל"${item.name}"`);
 }
 
 function removeItem(catName,idx){
