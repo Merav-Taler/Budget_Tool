@@ -862,6 +862,12 @@ function pushUndo(){
 }
 function undo(){
   if(undoStack.length===0){toast('אין פעולות לביטול');return}
+  // Save current UI state
+  const expanded=new Set();
+  document.querySelectorAll('.category-card.expanded').forEach(c=>{
+    const cat=c.getAttribute('data-cat');if(cat)expanded.add(cat);
+  });
+  const activeTab=document.querySelector('.tab-btn.active')?.getAttribute('data-tab')||'budget';
   const prev=undoStack.pop();
   try{
     D=JSON.parse(prev);
@@ -869,6 +875,15 @@ function undo(){
     try{localStorage.setItem(SK,JSON.stringify(D))}catch(e){}
     if(fbRef&&fbUser){fbRef.set(D).catch(()=>{})}
     initApp();
+    // Restore tab
+    if(activeTab)switchTab(activeTab);
+    // Restore expanded categories
+    if(expanded.size>0){
+      document.querySelectorAll('.category-card').forEach(c=>{
+        const cat=c.getAttribute('data-cat');
+        if(cat&&expanded.has(cat))c.classList.add('expanded');
+      });
+    }
     toast('↩️ הפעולה האחרונה בוטלה');
   }catch(e){toast('שגיאה בביטול')}
   if(undoStack.length===0){
