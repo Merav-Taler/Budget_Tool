@@ -110,6 +110,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);direction:rt
 .num-input:focus{outline:none;border-color:var(--primary);background:var(--primary-bg);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
 .delete-btn{width:28px;height:28px;border:none;background:none;color:var(--text-light);cursor:pointer;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.82rem;transition:var(--transition)}
 .delete-btn:hover{background:var(--danger-bg);color:var(--danger)}
+.fixed-toggle{position:relative;width:32px;height:18px;flex-shrink:0;cursor:pointer}
+.fixed-toggle input{opacity:0;width:0;height:0}
+.fixed-toggle .slider{position:absolute;inset:0;background:var(--border);border-radius:9px;transition:var(--transition)}
+.fixed-toggle .slider::before{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:#fff;top:2px;right:2px;transition:var(--transition);box-shadow:0 1px 2px rgba(0,0,0,.15)}
+.fixed-toggle input:checked+.slider{background:var(--primary)}
+.fixed-toggle input:checked+.slider::before{right:auto;left:2px}
 .add-item-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;margin:8px 12px 12px;border:1px dashed var(--border);border-radius:var(--radius-xs);background:none;font-family:var(--font);font-size:.8rem;color:var(--primary);cursor:pointer;transition:var(--transition);font-weight:500}
 .add-item-btn:hover{background:var(--primary-bg);border-color:var(--primary)}
 .section-title{font-size:1.05rem;font-weight:700;margin:20px 0 10px;display:flex;align-items:center;gap:8px;color:var(--text)}
@@ -1268,11 +1274,11 @@ function renderBudget(){
           const cn=catDef.name.replace(/'/g,"\\'");
           return `<tr${isFixed?' style="background:var(--border-light)"':''}>
             <td class="owner-cell">${ownerBadge(item.owner||'shared',catDef.name,ii,'expense')}</td>
-            <td class="item-name">${isFixed?'🔒 ':''}<span onclick="toggleFixed('${cn}',${ii})" style="cursor:pointer" title="${isFixed?'לחצי להפוך למשתנה':'לחצי לסמן כהוצאה קבועה'}">${item.name}</span></td>
+            <td class="item-name"><div style="display:flex;align-items:center;gap:6px"><label class="fixed-toggle" title="${isFixed?'הוצאה קבועה — לחצי לביטול':'לחצי לסמן כהוצאה קבועה'}"><input type="checkbox" ${isFixed?'checked':''} onchange="toggleFixed('${cn}',${ii})"><span class="slider"></span></label>${item.name}</div></td>
             ${isFixed?`<td class="number-cell" colspan="2"><input class="num-input" type="number" min="0" value="${item.planned||0}" onchange="updateFixedItem('${cn}',${ii},this.value)" onfocus="this.select()" style="max-width:140px"></td>`
             :`<td class="number-cell"><input class="num-input" type="number" min="0" value="${item.planned||0}" onchange="updateItem('${cn}',${ii},'planned',this.value)" onfocus="this.select()"></td>
             <td class="number-cell"><input class="num-input" type="number" min="0" value="${item.actual||0}" onchange="updateItem('${cn}',${ii},'actual',this.value)" onfocus="this.select()"></td>`}
-            <td class="number-cell ${d>=0?'diff-positive':'diff-negative'}">${isFixed?'🔒 קבוע':fc(d)}</td>
+            <td class="number-cell ${d>=0?'diff-positive':'diff-negative'}">${isFixed?'🔒':fc(d)}</td>
             <td class="actions-cell">${!item.isDefault?`<button class="delete-btn" onclick="removeItem('${cn}',${ii})">✕</button>`:''}</td>
           </tr>`;
         }).join('')}</tbody>
