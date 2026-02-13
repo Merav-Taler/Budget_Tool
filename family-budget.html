@@ -576,6 +576,7 @@ body{padding-bottom:0;background:#fff}
 <button class="dm-btn" onclick="exportExcel('month')"><span class="dm-icon">📗</span><span class="dm-label">אקסל חודשי</span></button>
 <button class="dm-btn" onclick="exportExcel('year')"><span class="dm-icon">📗</span><span class="dm-label">אקסל שנתי</span></button>
 <button class="dm-btn" onclick="document.getElementById('excelImportInput').click()"><span class="dm-icon">📘</span><span class="dm-label">טעינת אקסל</span></button>
+<button class="dm-btn" onclick="downloadImportTemplate()"><span class="dm-icon">📄</span><span class="dm-label">תבנית לייבוא</span></button>
 <button class="dm-btn" onclick="exportCSV()"><span class="dm-icon">📑</span><span class="dm-label">CSV</span></button>
 <button class="dm-btn" onclick="showResetModal()"><span class="dm-icon">🗑️</span><span class="dm-label">איפוס חודש</span></button>
 <button class="dm-btn" onclick="showCopyModal()"><span class="dm-icon">📋</span><span class="dm-label">העתקת תקציב</span></button>
@@ -615,6 +616,7 @@ const DEF_CATS = [
   {id:'subscriptions',name:'מינויים',icon:'📱',items:['נטפליקס','ChatGPT','Google One','YouTube Premium','ספוטיפיי']},
   {id:'pet',name:'חיות מחמד',icon:'🐕',items:['ביטוח','אוכל','וטרינר ותרופות']},
   {id:'children',name:'ילדים',icon:'👶',items:[],isChildrenCategory:true},
+  {id:'events',name:'אירועים',icon:'📅',items:[]},
   {id:'unexpected',name:'חריגות',icon:'⚡',items:[]}
 ];
 
@@ -710,7 +712,8 @@ function freshData(){
       children:[],
       pet:{name:'',enabled:false},
       categories:DEF_CATS.map((c,i)=>({...c,order:i,items:c.items.map(n=>({name:n,isDefault:true}))})),
-      incomeSources:[]
+      incomeSources:[],
+      events:[]
     },
     months:{},
     savings:{
@@ -878,6 +881,16 @@ function getMonth(key){
   });
   if(!md.savingsContributions)md.savingsContributions={};
   if(!md.misc||typeof md.misc!=='object')md.misc={};
+  // Inject event items for this month
+  const [,evMStr]=key.split('-');
+  const evMNum=parseInt(evMStr);
+  (D.config.events||[]).forEach(evt=>{
+    if(!evt.enabled||evt.month!==evMNum)return;
+    const evCat=md.expenses['אירועים'];
+    if(!evCat)return;
+    if(evCat.items.some(i=>i.eventId===evt.id))return;
+    evCat.items.push({name:(evt.emoji||'📅')+' '+evt.name,amount:evt.estimatedBudget||0,isDefault:false,isEvent:true,eventId:evt.id,owner:evt.owner||'shared'});
+  });
   return md;
 }
 
@@ -895,7 +908,7 @@ function calcTotals(key){
 }
 
 // ===== SETUP WIZARD =====
-const WIZ_STEPS=['welcome','categories','items','personal','income','savings','planned','done'];
+const WIZ_STEPS=['welcome','categories','items','personal','events','income','savings','planned','done'];
 
 function showWizard(){
   wizStep=0;
@@ -923,7 +936,8 @@ function showWizard(){
       incomeSources:[...(D.config.incomeSources||[])],
       savingsGoals:[...(D.savings.goals||[])],
       hasEmergency:!!(D.savings.emergency&&D.savings.emergency.target>0),
-      emergencyTarget:(D.savings.emergency&&D.savings.emergency.target)||0
+      emergencyTarget:(D.savings.emergency&&D.savings.emergency.target)||0,
+      events:[...(D.config.events||[])]
     };
   }else{
     wizData={
@@ -934,7 +948,8 @@ function showWizard(){
       hasPet:false,petName:'',
       incomeSources:[],
       savingsGoals:[],
-      hasEmergency:true,emergencyTarget:0
+      hasEmergency:true,emergencyTarget:0,
+      events:[]
     };
   }
   document.getElementById('wizardOverlay').classList.remove('hidden');
@@ -1015,7 +1030,7 @@ function renderWizardStep(){
   if(wizStep>0) navHtml+=`<button class="wn-btn secondary" onclick="wizPrev()">→ חזרה</button>`;
   else navHtml+='<span></span>';
   if(wizStep<WIZ_STEPS.length-1){
-    if(step==='savings'||step==='planned') navHtml+=`<button class="wn-btn skip" onclick="wizNext()">דלג</button>`;
+    if(step==='events'||step==='savings'||step==='planned') navHtml+=`<button class="wn-btn skip" onclick="wizNext()">דלג</button>`;
     navHtml+=`<button class="wn-btn primary" onclick="wizNext()">הבא ←</button>`;
   }
   n.innerHTML=navHtml;
@@ -1025,6 +1040,7 @@ function renderWizardStep(){
     case 'categories': c.innerHTML=renderWizCategories(); break;
     case 'items': c.innerHTML=renderWizItems(); break;
     case 'personal': c.innerHTML=renderWizPersonal(); break;
+    case 'events': c.innerHTML=renderWizEvents(); break;
     case 'income': c.innerHTML=renderWizIncome(); break;
     case 'savings': c.innerHTML=renderWizSavings(); break;
     case 'planned': c.innerHTML=renderWizPlanned(); break;
@@ -1062,6 +1078,21 @@ function saveWizardStep(){
       // Enable children category if has children
       const childCat=wizData.categories.find(c=>c.id==='children');
       if(childCat) childCat.enabled=wizData.hasChildren&&wizData.children.length>0;
+      break;
+    case 'events':
+      wizData.events=[];
+      document.querySelectorAll('.wiz-event-row').forEach(el=>{
+        const name=(el.querySelector('.wiz-evt-name')?.value||'').trim();
+        if(!name)return;
+        wizData.events.push({
+          id:uid(),name,
+          emoji:(el.querySelector('.wiz-evt-emoji')?.value||'').trim()||'📅',
+          month:parseInt(el.querySelector('.wiz-evt-month')?.value)||1,
+          day:0,
+          estimatedBudget:Math.max(0,parseInt(el.querySelector('.wiz-evt-budget')?.value)||0),
+          owner:'shared',enabled:true
+        });
+      });
       break;
     case 'income':
       wizData.incomeSources=[];
@@ -1217,6 +1248,83 @@ function addWizChild(){
   list.appendChild(div);
 }
 
+function renderWizEvents(){
+  const p1=wizData.partner1||'בן/בת זוג 1',p2=wizData.partner2||'בן/בת זוג 2';
+  const children=wizData.hasChildren?wizData.children.filter(c=>c.name):[];
+  const suggestions=[
+    {name:`יום הולדת ${p1}`,emoji:'🎂'},
+    {name:`יום הולדת ${p2}`,emoji:'🎂'},
+    ...children.map(c=>({name:`יום הולדת ${c.name}`,emoji:'🎈'})),
+    {name:'יום נישואין',emoji:'💍'},
+    {name:'ראש השנה',emoji:'🍯',month:9},
+    {name:'פסח',emoji:'🫓',month:4},
+    {name:'חנוכה',emoji:'🕎',month:12},
+    {name:'חופשה גדולה',emoji:'🏖️',month:7}
+  ];
+  // Filter out already added
+  const existingNames=new Set((wizData.events||[]).map(e=>e.name));
+  const available=suggestions.filter(s=>!existingNames.has(s.name));
+  const monthOpts=HM.map((m,i)=>`<option value="${i+1}">${m}</option>`).join('');
+  return `<div class="wizard-step">
+    <div style="text-align:center;font-size:2.5rem;margin:16px 0">📅</div>
+    <div class="wizard-title">אירועים ותאריכים</div>
+    <div class="wizard-subtitle">הגדירו אירועים שנתיים שיופיעו אוטומטית בתקציב החודשי</div>
+    ${available.length>0?`<div style="margin:14px 0 8px;font-weight:600;font-size:.85rem">הצעות מהירות:</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">
+      ${available.map((s,i)=>`<button class="btn-sm" onclick="addWizEventSugg(${i})" style="font-size:.82rem;cursor:pointer">${s.emoji} ${esc(s.name)}</button>`).join('')}
+    </div>`:''}
+    <div style="font-weight:600;font-size:.85rem;margin-bottom:8px">אירועים שנבחרו:</div>
+    <div id="wizEventsList">
+      ${(wizData.events||[]).map((evt,i)=>`
+        <div class="wiz-event-row" style="display:flex;gap:6px;margin-bottom:8px;align-items:center;flex-wrap:wrap;background:var(--bg);padding:8px;border-radius:var(--radius-sm)">
+          <input type="text" class="wiz-evt-emoji admin-input" value="${esc(evt.emoji)}" style="width:42px;text-align:center;padding:4px">
+          <input type="text" class="wiz-evt-name admin-input" value="${esc(evt.name)}" placeholder="שם האירוע" style="flex:1;min-width:100px;padding:4px 8px">
+          <select class="wiz-evt-month admin-input" style="min-width:90px;padding:4px">
+            ${HM.map((m,mi)=>`<option value="${mi+1}"${evt.month===mi+1?' selected':''}>${m}</option>`).join('')}
+          </select>
+          <input type="number" class="wiz-evt-budget admin-input ltr" value="${evt.estimatedBudget||''}" placeholder="₪ תקציב" min="0" style="width:80px;direction:ltr;text-align:center;padding:4px">
+          <button class="btn-sm danger" onclick="removeWizEvent(${i})" style="flex-shrink:0">✕</button>
+        </div>
+      `).join('')}
+    </div>
+    ${(wizData.events||[]).length===0?'<p style="color:var(--text-light);font-size:.82rem;padding:8px 0">לחצו על הצעה מהירה או הוסיפו אירוע ידנית</p>':''}
+    <button class="add-item-btn" onclick="addWizEventBlank()" style="margin-top:8px">+ הוסף אירוע</button>
+  </div>`;
+}
+
+function addWizEventSugg(idx){
+  saveWizardStep();
+  const p1=wizData.partner1||'בן/בת זוג 1',p2=wizData.partner2||'בן/בת זוג 2';
+  const children=wizData.hasChildren?wizData.children.filter(c=>c.name):[];
+  const suggestions=[
+    {name:`יום הולדת ${p1}`,emoji:'🎂'},
+    {name:`יום הולדת ${p2}`,emoji:'🎂'},
+    ...children.map(c=>({name:`יום הולדת ${c.name}`,emoji:'🎈'})),
+    {name:'יום נישואין',emoji:'💍'},
+    {name:'ראש השנה',emoji:'🍯',month:9},
+    {name:'פסח',emoji:'🫓',month:4},
+    {name:'חנוכה',emoji:'🕎',month:12},
+    {name:'חופשה גדולה',emoji:'🏖️',month:7}
+  ];
+  const existingNames=new Set((wizData.events||[]).map(e=>e.name));
+  const available=suggestions.filter(s=>!existingNames.has(s.name));
+  const s=available[idx];if(!s)return;
+  wizData.events.push({id:uid(),name:s.name,emoji:s.emoji,month:s.month||1,day:0,estimatedBudget:0,owner:'shared',enabled:true});
+  renderWizardStep();
+}
+
+function addWizEventBlank(){
+  saveWizardStep();
+  wizData.events.push({id:uid(),name:'',emoji:'📅',month:1,day:0,estimatedBudget:0,owner:'shared',enabled:true});
+  renderWizardStep();
+}
+
+function removeWizEvent(idx){
+  saveWizardStep();
+  wizData.events.splice(idx,1);
+  renderWizardStep();
+}
+
 function renderWizIncome(){
   const p1=wizData.partner1||'בן/בת זוג 1';
   const p2=wizData.partner2||'בן/בת זוג 2';
@@ -1309,7 +1417,8 @@ function renderWizDone(){
       ${childCount>0?`<div style="margin-bottom:8px"><strong>ילדים:</strong> ${wizData.children.filter(c=>c.name).map(c=>c.name).join(', ')}</div>`:''}
       ${wizData.hasPet?`<div style="margin-bottom:8px"><strong>חיית מחמד:</strong> ${wizData.petName||'ללא שם'}</div>`:''}
       <div style="margin-bottom:8px"><strong>מקורות הכנסה:</strong> ${wizData.incomeSources.length}</div>
-      <div><strong>יעדי חיסכון:</strong> ${wizData.savingsGoals.length}${wizData.hasEmergency?' + קרן חירום':''}</div>
+      <div style="margin-bottom:8px"><strong>יעדי חיסכון:</strong> ${wizData.savingsGoals.length}${wizData.hasEmergency?' + קרן חירום':''}</div>
+      ${(wizData.events||[]).length>0?`<div><strong>אירועים:</strong> ${wizData.events.map(e=>e.emoji+' '+e.name).join(', ')}</div>`:''}
     </div>
   </div>`;
 }
@@ -1374,6 +1483,16 @@ function finishWizard(){
     }));
   }
 
+  // Events
+  D.config.events=wizData.events||[];
+  // Ensure events category exists if events defined
+  if(D.config.events.length>0&&!D.config.categories.find(c=>c.id==='events')){
+    const idx=D.config.categories.findIndex(c=>c.id==='unexpected');
+    const evCat={id:'events',name:'אירועים',icon:'📅',order:idx>=0?idx:D.config.categories.length,items:[]};
+    if(idx>=0)D.config.categories.splice(idx,0,evCat);
+    else D.config.categories.push(evCat);
+  }
+
   D.settings.setupComplete=true;
   saveData();
   hideWizard();
@@ -1428,6 +1547,8 @@ function renderBudget(){
     if(catDef.isChildrenCategory&&D.config.children.length===0)return;
     // Skip pet category if pet not enabled
     if(catDef.id==='pet'&&(!D.config.pet||!D.config.pet.enabled))return;
+    // Skip events category if no enabled events
+    if(catDef.id==='events'&&!(D.config.events||[]).some(e=>e.enabled))return;
 
     const catBudget=catData.budget||0;
     let totalSpent=0;
@@ -1450,10 +1571,10 @@ function renderBudget(){
       bodyHtml=`${ownerLegend()}<table class="data-table">
         <thead><tr><th class="owner-cell"></th><th>פריט</th><th class="number-cell">סכום</th><th class="actions-cell"></th></tr></thead>
         <tbody>${(catData.items||[]).map((item,ii)=>{
-          const isFixed=item.fixed;
-          return `<tr${isFixed?' style="background:var(--border-light)"':''}>
+          const isFixed=item.fixed;const isEvt=item.isEvent;
+          return `<tr${isFixed?' style="background:var(--border-light)"':''}${isEvt?' style="background:var(--warning-bg)"':''}>
             <td class="owner-cell">${ownerBadge(item.owner||'shared',catDef.name,ii,'expense')}</td>
-            <td class="item-name"><div style="display:flex;align-items:center;gap:6px"><button class="lock-btn${isFixed?' locked':''}" onclick="toggleFixed(this.closest('[data-cat]').dataset.cat,${ii})" title="${isFixed?'נעול — לחצי לשחרור':'לחצי לנעול כהוצאה קבועה'}">${isFixed?'🔒':'🔓'}</button><div>${esc(item.name)}<span class="provider-text${item.provider?' has-provider':''}" onclick="setProvider(this.closest('[data-cat]').dataset.cat,${ii})">${item.provider?'🏢 '+esc(item.provider):'+ ספק'}</span></div></div></td>
+            <td class="item-name"><div style="display:flex;align-items:center;gap:6px">${isEvt?'<span style="font-size:.85rem;cursor:help" title="אירוע שנתי">📅</span>':`<button class="lock-btn${isFixed?' locked':''}" onclick="toggleFixed(this.closest('[data-cat]').dataset.cat,${ii})" title="${isFixed?'נעול — לחצי לשחרור':'לחצי לנעול כהוצאה קבועה'}">${isFixed?'🔒':'🔓'}</button>`}<div>${esc(item.name)}<span class="provider-text${item.provider?' has-provider':''}" onclick="setProvider(this.closest('[data-cat]').dataset.cat,${ii})">${item.provider?'🏢 '+esc(item.provider):'+ ספק'}</span></div></div></td>
             <td class="number-cell"><input class="num-input" type="number" min="0" value="${item.amount||0}" oninput="updateItem(this.closest('[data-cat]').dataset.cat,${ii},this.value)" onfocus="this.select()"></td>
             <td class="actions-cell"><button class="move-btn" onclick="moveItem(this.closest('[data-cat]').dataset.cat,${ii})" title="העבר לקטגוריה אחרת"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/><path d="M12 11v6m0 0l-3-3m3 3l3-3"/></svg></button><button class="delete-btn" onclick="removeItem(this.closest('[data-cat]').dataset.cat,${ii})">✕</button></td>
           </tr>`;
@@ -2068,6 +2189,7 @@ function renderAlerts(){
   (D.config.categories||[]).forEach(cat=>{
     if(cat.isChildrenCategory&&D.config.children.length===0)return;
     if(cat.id==='pet'&&(!D.config.pet||!D.config.pet.enabled))return;
+    if(cat.id==='events'&&!(D.config.events||[]).some(e=>e.enabled))return;
     const cd=data.expenses[cat.name];if(!cd)return;
     const p=cd.budget||0;
     let a=0;cd.items.forEach(i=>{a+=(i.amount||0)});
@@ -2125,6 +2247,7 @@ function renderAlerts(){
     (D.config.categories||[]).forEach(cat=>{
       if(cat.isChildrenCategory&&D.config.children.length===0)return;
       if(cat.id==='pet'&&(!D.config.pet||!D.config.pet.enabled))return;
+      if(cat.id==='events'&&!(D.config.events||[]).some(e=>e.enabled))return;
       const cd=data.expenses[cat.name],pd=(D.months[prevKey].expenses||{})[cat.name];
       if(!cd||!pd)return;
       let curA=0,prevA=0;
@@ -2137,6 +2260,22 @@ function renderAlerts(){
       }
     });
   }
+
+  // Upcoming events alerts
+  const evMonthNum=curMonth+1;
+  (D.config.events||[]).forEach(evt=>{
+    if(!evt.enabled)return;
+    if(evt.month===evMonthNum){
+      const id='event_'+evt.id+'_'+key;
+      const dayTxt=evt.day?` (${evt.day} ב${HM[curMonth]})`:'';
+      if(!dismissed.includes(id)) alerts.push({id,cls:'blue',text:`${evt.emoji||'📅'} אירוע החודש: ${evt.name}${dayTxt}${evt.estimatedBudget?' — תקציב: '+fc(evt.estimatedBudget):''}`});
+    }
+    const nextM=curMonth===11?0:curMonth+1;
+    if(evt.month===nextM+1){
+      const id='event_next_'+evt.id+'_'+key;
+      if(!dismissed.includes(id)) alerts.push({id,cls:'blue',text:`${evt.emoji||'📅'} בחודש הבא: ${evt.name} (${HM[nextM]})`});
+    }
+  });
 
   // Children alerts
   if(D.config.children.length>0&&D.months[prevKey]){
@@ -2230,6 +2369,7 @@ function updateDashboard(){
   (D.config.categories||[]).forEach(cat=>{
     if(cat.isChildrenCategory&&D.config.children.length===0)return;
     if(cat.id==='pet'&&(!D.config.pet||!D.config.pet.enabled))return;
+    if(cat.id==='events'&&!(D.config.events||[]).some(e=>e.enabled))return;
     const cd=data.expenses[cat.name];if(!cd)return;
     let a=0;cd.items.forEach(i=>{a+=(i.amount||0)});
     const b=cd.budget||0;
@@ -2326,6 +2466,7 @@ function renderHealthScore(income,expenses,savings){
   (D.config.categories||[]).forEach(cat=>{
     if(cat.isChildrenCategory&&D.config.children.length===0)return;
     if(cat.id==='pet'&&(!D.config.pet||!D.config.pet.enabled))return;
+    if(cat.id==='events'&&!(D.config.events||[]).some(e=>e.enabled))return;
     const cd=data.expenses[cat.name];if(!cd)return;
     const p=cd.budget||0;
     let a=0;cd.items.forEach(i=>{a+=(i.amount||0)});
@@ -2829,6 +2970,7 @@ function renderAdmin(){
       ${(D.config.categories||[]).filter(cat=>{
         if(cat.isChildrenCategory&&D.config.children.length===0)return false;
         if(cat.id==='pet'&&(!D.config.pet||!D.config.pet.enabled))return false;
+        if(cat.id==='events')return false;
         return true;
       }).map((cat,i)=>{const ci=(D.config.categories||[]).indexOf(cat);return`
         <li>
@@ -2855,6 +2997,29 @@ function renderAdmin(){
       `).join('')}
     </ul>
     <button class="add-item-btn" onclick="D.config.incomeSources.push({name:'',defaultAmount:0});saveData();renderAdmin()">+ הוסף מקור</button>
+  </div>`;
+
+  // Events Management
+  html+=`<div class="admin-section">
+    <h3>📅 אירועים ותאריכים</h3>
+    <p style="font-size:.78rem;color:var(--text-secondary);margin-bottom:10px">אירועים שנתיים שיופיעו אוטומטית בתקציב החודשי</p>
+    ${(D.config.events||[]).length>0?`<ul class="admin-list">
+      ${(D.config.events||[]).map((evt,i)=>`
+        <li style="flex-wrap:wrap;gap:6px">
+          <span style="font-size:1.2rem;flex-shrink:0">${esc(evt.emoji||'📅')}</span>
+          <div style="flex:1;min-width:100px">
+            <div style="font-weight:600;font-size:.85rem">${esc(evt.name)}</div>
+            <div style="font-size:.72rem;color:var(--text-secondary)">${evt.day?evt.day+' ':''}${HM[evt.month-1]} · ${fc(evt.estimatedBudget)}</div>
+          </div>
+          <label style="font-size:.72rem;display:flex;align-items:center;gap:3px;cursor:pointer;flex-shrink:0">
+            <input type="checkbox" ${evt.enabled?'checked':''} onchange="toggleEvent(${i},this.checked)"> פעיל
+          </label>
+          <button class="btn-sm" onclick="editEvent(${i})" style="flex-shrink:0">✏️</button>
+          <button class="btn-sm danger" onclick="removeEvent(${i})" style="flex-shrink:0">✕</button>
+        </li>
+      `).join('')}
+    </ul>`:'<p style="color:var(--text-light);font-size:.82rem;padding:8px 0">אין אירועים. הוסיפו ימי הולדת, חגים ואירועים שנתיים</p>'}
+    <button class="add-item-btn" onclick="addEvent()">+ הוסף אירוע</button>
   </div>`;
 
   // Reset / Wizard
@@ -3167,6 +3332,29 @@ function copyBudget(){
     });
   }
   saveData();renderBudget();closeModal();toast('תקציב הועתק');
+}
+
+function downloadImportTemplate(){
+  if(typeof XLSX==='undefined'){toast('SheetJS לא נטען');return}
+  const wb=XLSX.utils.book_new();
+  const cats=D.config.categories||[];
+  const rows=[['תבנית ייבוא — תקציב משפחתי'],[''],['הוראות: מלאו סכומים בעמודה B ליד כל פריט. ניתן להוסיף פריטים חדשים.'],['']];
+  cats.forEach(cat=>{
+    if(cat.isChildrenCategory&&D.config.children.length===0)return;
+    if(cat.id==='pet'&&(!D.config.pet||!D.config.pet.enabled))return;
+    if(cat.id==='events')return;
+    rows.push([`${cat.icon} ${cat.name}`,'']);
+    (cat.items||[]).forEach(item=>{
+      const name=typeof item==='string'?item:item.name;
+      rows.push([name,0]);
+    });
+    rows.push(['']);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:30},{wch:15}];
+  XLSX.utils.book_append_sheet(wb,ws,'תבנית');
+  XLSX.writeFile(wb,'תבנית_ייבוא_תקציב.xlsx');
+  toast('תבנית הורדה בהצלחה');
 }
 
 // ===== EXCEL EXPORT =====
@@ -3704,22 +3892,12 @@ let skipFirebaseSync=false; // prevent re-render loops
 let userFamilies=[]; // [{familyId, name, role:'admin'|'member', createdAt}]
 
 // ===== FIREBASE CONFIG =====
-const DEFAULT_FB_CONFIG={
-  apiKey:"AIzaSyBHc93GqulX-akadMy21WxkvxWyHMD6k_I",
-  authDomain:"budgettoolauth.firebaseapp.com",
-  databaseURL:"https://budgettoolauth-default-rtdb.firebaseio.com",
-  projectId:"budgettoolauth",
-  storageBucket:"budgettoolauth.firebasestorage.app",
-  messagingSenderId:"84493564363",
-  appId:"1:84493564363:web:5589784749c651faae9e4e"
-};
-
 function loadFirebaseConfig(){
   try{
     const raw=localStorage.getItem('familyBudget_firebaseConfig');
     if(raw)return JSON.parse(raw);
   }catch(e){}
-  return DEFAULT_FB_CONFIG;
+  return null;
 }
 function saveFirebaseConfig(cfg){
   localStorage.setItem('familyBudget_firebaseConfig',JSON.stringify(cfg));
@@ -4021,6 +4199,7 @@ function ensureDataIntegrity(d){
   if(!Array.isArray(d.config.categories)||d.config.categories.length===0)d.config.categories=fresh.config.categories;
   if(!Array.isArray(d.config.children))d.config.children=[];
   if(!Array.isArray(d.config.incomeSources))d.config.incomeSources=[];
+  if(!Array.isArray(d.config.events))d.config.events=[];
   // Ensure each category has items array
   d.config.categories.forEach(c=>{
     if(!Array.isArray(c.items))c.items=[];
@@ -4037,6 +4216,13 @@ function ensureDataIntegrity(d){
       if(insertIdx>=0)d.config.categories.splice(insertIdx,0,newCat);
       else d.config.categories.push(newCat);
     }
+  }
+  // Add events category if not present
+  if(!d.config.categories.find(c=>c.id==='events')){
+    const insertIdx=d.config.categories.findIndex(c=>c.id==='unexpected');
+    const newCat={id:'events',name:'אירועים',icon:'📅',order:insertIdx>=0?insertIdx:d.config.categories.length,items:[]};
+    if(insertIdx>=0)d.config.categories.splice(insertIdx,0,newCat);
+    else d.config.categories.push(newCat);
   }
   // Months
   if(!d.months||typeof d.months!=='object')d.months={};
@@ -4517,6 +4703,130 @@ async function leaveFamily(familyId){
       showFamilyManager();
     }
   }catch(e){toast('שגיאה: '+e.message);console.error('Leave family error:',e)}
+}
+
+// ===== EVENTS MANAGEMENT =====
+function addEvent(){
+  const p1=D.config.partner1||'שותף 1',p2=D.config.partner2||'שותף 2';
+  const monthOpts=HM.map((m,i)=>`<option value="${i+1}">${m}</option>`).join('');
+  showModal(`<h3 style="margin-bottom:12px">📅 הוסף אירוע שנתי</h3>
+    <div class="modal-field"><label class="modal-label">שם האירוע</label><input class="modal-input" id="eventName" placeholder="לדוגמה: יום הולדת שחר" dir="rtl"></div>
+    <div class="modal-field"><label class="modal-label">אימוג'י</label><input class="modal-input" id="eventEmoji" value="🎂" style="width:60px;text-align:center"></div>
+    <div style="display:flex;gap:10px">
+      <div class="modal-field" style="flex:1"><label class="modal-label">חודש</label><select class="modal-input" id="eventMonth">${monthOpts}</select></div>
+      <div class="modal-field" style="flex:1"><label class="modal-label">יום (אופציונלי)</label><input class="modal-input ltr" type="number" id="eventDay" min="0" max="31" value="0" style="text-align:center"></div>
+    </div>
+    <div class="modal-field"><label class="modal-label">תקציב משוער</label><input class="modal-input ltr" type="number" id="eventBudget" min="0" value="0" style="text-align:center"></div>
+    <div class="modal-field"><label class="modal-label">שייך ל:</label>
+      <select class="modal-input" id="eventOwner">
+        <option value="shared">🤝 משותף</option>
+        <option value="partner1">${esc(p1)}</option>
+        <option value="partner2">${esc(p2)}</option>
+      </select></div>
+    <div class="modal-actions" style="margin-top:14px">
+      <button class="modal-btn primary" onclick="confirmAddEvent()">הוסף</button>
+      <button class="modal-btn cancel" onclick="closeModal()">ביטול</button>
+    </div>`);
+}
+
+function confirmAddEvent(){
+  const name=(document.getElementById('eventName')?.value||'').trim();
+  if(!name){toast('נא להזין שם אירוע');return}
+  if(!D.config.events)D.config.events=[];
+  D.config.events.push({
+    id:uid(),name,
+    emoji:(document.getElementById('eventEmoji')?.value||'').trim()||'📅',
+    month:parseInt(document.getElementById('eventMonth')?.value)||1,
+    day:parseInt(document.getElementById('eventDay')?.value)||0,
+    estimatedBudget:Math.max(0,parseInt(document.getElementById('eventBudget')?.value)||0),
+    owner:document.getElementById('eventOwner')?.value||'shared',
+    enabled:true
+  });
+  saveData();closeModal();renderAdmin();
+  toast(`אירוע "${name}" נוסף`);
+}
+
+function editEvent(idx){
+  const evt=D.config.events[idx];if(!evt)return;
+  window._editEventIdx=idx;
+  const p1=D.config.partner1||'שותף 1',p2=D.config.partner2||'שותף 2';
+  const monthOpts=HM.map((m,i)=>`<option value="${i+1}"${evt.month===i+1?' selected':''}>${m}</option>`).join('');
+  showModal(`<h3 style="margin-bottom:12px">✏️ עריכת אירוע</h3>
+    <div class="modal-field"><label class="modal-label">שם האירוע</label><input class="modal-input" id="eventName" value="${esc(evt.name)}" dir="rtl"></div>
+    <div class="modal-field"><label class="modal-label">אימוג'י</label><input class="modal-input" id="eventEmoji" value="${esc(evt.emoji)}" style="width:60px;text-align:center"></div>
+    <div style="display:flex;gap:10px">
+      <div class="modal-field" style="flex:1"><label class="modal-label">חודש</label><select class="modal-input" id="eventMonth">${monthOpts}</select></div>
+      <div class="modal-field" style="flex:1"><label class="modal-label">יום</label><input class="modal-input ltr" type="number" id="eventDay" min="0" max="31" value="${evt.day||0}" style="text-align:center"></div>
+    </div>
+    <div class="modal-field"><label class="modal-label">תקציב משוער</label><input class="modal-input ltr" type="number" id="eventBudget" min="0" value="${evt.estimatedBudget||0}" style="text-align:center"></div>
+    <div class="modal-field"><label class="modal-label">שייך ל:</label>
+      <select class="modal-input" id="eventOwner">
+        <option value="shared"${evt.owner==='shared'?' selected':''}>🤝 משותף</option>
+        <option value="partner1"${evt.owner==='partner1'?' selected':''}>${esc(p1)}</option>
+        <option value="partner2"${evt.owner==='partner2'?' selected':''}>${esc(p2)}</option>
+      </select></div>
+    <div class="modal-actions" style="margin-top:14px">
+      <button class="modal-btn primary" onclick="confirmEditEvent()">עדכן</button>
+      <button class="modal-btn cancel" onclick="closeModal()">ביטול</button>
+    </div>`);
+}
+
+function confirmEditEvent(){
+  const idx=window._editEventIdx;
+  const evt=D.config.events[idx];if(!evt)return;
+  const name=(document.getElementById('eventName')?.value||'').trim();
+  if(!name){toast('נא להזין שם');return}
+  const oldMonth=evt.month;
+  evt.name=name;
+  evt.emoji=(document.getElementById('eventEmoji')?.value||'').trim()||'📅';
+  evt.month=parseInt(document.getElementById('eventMonth')?.value)||1;
+  evt.day=parseInt(document.getElementById('eventDay')?.value)||0;
+  evt.estimatedBudget=Math.max(0,parseInt(document.getElementById('eventBudget')?.value)||0);
+  evt.owner=document.getElementById('eventOwner')?.value||'shared';
+  // Clean up items from old month if month changed
+  if(oldMonth!==evt.month){
+    Object.entries(D.months).forEach(([k,md])=>{
+      const [,ms]=k.split('-');
+      if(parseInt(ms)===oldMonth){
+        Object.values(md.expenses||{}).forEach(cat=>{
+          cat.items=(cat.items||[]).filter(i=>i.eventId!==evt.id);
+        });
+      }
+    });
+  }
+  // Update name/emoji in existing items
+  Object.values(D.months).forEach(md=>{
+    Object.values(md.expenses||{}).forEach(cat=>{
+      (cat.items||[]).forEach(i=>{
+        if(i.eventId===evt.id)i.name=(evt.emoji||'📅')+' '+evt.name;
+      });
+    });
+  });
+  saveData();closeModal();renderAdmin();renderBudget();
+  toast(`אירוע "${name}" עודכן`);
+}
+
+function toggleEvent(idx,enabled){
+  D.config.events[idx].enabled=enabled;
+  saveData();renderAdmin();
+}
+
+function removeEvent(idx){
+  const evt=D.config.events[idx];
+  showModal(`<h3>⚠️ מחיקת אירוע</h3>
+    <p style="font-size:.88rem">למחוק את <strong>${esc(evt.emoji)} ${esc(evt.name)}</strong>?</p>
+    <p style="font-size:.78rem;color:var(--text-secondary)">פריטים שכבר נוצרו בחודשים קיימים יישארו.</p>
+    <div class="modal-actions" style="margin-top:14px">
+      <button class="modal-btn" style="background:var(--danger);color:#fff" onclick="confirmRemoveEvent(${idx})">מחק</button>
+      <button class="modal-btn cancel" onclick="closeModal()">ביטול</button>
+    </div>`);
+}
+
+function confirmRemoveEvent(idx){
+  const name=D.config.events[idx].name;
+  D.config.events.splice(idx,1);
+  saveData();closeModal();renderAdmin();
+  toast(`אירוע "${name}" נמחק`);
 }
 
 // ===== INITIALIZATION =====
