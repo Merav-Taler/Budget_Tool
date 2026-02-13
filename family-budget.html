@@ -321,6 +321,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);direction:rt
 .income-source-input:hover{border-color:var(--border);background:var(--border-light)}
 .income-source-input:focus{outline:none;border-color:var(--primary);background:var(--primary-bg);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
 .misc-label{font-weight:500;padding-right:4px}
+.trend-btn{font-size:.65rem;cursor:pointer;opacity:0;margin-right:4px;transition:opacity .2s;vertical-align:middle}
+.item-name:hover .trend-btn{opacity:.6}
+.trend-btn:hover{opacity:1!important}
 .provider-text{font-size:.7rem;color:var(--text-secondary);cursor:pointer;display:none;line-height:1.2;margin-top:1px}
 .provider-text.has-provider{display:block}
 .item-name:hover .provider-text{display:block}
@@ -539,6 +542,9 @@ body{padding-bottom:0;background:#fff}
 <div class="month-nav-btns">
 <button class="month-nav-btn" onclick="navMonth(1)" title="חודש הבא">◀</button>
 <button class="month-nav-btn" onclick="navMonth(-1)" title="חודש קודם">▶</button>
+<button class="month-nav-btn" onclick="showCopyStructure()" title="העתק מבנה מחודש קודם" style="font-size:.8rem">📋</button>
+<button class="month-nav-btn" onclick="showRecommendedBudget()" title="תקציב מומלץ" style="font-size:.8rem">🎯</button>
+<button class="month-nav-btn" onclick="showCrossSearch()" title="חיפוש חוצה חודשים" style="font-size:.8rem">🔍</button>
 </div>
 </div>
 <div class="section-title">💳 הוצאות <button class="section-add-btn" onclick="addCategory()" title="הוסף קטגוריה">+</button></div>
@@ -653,6 +659,8 @@ body{padding-bottom:0;background:#fff}
 <button class="dm-btn" onclick="showCopyModal()"><span class="dm-icon">📋</span><span class="dm-label">העתקת תקציב</span></button>
 <button class="dm-btn" onclick="exportTemplate()"><span class="dm-icon">🔗</span><span class="dm-label">שתף תבנית</span></button>
 <button class="dm-btn" onclick="document.getElementById('bankFileInput').click()"><span class="dm-icon">🏦</span><span class="dm-label">טעינת דף חשבון</span></button>
+<button class="dm-btn" onclick="exportPDF('month')"><span class="dm-icon">📄</span><span class="dm-label">PDF חודשי</span></button>
+<button class="dm-btn" onclick="exportPDF('year')"><span class="dm-icon">📄</span><span class="dm-label">PDF שנתי</span></button>
 </div>
 <input type="file" id="importInput" accept=".json" style="display:none" onchange="importJSON(event)">
 <input type="file" id="excelImportInput" accept=".xlsx,.xls" style="display:none" onchange="importExcel(event)">
@@ -1734,7 +1742,7 @@ function renderBudget(){
           const isSub=ii>0&&grp(items[ii-1])===grp(item)&&item.group;
           return `<tr style="${isFixed?'background:var(--border-light);':''}${isEvt?'background:var(--warning-bg);':''}${isSub?'border-top:1px dashed var(--border);':''}">
             <td class="owner-cell">${ownerBadge(item.owner||'shared',catDef.name,ii,'expense')}</td>
-            <td class="item-name"><div style="display:flex;align-items:center;gap:6px">${isEvt?'<span style="font-size:.85rem;cursor:help" title="אירוע שנתי">📅</span>':(isSub?'<span style="width:32px;flex-shrink:0;text-align:center;color:var(--text-light);font-size:.75rem">┗</span>':`<button class="lock-btn${isFixed?' locked':''}" onclick="toggleFixed(this.closest('[data-cat]').dataset.cat,${ii})" title="${isFixed?'נעול — לחצי לשחרור':'לחצי לנעול כהוצאה קבועה'}">${isFixed?'🔒':'🔓'}</button>`)}<div>${isSub?`<span style="font-size:.85rem">${esc(item.name)}</span>`:`${esc(item.name)}<span class="provider-text${item.provider?' has-provider':''}" onclick="setProvider(this.closest('[data-cat]').dataset.cat,${ii})">${item.provider?'🏢 '+esc(item.provider):'+ ספק'}</span>`}</div></div></td>
+            <td class="item-name"><div style="display:flex;align-items:center;gap:6px">${isEvt?'<span style="font-size:.85rem;cursor:help" title="אירוע שנתי">📅</span>':(isSub?'<span style="width:32px;flex-shrink:0;text-align:center;color:var(--text-light);font-size:.75rem">┗</span>':`<button class="lock-btn${isFixed?' locked':''}" onclick="toggleFixed(this.closest('[data-cat]').dataset.cat,${ii})" title="${isFixed?'נעול — לחצי לשחרור':'לחצי לנעול כהוצאה קבועה'}">${isFixed?'🔒':'🔓'}</button>`)}<div>${isSub?`<span style="font-size:.85rem">${esc(item.name)}</span>`:`${esc(item.name)}<span class="trend-btn" onclick="event.stopPropagation();showItemTrend(this.closest('[data-cat]').dataset.cat,'${esc(item.name).replace(/'/g,"\\'")}')">📈</span><span class="provider-text${item.provider?' has-provider':''}" onclick="setProvider(this.closest('[data-cat]').dataset.cat,${ii})">${item.provider?'🏢 '+esc(item.provider):'+ ספק'}</span>`}</div></div></td>
             <td class="number-cell"><input class="num-input" type="number" min="0" value="${item.amount||0}" oninput="updateItem(this.closest('[data-cat]').dataset.cat,${ii},this.value)" onfocus="this.select()"></td>
             <td class="actions-cell"><div class="actions-cell-inner"><button class="add-row-btn" onclick="quickAddRow(this.closest('[data-cat]').dataset.cat,${ii})" title="שכפל שורה">➕</button><button class="move-btn" onclick="moveItem(this.closest('[data-cat]').dataset.cat,${ii})" title="העבר לקטגוריה אחרת"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/><path d="M12 11v6m0 0l-3-3m3 3l3-3"/></svg></button><button class="delete-btn" onclick="removeItem(this.closest('[data-cat]').dataset.cat,${ii})">✕</button></div></td>
           </tr>`;
@@ -3713,6 +3721,305 @@ function copyBudget(){
     });
   }
   saveData();renderBudget();closeModal();toast('תקציב הועתק');
+}
+
+// ===== COPY MONTH STRUCTURE (without amounts) =====
+function showCopyStructure(){
+  const months=Object.keys(D.months).sort().reverse();
+  if(!months.length){toast('אין חודשים קודמים');return}
+  const curKey=mk(curMonth,curYear);
+  const opts=months.filter(k=>k!==curKey).map(k=>{const[y,m]=k.split('-');return`<option value="${k}">${HM[parseInt(m)-1]} ${y}</option>`}).join('');
+  if(!opts){toast('אין חודשים אחרים');return}
+  showModal(`<h3>📋 העתק מבנה חודש</h3>
+    <p style="font-size:.82rem;color:var(--text-secondary)">מעתיק את כל הקטגוריות, הפריטים והתקציבים — <strong>בלי</strong> הסכומים בפועל</p>
+    <div class="modal-field"><label>מחודש:</label><select class="modal-input" id="copyStructSrc">${opts}</select></div>
+    <div class="modal-field"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="copyStructBudgets" checked> העתק גם תקציבים לקטגוריות</label></div>
+    <div class="modal-field"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="copyStructIncome" checked> העתק גם מקורות הכנסה</label></div>
+    <div class="modal-actions"><button class="modal-btn primary" onclick="doCopyStructure()">העתק</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
+}
+function doCopyStructure(){
+  pushUndo();
+  const sk=document.getElementById('copyStructSrc').value;
+  const copyBudgets=document.getElementById('copyStructBudgets').checked;
+  const copyIncome=document.getElementById('copyStructIncome').checked;
+  const src=D.months[sk];if(!src)return;
+  const tgt=getMonth(mk(curMonth,curYear));
+  Object.entries(src.expenses||{}).forEach(([cn,cd])=>{
+    if(!tgt.expenses[cn]){tgt.expenses[cn]={budget:0,items:[]}}
+    if(copyBudgets)tgt.expenses[cn].budget=cd.budget||0;
+    (cd.items||[]).forEach(si=>{
+      const exists=tgt.expenses[cn].items.find(i=>i.name===si.name);
+      if(!exists){
+        const newItem={name:si.name,amount:0,isDefault:si.isDefault,owner:si.owner||'shared'};
+        if(si.fixed){newItem.fixed=true;newItem.amount=si.amount||0}
+        if(si.provider)newItem.provider=si.provider;
+        if(si.group)newItem.group=si.group;
+        tgt.expenses[cn].items.push(newItem);
+      }
+    });
+  });
+  if(copyIncome&&src.income){
+    src.income.forEach(si=>{
+      const exists=tgt.income.find(i=>i.source===si.source);
+      if(!exists){
+        const newInc={source:si.source,amount:0,owner:si.owner||'shared'};
+        if(si.fixed){newInc.fixed=true;newInc.amount=si.amount||0}
+        tgt.income.push(newInc);
+      }
+    });
+  }
+  saveData();renderBudget();closeModal();
+  toast(`מבנה ${sk.split('-').reverse().map((v,i)=>i?HM[parseInt(v)-1]:v).join(' ')} הועתק`);
+}
+
+// ===== RECOMMENDED BUDGET =====
+function showRecommendedBudget(){
+  const allKeys=Object.keys(D.months).sort().reverse();
+  const curKey=mk(curMonth,curYear);
+  const pastKeys=allKeys.filter(k=>k<curKey).slice(0,6);
+  if(pastKeys.length<1){toast('אין מספיק היסטוריה להמלצות');return}
+  const catAvgs={};
+  pastKeys.forEach(k=>{
+    const m=D.months[k];
+    Object.entries(m.expenses||{}).forEach(([cn,cd])=>{
+      if(!catAvgs[cn])catAvgs[cn]={totals:[],budgets:[]};
+      let spent=0;(cd.items||[]).forEach(i=>spent+=(i.amount||0));
+      catAvgs[cn].totals.push(spent);
+      catAvgs[cn].budgets.push(cd.budget||0);
+    });
+  });
+  let html='<h3>🎯 תקציב מומלץ</h3>';
+  html+=`<p style="font-size:.82rem;color:var(--text-secondary);margin-bottom:14px">מבוסס על ממוצע ${pastKeys.length} חודשים אחרונים</p>`;
+  html+='<div style="max-height:400px;overflow-y:auto">';
+  html+='<table style="width:100%;border-collapse:collapse;font-size:.85rem"><thead><tr style="border-bottom:2px solid var(--border)"><th style="text-align:right;padding:8px">קטגוריה</th><th style="text-align:center;padding:8px">ממוצע הוצאות</th><th style="text-align:center;padding:8px">תקציב נוכחי</th><th style="text-align:center;padding:8px">מומלץ</th><th style="padding:8px"></th></tr></thead><tbody>';
+  const tgtKey=mk(curMonth,curYear);const tgt=getMonth(tgtKey);
+  Object.entries(catAvgs).forEach(([cn,data])=>{
+    const avgSpent=Math.round(data.totals.reduce((a,b)=>a+b,0)/data.totals.length);
+    const recommended=Math.round(avgSpent*1.1/100)*100; // +10% buffer, rounded to 100
+    const curBudget=tgt.expenses[cn]?.budget||0;
+    const diff=recommended-curBudget;
+    const diffClass=diff>0?'color:var(--danger)':'color:var(--success)';
+    html+=`<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:8px;font-weight:500">${esc(cn)}</td>
+      <td style="padding:8px;text-align:center;direction:ltr">${fc(avgSpent)}</td>
+      <td style="padding:8px;text-align:center;direction:ltr">${fc(curBudget)}</td>
+      <td style="padding:8px;text-align:center;direction:ltr;font-weight:600">${fc(recommended)}</td>
+      <td style="padding:8px"><button class="btn-sm" onclick="applyRecommended('${esc(cn)}',${recommended})" style="font-size:.75rem">החל</button></td>
+    </tr>`;
+  });
+  html+='</tbody></table></div>';
+  html+=`<div class="modal-actions" style="margin-top:14px"><button class="modal-btn primary" onclick="applyAllRecommended()">החל הכל</button><button class="modal-btn cancel" onclick="closeModal()">סגור</button></div>`;
+  window._recommendedBudgets=catAvgs;
+  showModal(html);
+}
+function applyRecommended(catName,amount){
+  pushUndo();
+  const tgt=getMonth(mk(curMonth,curYear));
+  if(tgt.expenses[catName])tgt.expenses[catName].budget=amount;
+  saveData();renderBudget();toast(`תקציב ${catName}: ${fc(amount)}`);
+}
+function applyAllRecommended(){
+  pushUndo();
+  const tgt=getMonth(mk(curMonth,curYear));
+  Object.entries(window._recommendedBudgets||{}).forEach(([cn,data])=>{
+    const avgSpent=Math.round(data.totals.reduce((a,b)=>a+b,0)/data.totals.length);
+    const recommended=Math.round(avgSpent*1.1/100)*100;
+    if(tgt.expenses[cn])tgt.expenses[cn].budget=recommended;
+  });
+  saveData();renderBudget();closeModal();toast('כל התקציבים עודכנו');
+}
+
+// ===== ITEM TREND CHART =====
+function showItemTrend(catName,itemName){
+  const allKeys=Object.keys(D.months).sort();
+  const last12=allKeys.slice(-12);
+  const labels=[];const values=[];
+  last12.forEach(k=>{
+    const[y,m]=k.split('-');
+    labels.push(HM[parseInt(m)-1]+' '+y.slice(2));
+    const md=D.months[k];
+    let total=0;
+    if(md.expenses&&md.expenses[catName]){
+      (md.expenses[catName].items||[]).forEach(i=>{
+        if(i.name===itemName||(i.group&&i.group===itemName))total+=(i.amount||0);
+      });
+    }
+    values.push(total);
+  });
+  if(values.every(v=>v===0)){toast('אין נתונים להצגה');return}
+  const avg=Math.round(values.filter(v=>v>0).reduce((a,b)=>a+b,0)/Math.max(values.filter(v=>v>0).length,1));
+  const max=Math.max(...values);const min=Math.min(...values.filter(v=>v>0));
+  showModal(`<h3>📈 מגמות: ${esc(itemName)}</h3>
+    <p style="font-size:.78rem;color:var(--text-secondary)">קטגוריה: ${esc(catName)} · ${last12.length} חודשים אחרונים</p>
+    <div style="display:flex;gap:12px;margin:12px 0;font-size:.82rem">
+      <span style="background:var(--primary-bg);padding:4px 10px;border-radius:6px">ממוצע: <strong>${fc(avg)}</strong></span>
+      <span style="background:var(--success-bg);padding:4px 10px;border-radius:6px">מינימום: <strong>${fc(min)}</strong></span>
+      <span style="background:var(--danger-bg);padding:4px 10px;border-radius:6px">מקסימום: <strong>${fc(max)}</strong></span>
+    </div>
+    <canvas id="trendChart" width="500" height="250"></canvas>
+    <div class="modal-actions"><button class="modal-btn cancel" onclick="closeModal()">סגור</button></div>`);
+  setTimeout(()=>{
+    const ctx=document.getElementById('trendChart');
+    if(!ctx||typeof Chart==='undefined')return;
+    new Chart(ctx,{type:'line',data:{labels,datasets:[{
+      label:itemName,data:values,borderColor:'#6366F1',backgroundColor:'rgba(99,102,241,.15)',
+      fill:true,tension:.3,pointRadius:4,pointBackgroundColor:'#6366F1'
+    },{
+      label:'ממוצע',data:values.map(()=>avg),borderColor:'#F59E0B',borderDash:[6,4],pointRadius:0,borderWidth:2
+    }]},options:{responsive:true,plugins:{legend:{display:true,labels:{font:{family:'Heebo'}}},tooltip:{callbacks:{label:c=>fc(c.raw)}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>fc(v)}},x:{ticks:{font:{size:10}}}}}});
+  },200);
+}
+
+// ===== CROSS-MONTH SEARCH =====
+function showCrossSearch(){
+  showModal(`<h3>🔍 חיפוש חוצה חודשים</h3>
+    <div class="modal-field"><input class="modal-input" type="text" id="crossSearchQ" placeholder="חפש הוצאה, ספק, קטגוריה..." oninput="doCrossSearch()" onkeyup="if(event.key==='Escape')closeModal()"></div>
+    <div id="crossSearchResults" style="max-height:400px;overflow-y:auto;font-size:.85rem"></div>
+    <div class="modal-actions"><button class="modal-btn cancel" onclick="closeModal()">סגור</button></div>`);
+  setTimeout(()=>{const i=document.getElementById('crossSearchQ');if(i)i.focus()},200);
+}
+function doCrossSearch(){
+  const q=(document.getElementById('crossSearchQ')?.value||'').trim().toLowerCase();
+  const el=document.getElementById('crossSearchResults');
+  if(!el)return;
+  if(q.length<2){el.innerHTML='<p style="color:var(--text-light);text-align:center;padding:16px">הקלידו לפחות 2 תווים</p>';return}
+  const results=[];
+  Object.keys(D.months).sort().reverse().forEach(key=>{
+    const[y,m]=key.split('-');const ml=HM[parseInt(m)-1]+' '+y;
+    const md=D.months[key];
+    Object.entries(md.expenses||{}).forEach(([cn,cd])=>{
+      (cd.items||[]).forEach(item=>{
+        const match=(item.name||'').toLowerCase().includes(q)||(item.provider||'').toLowerCase().includes(q)||cn.toLowerCase().includes(q);
+        if(match&&(item.amount||0)>0){
+          results.push({month:ml,key,cat:cn,name:item.name,provider:item.provider,amount:item.amount||0,type:'expense'});
+        }
+      });
+    });
+    (md.income||[]).forEach(inc=>{
+      if((inc.source||'').toLowerCase().includes(q)&&(inc.amount||0)>0){
+        results.push({month:ml,key,cat:'הכנסות',name:inc.source,amount:inc.amount||0,type:'income'});
+      }
+    });
+  });
+  if(!results.length){el.innerHTML='<p style="color:var(--text-light);text-align:center;padding:16px">לא נמצאו תוצאות</p>';return}
+  // Group by item name and show summary
+  const grouped={};let totalAll=0;
+  results.forEach(r=>{
+    const gk=r.name;
+    if(!grouped[gk])grouped[gk]={total:0,count:0,months:[]};
+    grouped[gk].total+=r.amount;grouped[gk].count++;totalAll+=r.amount;
+    grouped[gk].months.push(r);
+  });
+  let html=`<div style="background:var(--primary-bg);padding:8px 12px;border-radius:8px;margin-bottom:10px;display:flex;justify-content:space-between">
+    <span><strong>${results.length}</strong> תוצאות</span><span>סה״כ: <strong>${fc(totalAll)}</strong></span></div>`;
+  html+='<table style="width:100%;border-collapse:collapse"><thead><tr style="border-bottom:2px solid var(--border)"><th style="text-align:right;padding:6px">חודש</th><th style="text-align:right;padding:6px">קטגוריה</th><th style="text-align:right;padding:6px">פריט</th><th style="text-align:center;padding:6px">סכום</th></tr></thead><tbody>';
+  results.slice(0,50).forEach(r=>{
+    html+=`<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:6px;white-space:nowrap">${esc(r.month)}</td>
+      <td style="padding:6px">${esc(r.cat)}</td>
+      <td style="padding:6px">${esc(r.name)}${r.provider?` <span style="font-size:.75rem;color:var(--text-light)">(${esc(r.provider)})</span>`:''}</td>
+      <td style="padding:6px;text-align:center;direction:ltr;font-weight:500;color:${r.type==='income'?'var(--success)':'var(--text)'}">${fc(r.amount)}</td>
+    </tr>`;
+  });
+  html+='</tbody></table>';
+  if(results.length>50)html+=`<p style="text-align:center;color:var(--text-light);padding:8px">מציג 50 מתוך ${results.length}</p>`;
+  el.innerHTML=html;
+}
+
+// ===== PDF EXPORT =====
+function exportPDF(mode){
+  const w=window.open('','_blank');
+  if(!w){toast('נא לאפשר חלונות קופצים');return}
+  const p1=D.config.partner1||'',p2=D.config.partner2||'';
+  const title=D.config.soloMode?`${p1} — תקציב`:`${p1} ו${p2} — תקציב משפחתי`;
+  let body='';
+  if(mode==='month'){
+    const key=mk(curMonth,curYear);const data=getMonth(key);
+    const monthLabel=HM[curMonth]+' '+curYear;
+    body+=`<h2>${monthLabel}</h2>`;
+    // Income
+    let totalIncome=0;
+    body+='<h3>💵 הכנסות</h3><table><thead><tr><th>מקור</th><th>סכום</th></tr></thead><tbody>';
+    (data.income||[]).forEach(i=>{totalIncome+=(i.amount||0);body+=`<tr><td>${esc(i.source)}${i.fixed?' 🔒':''}</td><td class="num">${fc(i.amount||0)}</td></tr>`});
+    body+=`</tbody><tfoot><tr><td><strong>סה״כ הכנסות</strong></td><td class="num"><strong>${fc(totalIncome)}</strong></td></tr></tfoot></table>`;
+    // Expenses per category
+    let totalExpenses=0;
+    body+='<h3>💳 הוצאות</h3>';
+    Object.entries(data.expenses||{}).forEach(([cn,cd])=>{
+      let catTotal=0;
+      body+=`<h4>${esc(cn)} (תקציב: ${fc(cd.budget||0)})</h4><table><thead><tr><th>פריט</th><th>סכום</th></tr></thead><tbody>`;
+      (cd.items||[]).forEach(i=>{
+        catTotal+=(i.amount||0);
+        body+=`<tr><td>${esc(i.name)}${i.provider?' — '+esc(i.provider):''}${i.fixed?' 🔒':''}</td><td class="num">${fc(i.amount||0)}</td></tr>`;
+      });
+      totalExpenses+=catTotal;
+      const diff=(cd.budget||0)-catTotal;
+      body+=`</tbody><tfoot><tr><td><strong>סה״כ ${esc(cn)}</strong></td><td class="num"><strong>${fc(catTotal)}</strong></td></tr></tfoot></table>`;
+    });
+    // Misc
+    let miscTotal=0;
+    const misc=data.misc||{};
+    if(Object.keys(misc).length>0){
+      body+='<h4>📦 הוצאות אחרות</h4><table><tbody>';
+      Object.entries(misc).forEach(([n,v])=>{miscTotal+=(Number(v)||0);body+=`<tr><td>${esc(n)}</td><td class="num">${fc(Number(v)||0)}</td></tr>`});
+      body+=`</tbody><tfoot><tr><td><strong>סה״כ שונות</strong></td><td class="num"><strong>${fc(miscTotal)}</strong></td></tr></tfoot></table>`;
+    }
+    // Summary
+    const balance=totalIncome-totalExpenses-miscTotal;
+    body+=`<div class="summary"><h3>מאזן חודשי</h3><p>הכנסות: ${fc(totalIncome)} | הוצאות: ${fc(totalExpenses+miscTotal)} | <strong style="color:${balance>=0?'#16A34A':'#EF4444'}">יתרה: ${fc(balance)}</strong></p></div>`;
+  }else{
+    // Yearly report
+    const year=curYear;
+    body+=`<h2>דוח שנתי — ${year}</h2>`;
+    const monthKeys=[];for(let m=0;m<12;m++){const k=year+'-'+String(m+1).padStart(2,'0');if(D.months[k])monthKeys.push(k)}
+    if(!monthKeys.length){body+='<p>אין נתונים לשנה זו</p>'}
+    else{
+      body+='<table><thead><tr><th>חודש</th><th>הכנסות</th><th>הוצאות</th><th>יתרה</th></tr></thead><tbody>';
+      let yInc=0,yExp=0;
+      monthKeys.forEach(k=>{
+        const[y,m]=k.split('-');const md=D.months[k];
+        let inc=0,exp=0;
+        (md.income||[]).forEach(i=>inc+=(i.amount||0));
+        Object.values(md.expenses||{}).forEach(cd=>(cd.items||[]).forEach(i=>exp+=(i.amount||0)));
+        Object.values(md.misc||{}).forEach(v=>exp+=(Number(v)||0));
+        yInc+=inc;yExp+=exp;
+        const bal=inc-exp;
+        body+=`<tr><td>${HM[parseInt(m)-1]}</td><td class="num">${fc(inc)}</td><td class="num">${fc(exp)}</td><td class="num" style="color:${bal>=0?'#16A34A':'#EF4444'}">${fc(bal)}</td></tr>`;
+      });
+      body+=`</tbody><tfoot><tr><td><strong>סה״כ</strong></td><td class="num"><strong>${fc(yInc)}</strong></td><td class="num"><strong>${fc(yExp)}</strong></td><td class="num"><strong style="color:${yInc-yExp>=0?'#16A34A':'#EF4444'}">${fc(yInc-yExp)}</strong></td></tr></tfoot></table>`;
+      // Category breakdown
+      body+='<h3>פירוט לפי קטגוריה</h3><table><thead><tr><th>קטגוריה</th><th>סה״כ שנתי</th><th>ממוצע חודשי</th></tr></thead><tbody>';
+      const catTotals={};
+      monthKeys.forEach(k=>{Object.entries(D.months[k].expenses||{}).forEach(([cn,cd])=>{
+        if(!catTotals[cn])catTotals[cn]=0;
+        (cd.items||[]).forEach(i=>catTotals[cn]+=(i.amount||0));
+      })});
+      Object.entries(catTotals).sort((a,b)=>b[1]-a[1]).forEach(([cn,total])=>{
+        body+=`<tr><td>${esc(cn)}</td><td class="num">${fc(total)}</td><td class="num">${fc(Math.round(total/monthKeys.length))}</td></tr>`;
+      });
+      body+='</tbody></table>';
+    }
+  }
+  w.document.write(`<!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="UTF-8">
+    <title>${esc(title)} — ${mode==='month'?HM[curMonth]+' '+curYear:curYear}</title>
+    <style>
+      *{margin:0;padding:0;box-sizing:border-box}body{font-family:'Heebo',Arial,sans-serif;padding:30px 40px;color:#1a1a2e;font-size:14px;direction:rtl}
+      h1{font-size:24px;margin-bottom:4px;color:#6366F1}h2{font-size:20px;margin:20px 0 12px;border-bottom:2px solid #6366F1;padding-bottom:6px}
+      h3{font-size:16px;margin:18px 0 8px;color:#333}h4{font-size:14px;margin:14px 0 6px;color:#555}
+      table{width:100%;border-collapse:collapse;margin-bottom:16px}th,td{padding:6px 10px;border-bottom:1px solid #e5e7eb;text-align:right}
+      th{background:#f8f9fa;font-weight:600;font-size:12px;color:#666}.num{text-align:left;direction:ltr;font-variant-numeric:tabular-nums}
+      tfoot td{border-top:2px solid #333;font-weight:600}.summary{background:#f0f4ff;padding:16px;border-radius:8px;margin-top:20px}
+      .header{text-align:center;margin-bottom:20px;padding-bottom:16px;border-bottom:3px solid #6366F1}
+      .footer{margin-top:30px;text-align:center;font-size:11px;color:#999}
+      @media print{body{padding:15px}table{page-break-inside:auto}tr{page-break-inside:avoid}}
+    </style></head><body>
+    <div class="header"><h1>${esc(title)}</h1><p style="color:#666;font-size:13px">הופק: ${new Date().toLocaleDateString('he-IL')}</p></div>
+    ${body}
+    <div class="footer">תקציב משפחתי — ניהול פיננסי חכם</div>
+    <script>setTimeout(()=>window.print(),500)<\/script>
+  </body></html>`);
+  w.document.close();
+  toast('PDF נפתח להדפסה');
 }
 
 function downloadImportTemplate(){
