@@ -3144,10 +3144,22 @@ async function connectToFamily(familyId,user){
 }
 
 function ensureDataIntegrity(d){
-  if(!d.savings)d.savings={emergency:{target:0,current:0,monthlyContribution:0},goals:[],childrenSavings:[],completedGoals:[]};
-  if(!d.settings)d.settings={darkMode:false,setupComplete:true,currency:'₪',dismissedAlerts:[],subtitle:''};
-  if(!d.settings.dismissedAlerts)d.settings.dismissedAlerts=[];
+  if(!d.savings)d.savings={};
+  if(!d.savings.emergency)d.savings.emergency={target:0,current:0,monthlyContribution:0};
+  if(!Array.isArray(d.savings.goals))d.savings.goals=[];
+  if(!Array.isArray(d.savings.childrenSavings))d.savings.childrenSavings=[];
+  if(!Array.isArray(d.savings.completedGoals))d.savings.completedGoals=[];
+  if(!d.settings)d.settings={};
+  if(d.settings.darkMode===undefined)d.settings.darkMode=false;
+  if(d.settings.setupComplete===undefined)d.settings.setupComplete=true;
+  if(!d.settings.currency)d.settings.currency='₪';
+  if(!Array.isArray(d.settings.dismissedAlerts))d.settings.dismissedAlerts=[];
+  if(!d.settings.subtitle)d.settings.subtitle='';
   if(!d.config)d.config=freshData().config;
+  if(!Array.isArray(d.config.categories))d.config.categories=freshData().config.categories;
+  if(!Array.isArray(d.config.children))d.config.children=[];
+  if(!Array.isArray(d.config.incomeSources))d.config.incomeSources=[];
+  if(!d.months)d.months={};
 }
 
 // ===== FIREBASE REAL-TIME SYNC =====
@@ -3576,17 +3588,32 @@ function init(){
   }
 
   if(fbConfig&&fbAuth){
-    // Show login screen and wait for auth
-    showLoginScreen();
+    // Set persistence to LOCAL (stay logged in across sessions)
+    fbAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
+    // Show loading indicator (not login screen) until auth state resolves
+    const loginEl=document.getElementById('loginOverlay');
+    const loginStatus=document.getElementById('loginStatus');
+    loginEl.classList.remove('hidden');
+    if(loginStatus)loginStatus.textContent='טוען...';
+    // Hide Google button initially during auth check
+    const googleBtn=loginEl.querySelector('.google-btn');
+    if(googleBtn)googleBtn.style.display='none';
+    const offlineLink=loginEl.querySelector('.offline-link');
+    if(offlineLink)offlineLink.style.display='none';
+
     fbAuth.onAuthStateChanged(user=>{
       if(user){
         fbUser=user;
-        // Show loading state on login screen while resolving family
-        const ls=document.getElementById('loginStatus');
-        if(ls)ls.textContent='טוען נתוני משפחה...';
+        if(loginStatus)loginStatus.textContent='טוען נתוני משפחה...';
         hideLoginScreen();
         resolveFamily(user);
       }else{
+        // Not logged in — show full login screen
+        if(googleBtn)googleBtn.style.display='';
+        if(offlineLink)offlineLink.style.display='';
+        if(loginStatus)loginStatus.textContent='';
+        const subtitle=loginEl.querySelector('.login-subtitle');
+        if(subtitle)subtitle.textContent='התחברו כדי לסנכרן את הנתונים בין בני הזוג';
         showLoginScreen();
       }
     });
