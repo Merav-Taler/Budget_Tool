@@ -425,7 +425,7 @@ body{padding-bottom:0;background:#fff}
 <div class="login-content">
 <div style="font-size:3.5rem;margin-bottom:12px">💰</div>
 <div class="login-title">תקציב משפחתי</div>
-<div class="login-subtitle">התחברו כדי לסנכרן את הנתונים בין בני הזוג</div>
+<div class="login-subtitle">התחברו כדי לסנכרן ולשתף את התקציב</div>
 <button class="google-btn" onclick="signInWithGoogle()">
 <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
 <span>התחברות עם Google</span>
@@ -462,7 +462,7 @@ body{padding-bottom:0;background:#fff}
 <div class="hdr-right">
 <span id="connectionStatus" class="connection-indicator" style="display:none"></span>
 <span id="partnerStatus" class="partner-status"></span>
-<button class="dark-toggle" id="shareBtn" onclick="showShareModal()" title="שיתוף עם בן/בת זוג" style="display:none">🔗</button>
+<button class="dark-toggle" id="shareBtn" onclick="showShareModal()" title="שיתוף תקציב" style="display:none">🔗</button>
 <button class="dark-toggle" id="darkToggle" onclick="toggleDarkMode()" title="מצב כהה/בהיר">🌙</button>
 <button class="dark-toggle" id="userBtn" onclick="showUserMenu()" title="חשבון"><span id="userInitial">👤</span></button>
 </div>
@@ -540,7 +540,7 @@ body{padding-bottom:0;background:#fff}
   <span style="font-weight:700;font-size:.9rem;flex:1">הערות לחודש</span>
   <span id="notesLastSaved" style="font-size:.7rem;color:var(--text-light)"></span>
 </div>
-<textarea id="monthNotes" class="month-notes" placeholder="כתבו הערות, תזכורות או הודעות לבן/בת הזוג...&#10;לדוגמה: לשלם ארנונה עד ה-15, חתונה של דנה בשישי" oninput="saveMonthNotes()"></textarea>
+<textarea id="monthNotes" class="month-notes" placeholder="כתבו הערות, תזכורות או הודעות...&#10;לדוגמה: לשלם ארנונה עד ה-15, חתונה של דנה בשישי" oninput="saveMonthNotes()"></textarea>
 </div>
 </div>
 
@@ -675,6 +675,7 @@ function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'
 
 // ===== OWNER HELPERS =====
 function ownerBadge(owner, catName, idx, type){
+  if(D.config.soloMode)return '';
   const p1i=(D.config.partner1||'?')[0];
   const p2i=(D.config.partner2||'?')[0];
   const cls=owner==='partner1'?'p1':owner==='partner2'?'p2':'shared';
@@ -687,7 +688,15 @@ function ownerBadge(owner, catName, idx, type){
   return `<span class="owner-badge ${cls}" onclick="${onclick}" title="${esc(ownerName(owner))}">${label}</span>`;
 }
 function ownerName(o){return o==='partner1'?(D.config.partner1||'שותף 1'):o==='partner2'?(D.config.partner2||'שותף 2'):'משותף'}
-function nextOwner(o){return o==='shared'?'partner1':o==='partner1'?'partner2':'shared'}
+function nextOwner(o){
+  if(D.config.soloMode)return o==='shared'?'partner1':'shared';
+  return o==='shared'?'partner1':o==='partner1'?'partner2':'shared';
+}
+function ownerSelectOpts(selected,p1,p2){
+  let h=`<option value="shared"${selected==='shared'?' selected':''}>🤝 משותף</option><option value="partner1"${selected==='partner1'?' selected':''}>${esc(p1)}</option>`;
+  if(!D.config.soloMode)h+=`<option value="partner2"${selected==='partner2'?' selected':''}>${esc(p2)}</option>`;
+  return h;
+}
 function cycleOwner(catName,idx){
   const key=mk(curMonth,curYear);const data=getMonth(key);
   const item=data.expenses[catName].items[idx];
@@ -700,6 +709,7 @@ function cycleIncOwner(idx){
   saveData();renderBudgetKeepOpen();
 }
 function ownerLegend(){
+  if(D.config.soloMode)return '';
   const p1i=(D.config.partner1||'?')[0],p2i=(D.config.partner2||'?')[0];
   return `<div class="owner-legend">
     <span class="owner-badge p1">${p1i}</span>${D.config.partner1||'שותף 1'}
@@ -713,7 +723,7 @@ function ownerLegend(){
 function freshData(){
   return {
     config:{
-      partner1:'',partner2:'',
+      partner1:'',partner2:'',soloMode:false,
       children:[],
       pet:{name:'',enabled:false},
       categories:DEF_CATS.map((c,i)=>({...c,order:i,items:c.items.map(n=>({name:n,isDefault:true}))})),
@@ -942,7 +952,8 @@ function showWizard(){
       savingsGoals:[...(D.savings.goals||[])],
       hasEmergency:!!(D.savings.emergency&&D.savings.emergency.target>0),
       emergencyTarget:(D.savings.emergency&&D.savings.emergency.target)||0,
-      events:[...(D.config.events||[])]
+      events:[...(D.config.events||[])],
+      soloMode:!D.config.partner2
     };
   }else{
     wizData={
@@ -954,7 +965,8 @@ function showWizard(){
       incomeSources:[],
       savingsGoals:[],
       hasEmergency:true,emergencyTarget:0,
-      events:[]
+      events:[],
+      soloMode:false
     };
   }
   document.getElementById('wizardOverlay').classList.remove('hidden');
@@ -980,10 +992,10 @@ function showWizardJoinCode(){
   c.innerHTML=`<div class="wizard-step">
     <div style="text-align:center;font-size:3rem;margin:20px 0">🔗</div>
     <div class="wizard-title">הצטרפות לתקציב קיים</div>
-    <div class="wizard-subtitle">הכניסו את הקוד שקיבלתם מבן/בת הזוג</div>
+    <div class="wizard-subtitle">הכניסו את קוד ההזמנה שקיבלתם</div>
     ${fbUser?'':`<div style="background:var(--warning-bg);padding:12px;border-radius:var(--radius-sm);margin-bottom:12px;font-size:.85rem;color:#92400E">⚠️ יש להתחבר עם Google תחילה כדי להצטרף לתקציב משותף.
       <button class="btn-sm primary" style="margin-top:8px;display:block" onclick="hideWizard();showLoginScreen()">🔑 התחברות עם Google</button></div>`}
-    <div class="modal-field"><input class="modal-input ltr" id="wizJoinCode" placeholder="XXXXXX" maxlength="6" style="text-align:center;font-size:1.8rem;letter-spacing:6px;font-weight:700;text-transform:uppercase;padding:14px" ${fbUser?'':'disabled'}></div>
+    <div class="modal-field"><input class="modal-input ltr" id="wizJoinCode" placeholder="XXXXXXXX" maxlength="8" style="text-align:center;font-size:1.8rem;letter-spacing:6px;font-weight:700;text-transform:uppercase;padding:14px" ${fbUser?'':'disabled'}></div>
     <div id="wizJoinStatus" style="margin-top:8px;font-size:.85rem;color:var(--danger);text-align:center"></div>
     <button class="modal-btn primary" style="margin-top:16px;width:100%" onclick="wizardJoinWithCode()" ${fbUser?'':'disabled'}>הצטרף לתקציב →</button>
     <button class="modal-btn cancel" style="margin-top:8px;width:100%" onclick="renderWizardStep()">← חזרה</button>
@@ -993,7 +1005,7 @@ function showWizardJoinCode(){
 async function wizardJoinWithCode(){
   const code=(document.getElementById('wizJoinCode').value||'').trim().toUpperCase();
   const status=document.getElementById('wizJoinStatus');
-  if(code.length!==6){status.textContent='הקוד חייב להיות 6 תווים';return}
+  if(code.length<6||code.length>8){status.textContent='הקוד חייב להיות 6-8 תווים';return}
   if(!fbUser||!fbDb){status.textContent='יש להתחבר עם Google תחילה';return}
   status.style.color='var(--primary)';status.textContent='מחפש...';
   try{
@@ -1070,6 +1082,7 @@ function saveWizardStep(){
     case 'personal':
       wizData.partner1=(document.getElementById('wizP1')||{}).value||'';
       wizData.partner2=(document.getElementById('wizP2')||{}).value||'';
+      wizData.soloMode=!(document.getElementById('wizHasPartner')||{}).checked;
       wizData.hasPet=!!(document.getElementById('wizHasPet')||{}).checked;
       wizData.petName=(document.getElementById('wizPetName')||{}).value||'';
       wizData.hasChildren=!!(document.getElementById('wizHasChildren')||{}).checked;
@@ -1139,7 +1152,7 @@ function renderWizWelcome(){
     </div>
     <div class="wizard-card" onclick="showWizardJoinCode()">
       <div class="wc-icon">🔗</div>
-      <div><div class="wc-title">הצטרפות עם קוד</div><div class="wc-desc">קיבלתם קוד מבן/בת הזוג? הכניסו אותו כאן</div></div>
+      <div><div class="wc-title">הצטרפות עם קוד</div><div class="wc-desc">קיבלתם קוד הזמנה? הכניסו אותו כאן</div></div>
     </div>
   </div>`;
 }
@@ -1197,13 +1210,22 @@ function addWizItem(catIdx){
 }
 
 function renderWizPersonal(){
+  const isSolo=wizData.soloMode||false;
   return `<div class="wizard-step">
-    <div class="wizard-title">פרטים אישיים 👫</div>
+    <div class="wizard-title">פרטים אישיים 👤</div>
     <div class="wizard-subtitle">השמות ישמשו לפריטים אישיים כמו תספורת, כושר ובילויים</div>
-    <div class="wizard-field"><label>שם בן/בת זוג 1</label>
+    <div class="wizard-field" style="margin-bottom:14px">
+      <label class="wizard-check ${isSolo?'':'checked'}" onclick="this.classList.toggle('checked')">
+        <input type="checkbox" id="wizHasPartner" ${isSolo?'':'checked'} onchange="this.parentElement.classList.toggle('checked',this.checked);document.getElementById('partner2Field').style.display=this.checked?'block':'none'">
+        <span class="wch-icon">👥</span><span class="wch-text">ניהול תקציב עם שותף/ה</span>
+      </label>
+    </div>
+    <div class="wizard-field"><label>השם שלי</label>
       <input type="text" id="wizP1" value="${wizData.partner1}" placeholder="לדוגמה: שחר"></div>
-    <div class="wizard-field"><label>שם בן/בת זוג 2</label>
+    <div id="partner2Field" style="display:${isSolo?'none':'block'}">
+    <div class="wizard-field"><label>שם השותף/ה</label>
       <input type="text" id="wizP2" value="${wizData.partner2}" placeholder="לדוגמה: רותם"></div>
+    </div>
 
     <div class="wizard-field" style="margin-top:20px">
       <label class="wizard-check ${wizData.hasPet?'checked':''}" onclick="this.classList.toggle('checked')">
@@ -1254,7 +1276,7 @@ function addWizChild(){
 }
 
 function renderWizEvents(){
-  const p1=wizData.partner1||'בן/בת זוג 1',p2=wizData.partner2||'בן/בת זוג 2';
+  const p1=wizData.partner1||'שותף 1',p2=wizData.partner2||'שותף 2';
   const children=wizData.hasChildren?wizData.children.filter(c=>c.name):[];
   const suggestions=[
     {name:`יום הולדת ${p1}`,emoji:'🎂'},
@@ -1299,7 +1321,7 @@ function renderWizEvents(){
 
 function addWizEventSugg(idx){
   saveWizardStep();
-  const p1=wizData.partner1||'בן/בת זוג 1',p2=wizData.partner2||'בן/בת זוג 2';
+  const p1=wizData.partner1||'שותף 1',p2=wizData.partner2||'שותף 2';
   const children=wizData.hasChildren?wizData.children.filter(c=>c.name):[];
   const suggestions=[
     {name:`יום הולדת ${p1}`,emoji:'🎂'},
@@ -1331,11 +1353,12 @@ function removeWizEvent(idx){
 }
 
 function renderWizIncome(){
-  const p1=wizData.partner1||'בן/בת זוג 1';
-  const p2=wizData.partner2||'בן/בת זוג 2';
-  const sources=wizData.incomeSources.length>0?wizData.incomeSources:[
-    {name:`משכורת ${p1}`,defaultAmount:0},{name:`משכורת ${p2}`,defaultAmount:0}
-  ];
+  const p1=wizData.partner1||'שותף 1';
+  const p2=wizData.partner2||'שותף 2';
+  const solo=!!wizData.soloMode;
+  const sources=wizData.incomeSources.length>0?wizData.incomeSources:
+    solo?[{name:`משכורת ${p1}`,defaultAmount:0}]:
+    [{name:`משכורת ${p1}`,defaultAmount:0},{name:`משכורת ${p2}`,defaultAmount:0}];
   return `<div class="wizard-step">
     <div class="wizard-title">הכנסות 💵</div>
     <div class="wizard-subtitle">הגדירו מקורות הכנסה וסכומים חודשיים טיפוסיים</div>
@@ -1417,7 +1440,7 @@ function renderWizDone(){
     <div class="wizard-title">הכל מוכן!</div>
     <div class="wizard-subtitle">סיכום ההגדרות שלכם</div>
     <div style="background:var(--card);border-radius:var(--radius);padding:16px;text-align:right;box-shadow:var(--card-shadow)">
-      <div style="margin-bottom:8px"><strong>שותפים:</strong> ${p1} ו-${p2}</div>
+      <div style="margin-bottom:8px"><strong>${wizData.soloMode?'שם:':'שותפים:'}</strong> ${wizData.soloMode?p1:p1+' ו-'+p2}</div>
       <div style="margin-bottom:8px"><strong>קטגוריות:</strong> ${catCount}</div>
       ${childCount>0?`<div style="margin-bottom:8px"><strong>ילדים:</strong> ${wizData.children.filter(c=>c.name).map(c=>c.name).join(', ')}</div>`:''}
       ${wizData.hasPet?`<div style="margin-bottom:8px"><strong>חיית מחמד:</strong> ${wizData.petName||'ללא שם'}</div>`:''}
@@ -1431,11 +1454,13 @@ function renderWizDone(){
 function finishWizard(){
   saveWizardStep();
   // Build config from wizard data
+  const solo=!!wizData.soloMode;
   const p1=wizData.partner1||'שותף 1';
-  const p2=wizData.partner2||'שותף 2';
+  const p2=solo?'':(wizData.partner2||'שותף 2');
 
   D.config.partner1=p1;
   D.config.partner2=p2;
+  D.config.soloMode=solo;
   D.config.pet={name:wizData.petName||'',enabled:wizData.hasPet};
   D.config.children=wizData.hasChildren?wizData.children.filter(c=>c.name):[];
 
@@ -1447,12 +1472,21 @@ function finishWizard(){
       // Personalize items
       if(c.id==='grooming'){
         items=items.filter(i=>i.name!=='תספורת'&&i.name!=='כושר');
-        items.push({name:`תספורת ${p1}`,isDefault:true},{name:`תספורת ${p2}`,isDefault:true});
-        items.push({name:`כושר ${p1}`,isDefault:true},{name:`כושר ${p2}`,isDefault:true});
+        if(solo){
+          items.push({name:`תספורת ${p1}`,isDefault:true});
+          items.push({name:`כושר ${p1}`,isDefault:true});
+        }else{
+          items.push({name:`תספורת ${p1}`,isDefault:true},{name:`תספורת ${p2}`,isDefault:true});
+          items.push({name:`כושר ${p1}`,isDefault:true},{name:`כושר ${p2}`,isDefault:true});
+        }
       }
       if(c.id==='entertainment'){
         items=items.filter(i=>!i.name.includes('בילויים'));
-        items.push({name:`בילויים ${p1}`,isDefault:true},{name:`בילויים ${p2}`,isDefault:true},{name:'בילויים משותפים',isDefault:true});
+        if(solo){
+          items.push({name:'בילויים',isDefault:true});
+        }else{
+          items.push({name:`בילויים ${p1}`,isDefault:true},{name:`בילויים ${p2}`,isDefault:true},{name:'בילויים משותפים',isDefault:true});
+        }
       }
       // Pet category rename
       if(c.id==='pet'&&wizData.hasPet&&wizData.petName){
@@ -1467,13 +1501,17 @@ function finishWizard(){
   });
 
   // Income sources
-  D.config.incomeSources=wizData.incomeSources.length>0?wizData.incomeSources:[
-    {name:`משכורת ${p1}`,defaultAmount:0},{name:`משכורת ${p2}`,defaultAmount:0}
-  ];
+  if(wizData.incomeSources.length>0){
+    D.config.incomeSources=wizData.incomeSources;
+  }else if(solo){
+    D.config.incomeSources=[{name:`משכורת ${p1}`,defaultAmount:0}];
+  }else{
+    D.config.incomeSources=[{name:`משכורת ${p1}`,defaultAmount:0},{name:`משכורת ${p2}`,defaultAmount:0}];
+  }
   // Update salary names with actual partner names
   D.config.incomeSources.forEach(s=>{
     if(s.name.includes('בן/בת זוג 1')||s.name.includes('שותף 1'))s.name=s.name.replace(/בן\/בת זוג 1|שותף 1/g,p1);
-    if(s.name.includes('בן/בת זוג 2')||s.name.includes('שותף 2'))s.name=s.name.replace(/בן\/בת זוג 2|שותף 2/g,p2);
+    if(!solo&&(s.name.includes('בן/בת זוג 2')||s.name.includes('שותף 2')))s.name=s.name.replace(/בן\/בת זוג 2|שותף 2/g,p2);
   });
 
   // Savings
@@ -1954,7 +1992,7 @@ function addItem(catName){
     <p>קטגוריה: <strong>${esc(catName)}</strong></p>
     <div class="modal-field"><label>שם הפריט</label><input class="modal-input" type="text" id="newItemName" placeholder="לדוגמה: ביטוח דירה"></div>
     <div class="modal-field"><label>ספק / חברה</label><input class="modal-input" type="text" id="newItemProvider" placeholder="לדוגמה: בזק, חברת חשמל (לא חובה)"></div>
-    <div class="modal-field"><label>שייך ל:</label><select id="newItemOwner" class="modal-input"><option value="shared">🤝 משותף</option><option value="partner1">${esc(p1)}</option><option value="partner2">${esc(p2)}</option></select></div>
+    ${D.config.soloMode?'':`<div class="modal-field"><label>שייך ל:</label><select id="newItemOwner" class="modal-input">${ownerSelectOpts('shared',p1,p2)}</select></div>`}
     <div class="modal-field"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="newItemFixed"> 🔒 הוצאה קבועה <span style="font-size:.75rem;color:var(--text-secondary)">(סכום זהה כל חודש, מועתק אוטומטית)</span></label></div>
     <div class="modal-field"><label>סכום</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="newItemAmount" min="0" placeholder="0"></div></div>
     <div class="modal-actions"><button class="modal-btn primary" onclick="confirmAddItem()">הוסף</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
@@ -2078,7 +2116,7 @@ function addIncomeRow(){
   const p1=D.config.partner1||'שותף 1',p2=D.config.partner2||'שותף 2';
   showModal(`<h3>➕ הוסף מקור הכנסה</h3>
     <div class="modal-field"><label>שם המקור</label><input class="modal-input" type="text" id="newIncSource" placeholder="לדוגמה: משכורת"></div>
-    <div class="modal-field"><label>שייך ל:</label><select id="newIncOwner" class="modal-input"><option value="shared">🤝 משותף</option><option value="partner1">${esc(p1)}</option><option value="partner2">${esc(p2)}</option></select></div>
+    ${D.config.soloMode?'':`<div class="modal-field"><label>שייך ל:</label><select id="newIncOwner" class="modal-input">${ownerSelectOpts('shared',p1,p2)}</select></div>`}
     <div class="modal-field"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="newIncFixed"> 🔒 הכנסה קבועה <span style="font-size:.75rem;color:var(--text-secondary)">(סכום זהה כל חודש, מועתק אוטומטית)</span></label></div>
     <div class="modal-field"><label>סכום</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="newIncAmount" min="0" placeholder="0"></div></div>
     <div class="modal-actions"><button class="modal-btn primary" onclick="confirmAddIncome()">הוסף</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
@@ -2849,7 +2887,7 @@ function addFixedSaving(){
     <div class="modal-field"><label>אימוג'י</label><input class="modal-input" id="fsEmoji" value="🏦" style="width:60px"></div>
     <div class="modal-field"><label>סכום חודשי</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="fsAmount" min="0" placeholder="0"></div></div>
     <div class="modal-field"><label>מוסד / קופה</label><input class="modal-input" type="text" id="fsInstitution" placeholder="לדוגמה: מגדל, הראל, מנורה"></div>
-    <div class="modal-field"><label>שייך ל:</label><select id="fsOwner" class="modal-input"><option value="shared">🤝 משותף</option><option value="partner1">${esc(p1)}</option><option value="partner2">${esc(p2)}</option></select></div>
+    ${D.config.soloMode?'':`<div class="modal-field"><label>שייך ל:</label><select id="fsOwner" class="modal-input">${ownerSelectOpts('shared',p1,p2)}</select></div>`}
     <div class="modal-actions"><button class="modal-btn primary" onclick="saveNewFixedSaving()">הוסף</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
   setTimeout(()=>{const i=document.getElementById('fsName');if(i)i.focus()},250);
 }
@@ -2877,7 +2915,7 @@ function editFixedSaving(idx){
     <div class="modal-field"><label>אימוג'י</label><input class="modal-input" id="efsEmoji" value="${esc(s.emoji||'🏦')}" style="width:60px"></div>
     <div class="modal-field"><label>סכום חודשי</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="efsAmount" value="${s.amount}" min="0"></div></div>
     <div class="modal-field"><label>מוסד / קופה</label><input class="modal-input" type="text" id="efsInstitution" value="${esc(s.institution||'')}" placeholder="לדוגמה: מגדל, הראל, מנורה"></div>
-    <div class="modal-field"><label>שייך ל:</label><select id="efsOwner" class="modal-input"><option value="shared"${s.owner==='shared'?' selected':''}>🤝 משותף</option><option value="partner1"${s.owner==='partner1'?' selected':''}>${esc(p1)}</option><option value="partner2"${s.owner==='partner2'?' selected':''}>${esc(p2)}</option></select></div>
+    ${D.config.soloMode?'':`<div class="modal-field"><label>שייך ל:</label><select id="efsOwner" class="modal-input">${ownerSelectOpts(s.owner||'shared',p1,p2)}</select></div>`}
     <div class="modal-actions"><button class="modal-btn primary" onclick="saveEditFixedSaving(${idx})">שמור</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
 }
 
@@ -2940,11 +2978,14 @@ function renderAdmin(){
   // Personal Details
   html+=`<div class="admin-section">
     <h3>👫 פרטים אישיים</h3>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
-      <div class="wizard-field" style="flex:1;min-width:140px"><label>בן/בת זוג 1</label><input class="admin-input" value="${esc(D.config.partner1)}" onchange="updatePartnerName(1,this.value)" style="width:100%"></div>
-      <div class="wizard-field" style="flex:1;min-width:140px"><label>בן/בת זוג 2</label><input class="admin-input" value="${esc(D.config.partner2)}" onchange="updatePartnerName(2,this.value)" style="width:100%"></div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:.85rem;display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" ${D.config.soloMode?'':'checked'} onchange="toggleSoloMode(!this.checked)"> 👥 תקציב עם שותף/ה</label>
     </div>
-    <div class="wizard-field" style="margin-bottom:10px"><label>כותרת משנה (ריק = אוטומטי)</label><input class="admin-input" value="${esc(D.settings.subtitle||'')}" placeholder="${esc(D.config.partner1)} ו${esc(D.config.partner2)} — ניהול פיננסי חכם" onchange="D.settings.subtitle=this.value;saveData();initApp()" style="width:100%"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+      <div class="wizard-field" style="flex:1;min-width:140px"><label>${D.config.soloMode?'השם שלי':'שם ראשי'}</label><input class="admin-input" value="${esc(D.config.partner1)}" onchange="updatePartnerName(1,this.value)" style="width:100%"></div>
+      ${D.config.soloMode?'':`<div class="wizard-field" style="flex:1;min-width:140px"><label>שותף/ה</label><input class="admin-input" value="${esc(D.config.partner2)}" onchange="updatePartnerName(2,this.value)" style="width:100%"></div>`}
+    </div>
+    <div class="wizard-field" style="margin-bottom:10px"><label>כותרת משנה (ריק = אוטומטי)</label><input class="admin-input" value="${esc(D.settings.subtitle||'')}" placeholder="${D.config.soloMode?esc(D.config.partner1)+' — ניהול פיננסי חכם':esc(D.config.partner1)+' ו'+esc(D.config.partner2)+' — ניהול פיננסי חכם'}" onchange="D.settings.subtitle=this.value;saveData();initApp()" style="width:100%"></div>
     <div style="display:flex;gap:10px;align-items:center">
       <label style="font-size:.85rem"><input type="checkbox" ${D.config.pet.enabled?'checked':''} onchange="D.config.pet.enabled=this.checked;saveData();renderAdmin()"> 🐕 חיית מחמד</label>
       ${D.config.pet.enabled?`<input class="admin-input" value="${esc(D.config.pet.name)}" placeholder="שם" onchange="updatePetName(this.value)" style="width:120px">`:''}
@@ -3065,6 +3106,13 @@ function updatePartnerName(num,newName){
     });
   }
   saveData();toast(`שם עודכן ל-${newName}`);
+}
+
+function toggleSoloMode(solo){
+  D.config.soloMode=solo;
+  if(solo){D.config.partner2=''}
+  saveData();renderAdmin();initApp();
+  toast(solo?'מצב אישי — תקציב ליחיד':'מצב שותפים — תקציב משותף');
 }
 
 function updatePetName(newName){
@@ -3860,16 +3908,23 @@ function handlePendingInvite(){
   }
 }
 
+function sanitizeStr(s,maxLen=100){
+  if(typeof s!=='string')return '';
+  return s.replace(/[<>"'&]/g,'').substring(0,maxLen);
+}
 function loadTemplateFromURL(){
   const params=new URLSearchParams(window.location.search);
   const tmpl=params.get('template');
-  if(!tmpl)return false;
+  if(!tmpl||tmpl.length>50000)return false;
   try{
     const json=decodeURIComponent(escape(atob(tmpl)));
     const template=JSON.parse(json);
-    if(template.type!=='budget_template')return false;
-    // Apply template to wizard
-    wizData.categories=template.categories.map((c,i)=>({...c,id:uid(),enabled:true,order:i}));
+    if(template.type!=='budget_template'||!Array.isArray(template.categories))return false;
+    // Sanitize and apply template to wizard
+    wizData.categories=template.categories.slice(0,30).map((c,i)=>({
+      id:uid(),name:sanitizeStr(c.name,50),icon:sanitizeStr(c.icon,4),enabled:true,order:i,
+      items:Array.isArray(c.items)?c.items.slice(0,50).map(it=>typeof it==='string'?sanitizeStr(it,100):{name:sanitizeStr(it.name,100),isDefault:!!it.isDefault}):[]
+    }));
     return true;
   }catch(e){return false}
 }
@@ -3920,7 +3975,7 @@ function showFirebaseSetupGuide(){
   const content=document.getElementById('fbConfigContent');
   content.innerHTML=`
     <h2 style="margin-bottom:6px">☁️ הגדרת Firebase</h2>
-    <p style="color:var(--text-secondary);margin-bottom:16px;font-size:.88rem">Firebase מאפשר סנכרון נתונים בזמן אמת בין שני בני הזוג</p>
+    <p style="color:var(--text-secondary);margin-bottom:16px;font-size:.88rem">Firebase מאפשר סנכרון נתונים בזמן אמת בין כל המשתמשים</p>
     <div style="background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:14px;box-shadow:var(--card-shadow)">
       <h4 style="margin-bottom:10px;font-size:.9rem">📋 הוראות הגדרה</h4>
       <div class="fb-setup-step"><span class="step-num">1</span><span class="step-text">היכנסו ל-<a href="https://console.firebase.google.com" target="_blank" style="color:var(--primary)">console.firebase.google.com</a></span></div>
@@ -4007,8 +4062,8 @@ function hideLoginScreen(){
 // ===== FIREBASE FAMILY =====
 function generateInviteCode(){
   const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  const arr=new Uint8Array(6);crypto.getRandomValues(arr);
-  let code='';for(let i=0;i<6;i++)code+=chars[arr[i]%chars.length];
+  const arr=new Uint8Array(8);crypto.getRandomValues(arr);
+  let code='';for(let i=0;i<8;i++)code+=chars[arr[i]%chars.length];
   return code;
 }
 
@@ -4076,9 +4131,9 @@ function showFamilyChoice(user){
       <div class="wc-icon">📤</div><div><div class="wc-title">העלה נתונים קיימים</div><div class="wc-desc">יש לך נתונים מקומיים — העלה אותם לענן ושתף</div></div></div>`;
   }
   html+=`<div class="wizard-card" onclick="createNewFamily()">
-    <div class="wc-icon">🆕</div><div><div class="wc-title">צור משפחה חדשה</div><div class="wc-desc">התחילו מאפס. שתפו קוד עם בן/בת הזוג</div></div></div>
+    <div class="wc-icon">🆕</div><div><div class="wc-title">צור משפחה חדשה</div><div class="wc-desc">התחילו מאפס ושתפו קוד הזמנה</div></div></div>
     <div class="wizard-card" onclick="showJoinFamily()">
-    <div class="wc-icon">🔗</div><div><div class="wc-title">הצטרף למשפחה</div><div class="wc-desc">בן/בת הזוג כבר נרשמו? הכניסו קוד הזמנה</div></div></div>`;
+    <div class="wc-icon">🔗</div><div><div class="wc-title">הצטרף למשפחה</div><div class="wc-desc">מישהו שיתף אתכם קוד? הצטרפו לתקציב</div></div></div>`;
   el.innerHTML=html;
   document.getElementById('familyOverlay').classList.remove('hidden');
   hideLoginScreen();
@@ -4091,7 +4146,7 @@ async function createNewFamily(familyName,useLocalData){
     const familyRef=fbDb.ref('families').push();
     fbFamilyId=familyRef.key;
     const inviteCode=generateInviteCode();
-    const fName=familyName||D.config?.partner1&&D.config?.partner2?`${D.config.partner1} ו${D.config.partner2}`:'המשפחה שלי';
+    const fName=familyName||(D.config?.soloMode?`התקציב של ${D.config.partner1||'אני'}`:(D.config?.partner1&&D.config?.partner2?`${D.config.partner1} ו${D.config.partner2}`:'התקציב שלי'));
     await familyRef.set({
       data:D,
       meta:{createdAt:firebase.database.ServerValue.TIMESTAMP,createdBy:fbUser.uid,name:fName},
@@ -4118,7 +4173,7 @@ function showInviteCode(code){
   document.getElementById('familyContent').innerHTML=`
     <div style="font-size:3rem;margin-bottom:12px">🎉</div>
     <div class="login-title">המשפחה נוצרה!</div>
-    <div class="login-subtitle">שלחו את הקוד הבא לבן/בת הזוג כדי שיצטרפו</div>
+    <div class="login-subtitle">שלחו את הקוד הבא כדי להזמין למשתתפים לתקציב</div>
     <div class="invite-code-display">${code}</div>
     <p style="font-size:.82rem;color:var(--text-secondary)">הקוד חד-פעמי. שמרו אותו!</p>
     <button class="modal-btn primary" style="margin-top:16px" onclick="finishFamilySetup()">המשך לאפליקציה →</button>`;
@@ -4128,15 +4183,15 @@ function showJoinFamily(){
   document.getElementById('familyContent').innerHTML=`
     <div style="font-size:3rem;margin-bottom:12px">🔗</div>
     <div class="login-title">הצטרפות למשפחה</div>
-    <div class="login-subtitle">הכניסו את הקוד שקיבלתם מבן/בת הזוג</div>
-    <div class="modal-field"><input class="modal-input ltr" id="joinCode" placeholder="XXXXXX" maxlength="6" style="text-align:center;font-size:1.5rem;letter-spacing:4px;font-weight:700;text-transform:uppercase"></div>
+    <div class="login-subtitle">הכניסו את קוד ההזמנה שקיבלתם</div>
+    <div class="modal-field"><input class="modal-input ltr" id="joinCode" placeholder="XXXXXXXX" maxlength="8" style="text-align:center;font-size:1.5rem;letter-spacing:4px;font-weight:700;text-transform:uppercase"></div>
     <div id="joinStatus" style="margin-top:8px;font-size:.82rem;color:var(--danger)"></div>
     <button class="modal-btn primary" style="margin-top:12px" onclick="joinWithCode()">הצטרף →</button>`;
 }
 
 async function joinWithCode(){
   const code=(document.getElementById('joinCode').value||'').trim().toUpperCase();
-  if(code.length!==6){document.getElementById('joinStatus').textContent='הקוד חייב להיות 6 תווים';return}
+  if(code.length<6||code.length>8){document.getElementById('joinStatus').textContent='הקוד חייב להיות 6-8 תווים';return}
   try{
     const snap=await fbDb.ref('invites/'+code).once('value');
     if(!snap.exists()){document.getElementById('joinStatus').textContent='קוד לא נמצא. בדקו שהועתק נכון';return}
@@ -4206,6 +4261,7 @@ function ensureDataIntegrity(d){
   if(!d.config)d.config=fresh.config;
   if(!d.config.partner1&&d.config.partner1!=='')d.config.partner1='';
   if(!d.config.partner2&&d.config.partner2!=='')d.config.partner2='';
+  if(d.config.soloMode===undefined)d.config.soloMode=false;
   if(!d.config.pet||typeof d.config.pet!=='object')d.config.pet={name:'',enabled:false};
   if(d.config.pet.enabled===undefined)d.config.pet.enabled=false;
   if(!d.config.pet.name&&d.config.pet.name!=='')d.config.pet.name='';
@@ -4341,7 +4397,7 @@ function showUserMenu(){
     // Not logged in — show local mode info
     showModal(`<h3>👤 מצב מקומי</h3>
       <p>אתם עובדים במצב מקומי ללא התחברות.</p>
-      <p style="font-size:.85rem;color:var(--text-secondary)">כדי לסנכרן עם בן/בת הזוג, לחצו התחבר:</p>
+      <p style="font-size:.85rem;color:var(--text-secondary)">כדי לסנכרן ולשתף את התקציב, לחצו התחבר:</p>
       <div class="modal-actions" style="margin-top:14px">
         <button class="modal-btn primary" onclick="closeModal();showLoginScreen()">🔑 התחבר עם Google</button>
         <button class="modal-btn cancel" onclick="closeModal()">סגור</button>
@@ -4374,15 +4430,15 @@ function showUserMenu(){
   // Partner info
   if(fbFamilyId){
     html+=`<div id="profilePartnerArea" style="background:var(--bg);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px">
-      <div style="font-weight:600;font-size:.88rem;margin-bottom:6px">👫 בן/בת הזוג</div>
+      <div style="font-weight:600;font-size:.88rem;margin-bottom:6px">👫 שותף/ה לתקציב</div>
       <div style="font-size:.82rem;color:var(--text-secondary)">טוען...</div>
     </div>`;
   }
 
   // Invite code
   html+=`<div id="profileInviteArea" style="background:var(--bg);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px">
-    <div style="font-weight:600;font-size:.88rem;margin-bottom:6px">🔗 הזמנת בן/בת זוג</div>
-    <div style="font-size:.82rem;color:var(--text-secondary)">${fbFamilyId?'טוען...':'יש להתחבר עם Firebase כדי להזמין בן/בת זוג'}</div>
+    <div style="font-weight:600;font-size:.88rem;margin-bottom:6px">🔗 הזמנה לתקציב</div>
+    <div style="font-size:.82rem;color:var(--text-secondary)">${fbFamilyId?'טוען...':'יש להתחבר כדי להזמין שותפים לתקציב'}</div>
   </div>`;
 
   // Multi-family area
@@ -4425,7 +4481,7 @@ function showUserMenu(){
           <div style="font-size:.72rem">${p.online?'🟢 מחובר/ת כעת':'⚫ לא מחובר/ת'}</div></div>
         </div>`;
       }else{
-        area.innerHTML=`<div style="font-size:.85rem;color:var(--text-secondary)">עדיין לא הצטרף/ה בן/בת זוג. שלחו קוד הזמנה!</div>`;
+        area.innerHTML=`<div style="font-size:.85rem;color:var(--text-secondary)">עדיין לא הצטרפו שותפים. שלחו קוד הזמנה!</div>`;
       }
     });
 
@@ -4437,13 +4493,13 @@ function showUserMenu(){
         const code=Object.keys(snap.val())[0];
         area.innerHTML=renderInviteDisplay(code);
       }else{
-        area.innerHTML=`<div style="font-weight:600;font-size:.88rem;margin-bottom:6px">🔗 הזמנת בן/בת זוג</div>
+        area.innerHTML=`<div style="font-weight:600;font-size:.88rem;margin-bottom:6px">🔗 הזמנה לתקציב</div>
           <button class="btn-sm primary" onclick="generateNewInvite()">צור קוד הזמנה חדש</button>`;
       }
     }).catch(e=>{
       console.error('Invite load error:',e);
       const area=document.getElementById('profileInviteArea');
-      if(area)area.innerHTML=`<div style="font-weight:600;font-size:.88rem;margin-bottom:6px">🔗 הזמנת בן/בת זוג</div>
+      if(area)area.innerHTML=`<div style="font-weight:600;font-size:.88rem;margin-bottom:6px">🔗 הזמנה לתקציב</div>
         <button class="btn-sm primary" onclick="generateNewInvite()">צור קוד הזמנה חדש</button>`;
     });
   }
@@ -4453,7 +4509,7 @@ async function showShareModal(){
   if(!fbUser||!fbDb||!fbFamilyId){
     showModal(`<div style="text-align:center;padding:10px">
       <div style="font-size:2rem;margin-bottom:8px">🔗</div>
-      <h3>שיתוף עם בן/בת הזוג</h3>
+      <h3>שיתוף התקציב</h3>
       <p style="font-size:.85rem;color:var(--text-secondary);margin:10px 0">כדי לשתף יש להתחבר עם Google ולהגדיר Firebase</p>
       <div class="modal-actions"><button class="modal-btn cancel" onclick="closeModal()">סגור</button></div>
     </div>`);
@@ -4461,8 +4517,8 @@ async function showShareModal(){
   }
   showModal(`<div style="text-align:center;padding:10px">
     <div style="font-size:2rem;margin-bottom:8px">🔗</div>
-    <h3>שיתוף עם בן/בת הזוג</h3>
-    <p style="font-size:.85rem;color:var(--text-secondary);margin:8px 0">שלחו קוד הזמנה כדי שבן/בת הזוג יוכלו להצטרף לתקציב</p>
+    <h3>שיתוף התקציב</h3>
+    <p style="font-size:.85rem;color:var(--text-secondary);margin:8px 0">שלחו קוד הזמנה כדי שאחרים יוכלו להצטרף לתקציב</p>
     <div id="shareInviteArea" style="margin:14px 0"><div style="font-size:.82rem;color:var(--text-light)">טוען...</div></div>
     <div id="sharePartnerArea" style="margin:10px 0"></div>
     <div class="modal-actions"><button class="modal-btn cancel" onclick="closeModal()">סגור</button></div>
@@ -4493,7 +4549,7 @@ async function showShareModal(){
         <span style="font-size:.72rem;color:${m.online?'var(--success)':'var(--text-light)'}">${m.online?'🟢 מחובר/ת':'⚫ לא מחובר/ת'}</span>
       </div>`).join('');
     }else{
-      area.innerHTML='<p style="font-size:.8rem;color:var(--text-light)">טרם הצטרף/ה בן/בת הזוג</p>';
+      area.innerHTML='<p style="font-size:.8rem;color:var(--text-light)">טרם הצטרפו שותפים לתקציב</p>';
     }
   }catch(e){}
 }
@@ -4575,6 +4631,7 @@ function showFamilyManager(){
         </div>
         ${isActive?'<span style="color:var(--primary);font-weight:700;font-size:.82rem">✓ פעיל</span>'
         :`<button class="btn-sm primary" onclick="switchFamily('${fam.familyId}')">מעבר</button>`}
+        <button class="btn-sm" style="font-size:.75rem" onclick="renameBudget('${fam.familyId}')" title="שנה שם">✏️</button>
         ${fam.role==='admin'?`<button class="btn-sm" style="font-size:.75rem" onclick="showFamilySettings('${fam.familyId}')">⚙️</button>`:''}
         <button class="btn-sm" style="font-size:.7rem;color:var(--danger);border-color:var(--danger)" onclick="confirmLeaveFamily('${fam.familyId}','${esc(fam.name||'תקציב')}')">עזיבה</button>
       </div>`;
@@ -4590,6 +4647,34 @@ function showFamilyManager(){
 
   html+=`<div class="modal-actions"><button class="modal-btn cancel" onclick="closeModal()">סגור</button></div>`;
   showModal(html);
+}
+
+function renameBudget(familyId){
+  const fam=userFamilies.find(f=>f.familyId===familyId);
+  showModal(`<h3 style="margin-bottom:12px">✏️ שינוי שם התקציב</h3>
+    <div class="modal-field"><label class="modal-label">שם חדש</label><input class="modal-input" id="renameBudgetInput" value="${esc(fam?.name||'')}" dir="rtl"></div>
+    <div class="modal-actions" style="margin-top:14px">
+      <button class="modal-btn primary" onclick="doRenameBudget('${familyId}')">שמור</button>
+      <button class="modal-btn cancel" onclick="closeModal();showFamilyManager()">ביטול</button>
+    </div>`);
+  setTimeout(()=>{const i=document.getElementById('renameBudgetInput');if(i){i.focus();i.select()}},250);
+}
+
+async function doRenameBudget(familyId){
+  const name=(document.getElementById('renameBudgetInput')?.value||'').trim();
+  if(!name){toast('נא להזין שם');return}
+  const fam=userFamilies.find(f=>f.familyId===familyId);
+  if(fam)fam.name=name;
+  try{
+    await fbDb.ref('userFamilies/'+fbUser.uid+'/families/'+familyId+'/name').set(name);
+    if(fam?.role==='admin'){
+      await fbDb.ref('families/'+familyId+'/meta/name').set(name);
+    }
+  }catch(e){console.error('Rename error:',e)}
+  closeModal();
+  toast('שם התקציב עודכן: '+name);
+  showFamilyManager();
+  initApp();
 }
 
 function showCreateBudgetModal(){
@@ -4616,7 +4701,7 @@ async function doCreateNewBudget(){
 
 function showJoinBudgetModal(){
   showModal(`<h3 style="margin-bottom:12px">🔗 הצטרפות לתקציב</h3>
-    <div class="modal-field"><label class="modal-label">קוד הזמנה</label><input class="modal-input ltr" id="joinBudgetCode" placeholder="XXXXXX" maxlength="6" style="text-align:center;font-size:1.3rem;letter-spacing:3px;font-weight:700;text-transform:uppercase"></div>
+    <div class="modal-field"><label class="modal-label">קוד הזמנה</label><input class="modal-input ltr" id="joinBudgetCode" placeholder="XXXXXXXX" maxlength="8" style="text-align:center;font-size:1.3rem;letter-spacing:3px;font-weight:700;text-transform:uppercase"></div>
     <div id="joinBudgetStatus" style="margin-top:6px;font-size:.82rem;color:var(--danger)"></div>
     <div class="modal-actions" style="margin-top:14px">
       <button class="modal-btn primary" onclick="doJoinBudget()">הצטרף</button>
@@ -4626,7 +4711,7 @@ function showJoinBudgetModal(){
 
 async function doJoinBudget(){
   const code=(document.getElementById('joinBudgetCode')?.value||'').trim().toUpperCase();
-  if(code.length!==6){document.getElementById('joinBudgetStatus').textContent='הקוד חייב להיות 6 תווים';return}
+  if(code.length<6||code.length>8){document.getElementById('joinBudgetStatus').textContent='הקוד חייב להיות 6-8 תווים';return}
   try{
     const snap=await fbDb.ref('invites/'+code).once('value');
     if(!snap.exists()){document.getElementById('joinBudgetStatus').textContent='קוד לא נמצא';return}
@@ -4788,12 +4873,8 @@ function addEvent(){
       <div class="modal-field" style="flex:1"><label class="modal-label">יום (אופציונלי)</label><input class="modal-input ltr" type="number" id="eventDay" min="0" max="31" value="0" style="text-align:center"></div>
     </div>
     <div class="modal-field"><label class="modal-label">תקציב משוער</label><input class="modal-input ltr" type="number" id="eventBudget" min="0" value="0" style="text-align:center"></div>
-    <div class="modal-field"><label class="modal-label">שייך ל:</label>
-      <select class="modal-input" id="eventOwner">
-        <option value="shared">🤝 משותף</option>
-        <option value="partner1">${esc(p1)}</option>
-        <option value="partner2">${esc(p2)}</option>
-      </select></div>
+    ${D.config.soloMode?'':`<div class="modal-field"><label class="modal-label">שייך ל:</label>
+      <select class="modal-input" id="eventOwner">${ownerSelectOpts('shared',p1,p2)}</select></div>`}
     <div class="modal-actions" style="margin-top:14px">
       <button class="modal-btn primary" onclick="confirmAddEvent()">הוסף</button>
       <button class="modal-btn cancel" onclick="closeModal()">ביטול</button>
@@ -4830,12 +4911,8 @@ function editEvent(idx){
       <div class="modal-field" style="flex:1"><label class="modal-label">יום</label><input class="modal-input ltr" type="number" id="eventDay" min="0" max="31" value="${evt.day||0}" style="text-align:center"></div>
     </div>
     <div class="modal-field"><label class="modal-label">תקציב משוער</label><input class="modal-input ltr" type="number" id="eventBudget" min="0" value="${evt.estimatedBudget||0}" style="text-align:center"></div>
-    <div class="modal-field"><label class="modal-label">שייך ל:</label>
-      <select class="modal-input" id="eventOwner">
-        <option value="shared"${evt.owner==='shared'?' selected':''}>🤝 משותף</option>
-        <option value="partner1"${evt.owner==='partner1'?' selected':''}>${esc(p1)}</option>
-        <option value="partner2"${evt.owner==='partner2'?' selected':''}>${esc(p2)}</option>
-      </select></div>
+    ${D.config.soloMode?'':`<div class="modal-field"><label class="modal-label">שייך ל:</label>
+      <select class="modal-input" id="eventOwner">${ownerSelectOpts(evt.owner||'shared',p1,p2)}</select></div>`}
     <div class="modal-actions" style="margin-top:14px">
       <button class="modal-btn primary" onclick="confirmEditEvent()">עדכן</button>
       <button class="modal-btn cancel" onclick="closeModal()">ביטול</button>
@@ -4904,8 +4981,8 @@ function confirmRemoveEvent(idx){
 function initApp(){
   const p1=D.config.partner1,p2=D.config.partner2;
   if(D.settings.subtitle){document.getElementById('appSubtitle').textContent=D.settings.subtitle}
-  else if(p1&&p2){
-    let sub=`${p1} ו${p2} — ניהול פיננסי חכם`;
+  else if(p1){
+    let sub=D.config.soloMode?`${p1} — ניהול פיננסי חכם`:(p2?`${p1} ו${p2} — ניהול פיננסי חכם`:`${p1} — ניהול פיננסי חכם`);
     // Show family name if multiple families
     if(userFamilies.length>1){
       const active=userFamilies.find(f=>f.familyId===fbFamilyId);
@@ -5009,7 +5086,7 @@ function init(){
         if(offlineLink)offlineLink.style.display='';
         if(loginStatus)loginStatus.textContent='';
         const subtitle=loginEl.querySelector('.login-subtitle');
-        if(subtitle)subtitle.textContent='התחברו כדי לסנכרן את הנתונים בין בני הזוג';
+        if(subtitle)subtitle.textContent='התחברו כדי לסנכרן ולשתף את התקציב';
         showLoginScreen();
       }
     });
