@@ -996,7 +996,7 @@ async function wizardJoinWithCode(){
   }catch(e){
     status.style.color='var(--danger)';
     if(e.code==='PERMISSION_DENIED'||e.message?.includes('permission')||e.message?.includes('Permission')){
-      status.innerHTML='🔒 אין הרשאות. יש להגדיר חוקי אבטחה ב-Firebase.<br><span style="font-size:.78rem">בקונסולת Firebase → Realtime Database → Rules → הגדירו:<br><code style="font-size:.7rem">{"rules":{".read":"auth!=null",".write":"auth!=null"}}</code></span>';
+      status.innerHTML='🔒 אין הרשאות. בקשו ממנהל המשפחה לבדוק את חוקי האבטחה ב-Firebase.<br><span style="font-size:.78rem">Firebase Console → Realtime Database → Rules<br>יש לוודא ש-<code>members/$uid</code> מאפשר כתיבה עצמית ו-<code>meta/name</code> מאפשר קריאה.</span>';
     }else{
       status.textContent='שגיאה: '+e.message;
     }
