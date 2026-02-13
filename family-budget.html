@@ -3580,69 +3580,106 @@ function confirmExcelImport(categories){
 
 // ===== BANK STATEMENT PARSER =====
 const BANK_CATEGORY_RULES=[
-  // [keywords/patterns, target category name, optional sub-item name]
   // דיור
   {k:['ארנונה','עיריית','עירית'],cat:'דיור',item:'ארנונה'},
   {k:['חשמל','חברת חשמל','iec','חח"י'],cat:'דיור',item:'חשמל'},
   {k:['מים','מקורות','מי ','תאגיד מים'],cat:'דיור',item:'מים'},
   {k:['גז','סופרגז','פזגז','אמישראגז'],cat:'דיור',item:'גז'},
   {k:['ועד בית'],cat:'דיור',item:'ועד בית'},
-  {k:['בזק','פרטנר','סלקום','הוט','yes','cellcom','012','019','bezeq','internet','אינטרנט'],cat:'דיור',item:'אינטרנט'},
+  {k:['פרטנר תקשורת','פרטנר ','סלקום','הוט מובייל','cellcom','גולן טלקום','012','019','פלאפון'],cat:'דיור',item:'סלולר'},
+  {k:['בזק','הוט','yes ','bezeq','internet','אינטרנט','הוט נט'],cat:'דיור',item:'אינטרנט'},
   {k:['משכנתא','mortgage','משכנתה'],cat:'דיור',item:'משכנתא'},
   {k:['שכ"ד','שכר דירה','דמי שכירות'],cat:'דיור',item:'שכר דירה'},
-  {k:['ביטוח בריאות','מכבי','כללית','מאוחדת','לאומית'],cat:'ביטוחים',item:'ביטוח בריאות'},
-  {k:['ביטוח חיים','הפניקס','מגדל','הראל','כלל ביטוח','מנורה','איילון'],cat:'ביטוחים',item:'ביטוח חיים'},
-  {k:['ביטוח דירה'],cat:'ביטוחים',item:'ביטוח דירה'},
+  // ביטוחים — specific patterns FIRST to prevent broader matches
+  {k:['ביטוח בריאות','הראל בריאות','הראל-ביטוח בריאות'],cat:'ביטוחים',item:'ביטוח בריאות'},
+  {k:['שרותי בריאות כללית','מכבי','מאוחדת','לאומית','שירותי בריאות'],cat:'ביטוחים',item:'ביטוח בריאות'},
+  {k:['ביטוח חיים','כלל ביטוח'],cat:'ביטוחים',item:'ביטוח חיים'},
+  {k:['הפניקס','מגדל ביטוח','מנורה','איילון'],cat:'ביטוחים',item:'ביטוח'},
+  {k:['הראל-ביטוח','הראל ביטוח','ליברה עסקאות ביטוח','ליברה ביטוח'],cat:'ביטוחים',item:'ביטוח'},
+  {k:['ביטוח דירה','ביטוח משכנתא'],cat:'ביטוחים',item:'ביטוח דירה'},
+  {k:['ביטוח רכב','ביטוח מקיף','חובה רכב'],cat:'ביטוחים',item:'ביטוח רכב'},
+  {k:['ביטוח לאומי','המוסד לביטוח'],cat:'ביטוחים',item:'ביטוח לאומי'},
+  {k:['ביטוח שיניים','ביטוח משלים','שב"ן'],cat:'ביטוחים',item:'ביטוח סיעודי'},
+  {k:['ביטוח נסיעות','ביטוח לחו"ל'],cat:'ביטוחים',item:'ביטוח נסיעות'},
   // רכב ותחבורה
   {k:['דלק','פז ','סונול','דור אלון','ten ','delek','yellow'],cat:'רכב ותחבורה',item:'דלק'},
-  {k:['ביטוח רכב','ביטוח מקיף','חובה רכב'],cat:'ביטוחים',item:'ביטוח רכב'},
   {k:['רב קו','רב-קו','אגד','דן ','אפיקים','מטרופולין','רכבת','kavim','egged','moovit'],cat:'רכב ותחבורה',item:'תחב"צ'},
-  {k:['חנייה','חניון','parking','אחוזת חוף'],cat:'רכב ותחבורה',item:'חניה'},
+  {k:['חנייה','חניון','parking','אחוזת חוף','פנגו','cellopark'],cat:'רכב ותחבורה',item:'חניה'},
   {k:['מוסך','טסט','test','אוטו','רכב','car wash'],cat:'רכב ותחבורה',item:'מוסך וטיפולים'},
-  {k:['gett','yango','bolt','uber','מונית'],cat:'רכב ותחבורה',item:'תחב"צ'},
-  // מזון ופארמה
-  {k:['שופרסל','רמי לוי','מגה','ויקטורי','יוחננוף','חצי חינם','סופר','osher ad','אושר עד','יינות ביתן','טיב טעם','freshmarket','פרש מרקט','קרפור','ברקת','זול ובגדול','מחסני השוק','סופר פארם'],cat:'מזון ופארמה',item:'סופר'},
-  {k:['פארם','סופר פארם','be ','בשמת','good pharm'],cat:'מזון ופארמה',item:'פארם'},
-  {k:['wolt','וולט','תן ביס','10bis','משלוח','japanika','מקדונלד','mcdonald','בורגר','פיצה','pizza','dominos','שווארמה','פלאפל','קפה ','cafe','starbuck','ארומה','cofix','גרג','landwer'],cat:'מזון ופארמה',item:'אוכל בחוץ'},
+  {k:['gett','bolt','uber','מונית','yango ride','yango taxi'],cat:'רכב ותחבורה',item:'תחב"צ'},
+  // מזון — סופרים
+  {k:['שופרסל','רמי לוי','מגה','ויקטורי','יוחננוף','חצי חינם','osher ad','אושר עד','יינות ביתן','טיב טעם','freshmarket','פרש מרקט','קרפור','ברקת','זול ובגדול','מחסני השוק','שוק העיר','שיווק תוצרת','שיווק חקלאי','ירקות','פירות','מכולת'],cat:'מזון ופארמה',item:'סופר'},
+  // מזון — פארם ודראגסטורס
+  {k:['סופר פארם','super-pharm','בי דראגסטורס','be דראגסטורס','דראגסטור','good pharm','בשמת','פארם'],cat:'מזון ופארמה',item:'פארם'},
+  // מזון — מסעדות, קפה, משלוחים
+  {k:['wolt','וולט','תן ביס','10bis','yango deli','yango del'],cat:'מזון ופארמה',item:'משלוחי אוכל'},
+  {k:['japanika','מקדונלד','mcdonald','בורגר','פיצה','pizza','dominos','שווארמה','פלאפל'],cat:'מזון ופארמה',item:'אוכל בחוץ'},
+  {k:['קפה','cafe','starbuck','ארומה','cofix','coffeco','גרג','landwer','רולדין','מוצארט','נספרסו','nespresso','בורקס','מאפית','מאפה','לחם','בייקרי','bakery'],cat:'מזון ופארמה',item:'אוכל בחוץ'},
+  {k:['פאפא גונס','papa john','מסעדה','restaurant','סושי','sushi','שף','bbq','גריל'],cat:'מזון ופארמה',item:'אוכל בחוץ'},
   // טיפוח וכושר
   {k:['מספרה','תספורת','barber','hair'],cat:'טיפוח וכושר',item:'תספורת'},
   {k:['הולמס','holmes','gym','כושר','ספורט','פילאטיס','יוגה'],cat:'טיפוח וכושר',item:'כושר'},
-  {k:['h&m','zara','castro','fox','golf','shein','asos','pull&bear','renuar','מנגו','next','american eagle','terminal x','אופנה','ביגוד'],cat:'טיפוח וכושר',item:'ביגוד'},
-  // בילויים
-  {k:['סינמה','cinema','yes planet','סינמה סיטי','לב','הוט סינמה','movie'],cat:'בילויים',item:'בילויים משותפים'},
-  {k:['spotify','נטפליקס','netflix','apple tv','disney','hbo','אפל מיוזיק','youtube premium'],cat:'בילויים',item:'מנויים דיגיטליים'},
-  {k:['הופעה','כרטיס','eventim','barby','zappa','הבימה','קאמרי','תיאטרון'],cat:'בילויים',item:'בילויים משותפים'},
-  {k:['booking','airbnb','hotels','מלון','hotel','isrotel','דן','fattal'],cat:'בילויים',item:'נופש'},
+  {k:['h&m','zara','castro','fox ','golf ','shein','asos','pull&bear','renuar','מנגו','next','american eagle','terminal x','אופנה','ביגוד','סיסטארז','bershka','stradivarius','forever 21','מרשלס','marshalls'],cat:'טיפוח וכושר',item:'ביגוד'},
+  // בילויים ותרבות
+  {k:['סינמה','cinema','yes planet','סינמה סיטי','לב','הוט סינמה','movie'],cat:'בילויים',item:'בילויים'},
+  {k:['spotify','נטפליקס','netflix','apple tv','disney','hbo','אפל מיוזיק','youtube premium','youtubepremium'],cat:'מנויים',item:'מנויים דיגיטליים'},
+  {k:['הופעה','eventim','barby','zappa','הבימה','קאמרי','תיאטרון','חברה לתרבות','כרטיסים','תרבות','מוזיאון'],cat:'בילויים',item:'בילויים'},
+  {k:['booking','airbnb','hotels','מלון','hotel','isrotel','דן הוטלס','fattal','צימר'],cat:'בילויים',item:'נופש'},
+  {k:['הטבות פיס','מפעל הפיס','פיס','לוטו'],cat:'בילויים',item:'הגרלות'},
   // חיות מחמד
   {k:['וטרינר','vet','חנות חיות','pet','מזון לכלב','מזון לחתול'],cat:'חיות מחמד',item:'וטרינר ותרופות'},
   // ילדים
   {k:['גן ','צהרון','משפחתון','מעון'],cat:'ילדים',item:'גן/צהרון'},
   {k:['חוג','שיעור פרטי','מורה פרטי'],cat:'ילדים',item:'חוגים'},
-  // ביטוחים
-  {k:['ביטוח לאומי','המוסד לביטוח'],cat:'ביטוחים',item:'ביטוח לאומי'},
-  {k:['ביטוח משכנתא'],cat:'ביטוחים',item:'ביטוח דירה'},
+  // חסכונות
   {k:['ביטוח מנהלים'],cat:'חסכונות',item:'ביטוח מנהלים'},
   {k:['פנסיה','קרן פנסיה','מיטב דש','אלטשולר','הלמן אלדובי','פסגות'],cat:'חסכונות',item:'קרן פנסיה'},
-  {k:['ביטוח שיניים','ביטוח משלים','שב"ן'],cat:'ביטוחים',item:'ביטוח סיעודי'},
-  {k:['ביטוח נסיעות','ביטוח לחו"ל'],cat:'ביטוחים',item:'ביטוח נסיעות'},
-  // חסכונות
   {k:['קרן השתלמות','השתלמות'],cat:'חסכונות',item:'קרן השתלמות'},
   {k:['קופת גמל'],cat:'חסכונות',item:'קופת גמל'},
   {k:['חסכון','תכנית חיסכון','פקדון','פק"מ'],cat:'חסכונות',item:'חיסכון חודשי'},
   {k:['קרן נאמנות','תעודת סל','מניות','ני"ע','ניירות ערך','ברוקר'],cat:'חסכונות',item:'השקעות'},
   {k:['קרן לימודים','חסכון לילד'],cat:'חסכונות',item:'קרן לימודים לילדים'},
-  // כללי
+  // כללי / אונליין
   {k:['amazon','אמזון','aliexpress','ebay','ikea','איקאה'],cat:'חריגות',item:'קניות אונליין'},
   {k:['paypal','פייפל'],cat:'חריגות',item:'PayPal'},
   {k:['apple','אפל','google play'],cat:'חריגות',item:'חנויות אפליקציות'},
+  // בנקים ועמלות
+  {k:['דמי כרטיס','עמלת כרטיס','דמי ניהול','עמלה','עמלות'],cat:'חריגות',item:'עמלות בנק'},
+  {k:['העברה ב bit','bit בנה','העברת bit','העברה בbit'],cat:'חריגות',item:'העברות BIT'},
+  {k:['הי ביז','poalim wonder','wonder','פועלים'],cat:'חריגות',item:'שירותי בנק'},
 ];
 
 function classifyTransaction(desc){
   const lower=(desc||'').toLowerCase().trim();
+  // First: try built-in rules
   for(const rule of BANK_CATEGORY_RULES){
     for(const keyword of rule.k){
       if(lower.includes(keyword.toLowerCase())){
         return {cat:rule.cat,item:rule.item};
+      }
+    }
+  }
+  // Second: try matching against existing category item names in user's config
+  for(const cat of (D.config.categories||[])){
+    for(const item of (cat.items||[])){
+      const itemName=(typeof item==='string'?item:item.name||'').toLowerCase();
+      if(itemName.length>2&&lower.includes(itemName))return {cat:cat.name,item:typeof item==='string'?item:item.name};
+      // Also check if item name appears in description
+      if(itemName.length>3){
+        const words=itemName.split(/\s+/);
+        if(words.length>1&&words.every(w=>w.length>1&&lower.includes(w)))return {cat:cat.name,item:typeof item==='string'?item:item.name};
+      }
+    }
+  }
+  // Third: try provider names from existing monthly data
+  const curKey=mk(curMonth,curYear);
+  const curData=D.months[curKey];
+  if(curData){
+    for(const[catName,catData] of Object.entries(curData.expenses||{})){
+      for(const item of (catData.items||[])){
+        if(item.provider&&item.provider.length>2&&lower.includes(item.provider.toLowerCase())){
+          return {cat:catName,item:item.name};
+        }
       }
     }
   }
@@ -3681,23 +3718,53 @@ function importBankStatement(event){
       rows=rows.filter(r=>r&&r.length>1&&r.some(c=>c!=null&&String(c).trim()!==''));
       if(rows.length<2){toast('הקובץ ריק או לא תקין');return}
 
-      console.log('Bank import: rows='+rows.length+', header=',rows[0]);
+      console.log('Bank import: rows='+rows.length+', first=',rows[0]);
 
-      // Auto-detect columns: look for amount, description, date
+      // Smart header detection: scan ALL rows to find the best header
+      // Credit card statements often have summary sections before the actual data
+      const headerKeywords=['תיאור','פירוט','description','שם בית עסק','שם העסק','פעולה','הפעולה','תנועה'];
+      const amtKeywords=['סכום','חיוב','amount','debit','זכות','credit','סה"כ'];
+      const dateKeywords=['תאריך','date','ת.ערך'];
+      let headerRowIdx=0;
+      let bestHeaderScore=0;
+      for(let ri=0;ri<Math.min(rows.length,50);ri++){
+        const row=rows[ri]||[];
+        let score=0;
+        const rowText=row.map(c=>(String(c||'')).toLowerCase().trim()).join(' ');
+        headerKeywords.forEach(kw=>{if(rowText.includes(kw))score+=3});
+        amtKeywords.forEach(kw=>{if(rowText.includes(kw))score+=2});
+        dateKeywords.forEach(kw=>{if(rowText.includes(kw))score+=1});
+        // Bonus for rows with 3+ non-empty cells (typical header width)
+        const nonEmpty=row.filter(c=>c!=null&&String(c).trim()!=='').length;
+        if(nonEmpty>=3)score+=1;
+        if(score>bestHeaderScore){bestHeaderScore=score;headerRowIdx=ri}
+      }
+
+      const header=rows[headerRowIdx]||[];
+      console.log('Bank import: detected header at row',headerRowIdx,':', header.slice(0,8));
+
+      // Auto-detect columns from the detected header
       let descCol=-1,amtCol=-1,amtCol2=-1,dateCol=-1;
-      const header=rows[0]||[];
       header.forEach((h,i)=>{
         const hl=(String(h)||'').toLowerCase().trim();
-        if(descCol===-1&&(hl.includes('תיאור')||hl.includes('פירוט')||hl.includes('description')||hl.includes('שם')||hl.includes('פעולה')||hl.includes('הפעולה')||hl.includes('תנועה')||hl.includes('אסמכתא')))descCol=i;
-        if(hl.includes('חיוב')||hl.includes('debit')){amtCol=i}
+        if(descCol===-1&&(hl.includes('תיאור')||hl.includes('פירוט')||hl.includes('description')||hl.includes('שם בית עסק')||hl.includes('שם העסק')||hl.includes('פעולה')||hl.includes('הפעולה')||hl.includes('תנועה')))descCol=i;
+        // "שם" alone — only if it's a short header like "שם" not "שם כרטיס"
+        if(descCol===-1&&hl==='שם')descCol=i;
+        if(hl.includes('סכום חיוב')||hl.includes('חיוב בש')||hl.includes('debit')){amtCol=i}
         else if(hl.includes('זכות')||hl.includes('credit')){amtCol2=i}
-        else if(amtCol===-1&&(hl.includes('סכום')||hl.includes('amount')||hl.includes('סה"כ')||hl.includes('סהכ')))amtCol=i;
-        if(dateCol===-1&&(hl.includes('תאריך')||hl.includes('date')||hl.includes('ת.ערך')||hl.includes('תאריך ערך')))dateCol=i;
+        else if(amtCol===-1&&(hl.includes('סכום')||hl.includes('amount')||hl.includes('חיוב'))){amtCol=i}
+        if(dateCol===-1&&!hl.includes('חיוב לתאריך')&&!hl.includes('הפקה')&&(hl==='תאריך'||hl.includes('ת.ערך')||hl.includes('תאריך ערך')||hl==='date'))dateCol=i;
+      });
+      // Secondary amount column: "סכום קנייה" for credit card statements
+      let amtFallbackCol=-1;
+      header.forEach((h,i)=>{
+        const hl=(String(h)||'').toLowerCase().trim();
+        if(hl.includes('סכום קנייה')||hl.includes('סכום עסקה'))amtFallbackCol=i;
       });
 
-      // If no header detected, try data row heuristics
+      // If no header detected from keywords, try data row heuristics
       if(descCol===-1||amtCol===-1){
-        for(let r=1;r<Math.min(rows.length,5);r++){
+        for(let r=headerRowIdx+1;r<Math.min(rows.length,headerRowIdx+5);r++){
           const sampleRow=rows[r]||[];
           sampleRow.forEach((cell,i)=>{
             const s=String(cell||'').trim();
@@ -3709,23 +3776,51 @@ function importBankStatement(event){
           if(descCol!==-1&&amtCol!==-1)break;
         }
       }
-      if(descCol===-1){descCol=1}
-      if(amtCol===-1){amtCol=header.length>3?3:2}
+      if(descCol===-1){descCol=header.length>3?3:1}
+      if(amtCol===-1){amtCol=amtFallbackCol!==-1?amtFallbackCol:(header.length>4?4:2)}
 
-      console.log('Bank import: descCol='+descCol+', amtCol='+amtCol+', amtCol2='+amtCol2+', dateCol='+dateCol);
+      console.log('Bank import: descCol='+descCol+', amtCol='+amtCol+', amtCol2='+amtCol2+', amtFallback='+amtFallbackCol+', dateCol='+dateCol);
 
-      // Parse transactions
+      // Parse transactions starting AFTER the detected header
       const transactions=[];
-      const startRow=header.some(h=>/[א-ת]/.test(String(h||'')))?1:0;
+      const seenRefs={};// dedup by reference number (credit card discount rows)
+      const startRow=headerRowIdx+1;
       for(let i=startRow;i<rows.length;i++){
         const row=rows[i];
         if(!row||row.length<2)continue;
+        // Stop at next section header (credit card statements have multiple sections)
+        const firstCell=String(row[0]||'').trim();
+        if(firstCell.includes('פירוט עבור')||firstCell.includes('רכישות ב'))continue;
+        if(firstCell.includes('מספר חשבון'))continue;
+        if(firstCell===header[0]&&i!==startRow)continue; // duplicate header row (new section)
         const desc=String(row[descCol]||'').trim();
         if(!desc||desc.length<2)continue;
+        // Skip rows that look like section headers
+        if(desc.includes('שם בית עסק')||desc.includes('שם כרטיס'))continue;
 
-        // Try primary amount column, then secondary (credit/debit)
+        // Try primary amount column, then fallback (סכום קנייה), then secondary (credit)
         let amtStr=String(row[amtCol]||'').replace(/[,]/g,'');
         let amt=parseFloat(amtStr.replace(/[^\d.-]/g,''))||0;
+        // For credit card: if primary amount is 0 or very small, try fallback column
+        if(amtFallbackCol!==-1&&amtFallbackCol!==amtCol){
+          const fbStr=String(row[amtFallbackCol]||'').replace(/[,]/g,'');
+          const fbAmt=parseFloat(fbStr.replace(/[^\d.-]/g,''))||0;
+          if(fbAmt>0&&(amt===0||amt<1)){amt=fbAmt}
+          // Dedup: if same reference number seen, keep the one with larger amount
+          const refCol=header.findIndex((h)=>(String(h||'')).includes('אסמכתא'));
+          if(refCol!==-1){
+            const ref=String(row[refCol]||'').trim();
+            if(ref&&seenRefs[ref]){
+              // Keep the larger amount (the actual charge, not the discount row)
+              if(amt>seenRefs[ref].amount){
+                transactions[seenRefs[ref].idx].amount=Math.round(amt);
+                seenRefs[ref].amount=amt;
+              }
+              continue; // skip duplicate row
+            }
+            if(ref)seenRefs[ref]={idx:transactions.length,amount:amt};
+          }
+        }
         if(amt===0&&amtCol2!==-1){
           amtStr=String(row[amtCol2]||'').replace(/[,]/g,'');
           amt=parseFloat(amtStr.replace(/[^\d.-]/g,''))||0;
