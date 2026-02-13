@@ -47,6 +47,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);direction:rt
 .app-header .subtitle{font-size:.78rem;opacity:.85;font-weight:300;margin-top:2px}
 .dark-toggle{background:none;border:1px solid rgba(255,255,255,.3);color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;transition:var(--transition)}
 .dark-toggle:hover{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.5)}
+.hdr-tooltip{position:relative}
+.hdr-tooltip::after{content:attr(data-tip);position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--card-bg,#333);color:var(--text-primary,#fff);font-size:.72rem;white-space:nowrap;padding:4px 10px;border-radius:6px;pointer-events:none;opacity:0;transition:opacity .2s;box-shadow:0 2px 8px rgba(0,0,0,.25);z-index:9999}
+.hdr-tooltip:hover::after{opacity:1}
 
 /* Tabs */
 .tab-bar{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);display:flex;z-index:200;height:var(--tab-height);box-shadow:0 -2px 10px rgba(0,0,0,.06)}
@@ -138,6 +141,13 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);direction:rt
 .summary-item .value.savings-negative{color:var(--danger)}
 
 /* KPI / Dashboard */
+.dash-view-btn{padding:6px 16px;border:none;background:var(--bg);color:var(--text-secondary);cursor:pointer;font-size:.82rem;font-weight:600;transition:var(--transition)}
+.dash-view-btn.active{background:var(--primary);color:#fff}
+.yearly-table{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:8px}
+.yearly-table th,.yearly-table td{padding:8px 10px;text-align:center;border-bottom:1px solid var(--border)}
+.yearly-table th{font-weight:600;background:var(--bg);position:sticky;top:0}
+.yearly-table td.positive{color:var(--success)}.yearly-table td.negative{color:var(--danger)}
+.yearly-table tr:last-child{font-weight:700;background:var(--primary-bg)}
 .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px}
 .kpi-card{background:var(--card);border-radius:var(--radius);padding:14px;box-shadow:var(--card-shadow);text-align:center;position:relative;overflow:hidden}
 .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px}
@@ -462,9 +472,10 @@ body{padding-bottom:0;background:#fff}
 <div class="hdr-right">
 <span id="connectionStatus" class="connection-indicator" style="display:none"></span>
 <span id="partnerStatus" class="partner-status"></span>
-<button class="dark-toggle" id="shareBtn" onclick="showShareModal()" title="שיתוף תקציב" style="display:none">🔗</button>
-<button class="dark-toggle" id="darkToggle" onclick="toggleDarkMode()" title="מצב כהה/בהיר">🌙</button>
-<button class="dark-toggle" id="userBtn" onclick="showUserMenu()" title="חשבון"><span id="userInitial">👤</span></button>
+<button class="dark-toggle hdr-tooltip" id="undoBtn" onclick="undo()" data-tip="ביטול פעולה" style="display:none">↩️</button>
+<button class="dark-toggle hdr-tooltip" id="shareBtn" onclick="showShareModal()" data-tip="שיתוף תקציב" style="display:none">🔗</button>
+<button class="dark-toggle hdr-tooltip" id="darkToggle" onclick="toggleDarkMode()" data-tip="מצב כהה/בהיר">🌙</button>
+<button class="dark-toggle hdr-tooltip" id="userBtn" onclick="showUserMenu()" data-tip="חשבון"><span id="userInitial">👤</span></button>
 </div>
 </header>
 
@@ -546,11 +557,25 @@ body{padding-bottom:0;background:#fff}
 
 <!-- Tab 2: Dashboard -->
 <div class="tab-content" id="tab-dashboard">
-<div class="month-selector" style="margin-bottom:16px">
+<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+<div style="display:flex;border-radius:8px;overflow:hidden;border:1px solid var(--border)">
+<button class="dash-view-btn active" id="dashViewMonth" onclick="switchDashView('month')">חודשי</button>
+<button class="dash-view-btn" id="dashViewYear" onclick="switchDashView('year')">שנתי</button>
+</div>
+<div class="month-selector" id="dashMonthlySelectors" style="margin-bottom:0;flex:1">
 <label>📅</label>
 <select id="dashMonthSelect" onchange="updateDashboard()"></select>
 <input type="number" id="dashYearInput" min="2020" max="2040" onchange="updateDashboard()">
 </div>
+<div id="dashYearlySelectors" style="display:none;gap:8px;align-items:center;flex:1">
+<label>📅 שנה</label>
+<input type="number" id="dashYearlyYear" min="2020" max="2040" value="2026" onchange="updateYearlyDashboard()">
+<label style="margin-right:12px">השוואה ל</label>
+<input type="number" id="dashYearlyCompare" min="2020" max="2040" value="2025" onchange="updateYearlyDashboard()">
+</div>
+</div>
+<!-- Monthly dashboard -->
+<div id="dashMonthlyView">
 <div class="kpi-grid" id="kpiGrid"></div>
 <div class="chart-grid" id="dashCharts">
 <div class="chart-card"><h3>🍩 התפלגות הוצאות</h3><div class="chart-wrapper"><canvas id="chartDoughnut"></canvas></div></div>
@@ -563,6 +588,18 @@ body{padding-bottom:0;background:#fff}
 <div class="chart-card" id="savingsChartCard"><h3>💰 הפקדות חיסכון</h3><div class="chart-wrapper"><canvas id="chartSavings"></canvas></div></div>
 <div class="chart-card"><h3>🏥 בריאות פיננסית</h3><div id="healthScoreContainer"></div></div>
 <div class="chart-card"><h3>👫 השוואה אישית</h3><div id="comparisonContainer"></div></div>
+</div>
+</div>
+<!-- Yearly dashboard -->
+<div id="dashYearlyView" style="display:none">
+<div class="kpi-grid" id="yearlyKpiGrid"></div>
+<div class="chart-grid" id="yearlyCharts">
+<div class="chart-card"><h3>📅 הכנסות והוצאות — השוואה שנתית</h3><div class="chart-wrapper"><canvas id="chartYearCompare"></canvas></div></div>
+<div class="chart-card"><h3>💰 חיסכון חודשי — השוואה שנתית</h3><div class="chart-wrapper"><canvas id="chartYearSavings"></canvas></div></div>
+<div class="chart-card"><h3>🍩 התפלגות הוצאות שנתית</h3><div class="chart-wrapper"><canvas id="chartYearDoughnut"></canvas></div></div>
+<div class="chart-card"><h3>📊 הוצאות לפי קטגוריה — השוואה שנתית</h3><div class="chart-wrapper"><canvas id="chartYearCatCompare"></canvas></div></div>
+</div>
+<div class="chart-card" style="margin-top:12px"><h3>📋 סיכום חודשי</h3><div id="yearlyMonthTable"></div></div>
 </div>
 </div>
 
@@ -652,6 +689,8 @@ let saveTimer = null;
 let charts = {};
 let wizStep = 0;
 let wizData = {};
+const undoStack = [];
+const UNDO_MAX = 20;
 
 // ===== UTILITY =====
 function mk(m,y){return `${y}-${String(m+1).padStart(2,'0')}`}
@@ -668,6 +707,14 @@ document.addEventListener('keydown',function(e){
     if(primary&&!e.shiftKey){e.preventDefault();primary.click()}
   }
   if(e.key==='Escape'){closeModal()}
+});
+// Ctrl+Z undo
+document.addEventListener('keydown',function(e){
+  if((e.ctrlKey||e.metaKey)&&e.key==='z'&&!e.shiftKey){
+    const tag=document.activeElement.tagName;
+    if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT')return;
+    e.preventDefault();undo();
+  }
 });
 
 function uid(){return 'id_'+Math.random().toString(36).substr(2,9)}
@@ -789,6 +836,30 @@ function migrateV1(old){
   Object.assign(D,nd);
 }
 
+function pushUndo(){
+  try{
+    undoStack.push(JSON.stringify(D));
+    if(undoStack.length>UNDO_MAX)undoStack.shift();
+    const btn=document.getElementById('undoBtn');
+    if(btn)btn.style.display='flex';
+  }catch(e){}
+}
+function undo(){
+  if(undoStack.length===0){toast('אין פעולות לביטול');return}
+  const prev=undoStack.pop();
+  try{
+    D=JSON.parse(prev);
+    clearTimeout(saveTimer);
+    try{localStorage.setItem(SK,JSON.stringify(D))}catch(e){}
+    if(fbRef&&fbUser){fbRef.set(D).catch(()=>{})}
+    initApp();
+    toast('↩️ הפעולה האחרונה בוטלה');
+  }catch(e){toast('שגיאה בביטול')}
+  if(undoStack.length===0){
+    const btn=document.getElementById('undoBtn');
+    if(btn)btn.style.display='none';
+  }
+}
 function saveData(){
   clearTimeout(saveTimer);
   saveTimer=setTimeout(()=>{
@@ -1011,7 +1082,9 @@ async function wizardJoinWithCode(){
   try{
     const snap=await fbDb.ref('invites/'+code).once('value');
     if(!snap.exists()){status.style.color='var(--danger)';status.textContent='קוד לא נמצא. בדקו שהועתק נכון';return}
-    fbFamilyId=snap.val();
+    const inv=resolveInvite(snap.val());
+    if(inv.expired){await fbDb.ref('invites/'+code).remove();status.style.color='var(--danger)';status.textContent='קוד ההזמנה פג תוקף (72 שעות). בקשו קוד חדש';return}
+    fbFamilyId=inv.familyId;
     let familyName='תקציב';
     try{const ms=await fbDb.ref('families/'+fbFamilyId+'/meta/name').once('value');if(ms.exists())familyName=ms.val();}catch(e){}
     await fbDb.ref('families/'+fbFamilyId+'/members/'+fbUser.uid).set({
@@ -2025,6 +2098,7 @@ function removeItem(catName,idx){
     <div class="modal-actions"><button class="modal-btn danger" onclick="confirmRemoveItem()">מחק</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
 }
 function confirmRemoveItem(){
+  pushUndo();
   const catName=window._deleteItemCat,idx=window._deleteItemIdx;
   getMonth(mk(curMonth,curYear)).expenses[catName].items.splice(idx,1);
   saveData();closeModal();renderBudgetKeepOpen();toast('פריט נמחק');
@@ -2041,6 +2115,7 @@ function moveItem(catName,idx){
     <div class="modal-actions"><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
 }
 function confirmMoveItem(fromCat,idx,toCat){
+  pushUndo();
   const key=mk(curMonth,curYear);const data=getMonth(key);
   const item=data.expenses[fromCat].items.splice(idx,1)[0];
   // When moving to children category, ensure childId
@@ -2053,6 +2128,7 @@ function confirmMoveItem(fromCat,idx,toCat){
   saveData();closeModal();renderBudgetKeepOpen();toast(`"${item.name}" הועבר ל-${toCat}`);
 }
 function confirmMoveToMisc(fromCat,idx){
+  pushUndo();
   const key=mk(curMonth,curYear);const data=getMonth(key);
   const item=data.expenses[fromCat].items.splice(idx,1)[0];
   if(!data.misc)data.misc={};
@@ -2066,6 +2142,7 @@ function moveMiscItem(itemName){
     <div class="modal-actions"><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
 }
 function confirmMoveMiscTo(itemName,toCat){
+  pushUndo();
   const key=mk(curMonth,curYear);const data=getMonth(key);
   const amount=Number(data.misc[itemName])||0;
   delete data.misc[itemName];
@@ -2142,6 +2219,7 @@ function removeIncome(idx){
     <div class="modal-actions"><button class="modal-btn danger" onclick="confirmRemoveIncome()">מחק</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
 }
 function confirmRemoveIncome(){
+  pushUndo();
   getMonth(mk(curMonth,curYear)).income.splice(window._deleteIncIdx,1);
   saveData();closeModal();renderBudgetKeepOpen();toast('הכנסה נמחקה');
 }
@@ -2179,6 +2257,7 @@ function removeMiscItem(name){
     <div class="modal-actions"><button class="modal-btn danger" onclick="confirmRemoveMisc()">מחק</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
 }
 function confirmRemoveMisc(){
+  pushUndo();
   const name=window._deleteMiscName;
   delete getMonth(mk(curMonth,curYear)).misc[name];
   saveData();closeModal();renderBudgetKeepOpen();toast('פריט נמחק');
@@ -2576,6 +2655,129 @@ function renderChart(id,type,data,options){
   charts[id]=new Chart(ctx.getContext('2d'),{type,data,options:{responsive:true,maintainAspectRatio:true,...options}});
 }
 
+// ===== YEARLY DASHBOARD =====
+let dashView='month';
+function switchDashView(view){
+  dashView=view;
+  document.getElementById('dashViewMonth').classList.toggle('active',view==='month');
+  document.getElementById('dashViewYear').classList.toggle('active',view==='year');
+  document.getElementById('dashMonthlySelectors').style.display=view==='month'?'':'none';
+  document.getElementById('dashYearlySelectors').style.display=view==='year'?'flex':'none';
+  document.getElementById('dashMonthlyView').style.display=view==='month'?'':'none';
+  document.getElementById('dashYearlyView').style.display=view==='year'?'':'none';
+  if(view==='year'){
+    document.getElementById('dashYearlyYear').value=curYear;
+    document.getElementById('dashYearlyCompare').value=curYear-1;
+    updateYearlyDashboard();
+  }
+}
+
+function calcYearTotals(year){
+  let inc=0,exp=0,dep=0;
+  const monthly=[];
+  for(let m=0;m<12;m++){
+    const k=mk(m,year);
+    const t=D.months[k]?calcTotals(k):{income:0,expenses:0,savings:0,deposits:0};
+    inc+=t.income;exp+=t.expenses;dep+=t.deposits;
+    monthly.push(t);
+  }
+  return{income:inc,expenses:exp,savings:inc-exp,deposits:dep,monthly};
+}
+
+function calcYearCatTotals(year){
+  const catTotals={};
+  (D.config.categories||[]).forEach(cat=>{catTotals[cat.name]=0});
+  for(let m=0;m<12;m++){
+    const k=mk(m,year);
+    const d=D.months[k];if(!d)continue;
+    Object.entries(d.expenses||{}).forEach(([cn,cd])=>{
+      if(!catTotals[cn])catTotals[cn]=0;
+      (cd.items||[]).forEach(it=>catTotals[cn]+=(it.amount||0));
+    });
+  }
+  return catTotals;
+}
+
+function updateYearlyDashboard(){
+  const year=parseInt(document.getElementById('dashYearlyYear').value)||curYear;
+  const cmpYear=parseInt(document.getElementById('dashYearlyCompare').value)||(year-1);
+  const cur=calcYearTotals(year);
+  const prev=calcYearTotals(cmpYear);
+  const activeMonths=cur.monthly.filter(m=>m.income>0||m.expenses>0).length||1;
+  const avgInc=Math.round(cur.income/activeMonths);
+  const avgExp=Math.round(cur.expenses/activeMonths);
+
+  // Yearly KPIs
+  function yoyPct(c,p){if(!p)return '';const pct=Math.round((c-p)/Math.abs(p||1)*100);return pct>0?`<div class="kpi-mom down">▲ ${pct}% vs ${cmpYear}</div>`:pct<0?`<div class="kpi-mom up">▼ ${Math.abs(pct)}% vs ${cmpYear}</div>`:'';}
+  document.getElementById('yearlyKpiGrid').innerHTML=`
+    <div class="kpi-card blue"><div class="kpi-label">הכנסות שנתיות</div><div class="kpi-value">${fc(cur.income)}</div>${prev.income?yoyPct(cur.income,prev.income):''}<div style="font-size:.72rem;color:var(--text-secondary)">ממוצע ${fc(avgInc)}/חודש</div></div>
+    <div class="kpi-card ${cur.expenses>cur.income?'red':'amber'}"><div class="kpi-label">הוצאות שנתיות</div><div class="kpi-value">${fc(cur.expenses)}</div>${prev.expenses?yoyPct(cur.expenses,prev.expenses):''}<div style="font-size:.72rem;color:var(--text-secondary)">ממוצע ${fc(avgExp)}/חודש</div></div>
+    <div class="kpi-card ${cur.savings>=0?'green':'red'}"><div class="kpi-label">חיסכון שנתי</div><div class="kpi-value">${fc(cur.savings)}</div>${prev.savings?yoyPct(cur.savings,prev.savings):''}</div>
+    <div class="kpi-card blue"><div class="kpi-label">הפקדות שנתיות</div><div class="kpi-value">${fc(cur.deposits)}</div>${prev.deposits?yoyPct(cur.deposits,prev.deposits):''}</div>`;
+
+  // Chart 1: Year comparison — income & expenses lines
+  const labels=HM;
+  renderChart('chartYearCompare','line',{
+    labels,
+    datasets:[
+      {label:`הכנסות ${year}`,data:cur.monthly.map(m=>m.income),borderColor:'#16A34A',backgroundColor:'rgba(22,163,74,.08)',fill:false,tension:.3,pointRadius:3},
+      {label:`הוצאות ${year}`,data:cur.monthly.map(m=>m.expenses),borderColor:'#EF4444',backgroundColor:'rgba(239,68,68,.08)',fill:false,tension:.3,pointRadius:3},
+      {label:`הכנסות ${cmpYear}`,data:prev.monthly.map(m=>m.income),borderColor:'#16A34A',borderDash:[5,5],backgroundColor:'transparent',fill:false,tension:.3,pointRadius:2},
+      {label:`הוצאות ${cmpYear}`,data:prev.monthly.map(m=>m.expenses),borderColor:'#EF4444',borderDash:[5,5],backgroundColor:'transparent',fill:false,tension:.3,pointRadius:2}
+    ]
+  },{plugins:{legend:{display:true,position:'bottom',labels:{font:{size:11}}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>fc(v)}}}});
+
+  // Chart 2: Savings comparison
+  renderChart('chartYearSavings','bar',{
+    labels,
+    datasets:[
+      {label:`חיסכון ${year}`,data:cur.monthly.map(m=>m.savings),backgroundColor:cur.monthly.map(m=>m.savings>=0?'rgba(22,163,74,.7)':'rgba(239,68,68,.7)'),borderRadius:4},
+      {label:`חיסכון ${cmpYear}`,data:prev.monthly.map(m=>m.savings),backgroundColor:prev.monthly.map(m=>m.savings>=0?'rgba(22,163,74,.25)':'rgba(239,68,68,.25)'),borderRadius:4}
+    ]
+  },{plugins:{legend:{display:true,position:'bottom'}},scales:{y:{ticks:{callback:v=>fc(v)}}}});
+
+  // Chart 3: Yearly expense doughnut
+  const catTotals=calcYearCatTotals(year);
+  const catLabels=[],catVals=[],catColors=[];
+  const palette=['#6366F1','#F59E0B','#10B981','#EF4444','#8B5CF6','#EC4899','#14B8A6','#F97316','#06B6D4','#84CC16','#A855F7','#E11D48'];
+  let ci=0;
+  (D.config.categories||[]).forEach(cat=>{
+    const v=catTotals[cat.name]||0;
+    if(v>0){catLabels.push(cat.icon+' '+cat.name);catVals.push(v);catColors.push(palette[ci%palette.length])}
+    ci++;
+  });
+  renderChart('chartYearDoughnut','doughnut',{labels:catLabels,datasets:[{data:catVals,backgroundColor:catColors}]},{plugins:{legend:{display:true,position:'bottom',labels:{font:{size:10}}}}});
+
+  // Chart 4: Category comparison bar chart (current year vs compare year)
+  const prevCatTotals=calcYearCatTotals(cmpYear);
+  const compLabels=[],compCur=[],compPrev=[];
+  (D.config.categories||[]).forEach(cat=>{
+    const cv=catTotals[cat.name]||0;
+    const pv=prevCatTotals[cat.name]||0;
+    if(cv>0||pv>0){compLabels.push(cat.icon+' '+cat.name);compCur.push(cv);compPrev.push(pv)}
+  });
+  renderChart('chartYearCatCompare','bar',{
+    labels:compLabels,
+    datasets:[
+      {label:`${year}`,data:compCur,backgroundColor:'rgba(99,102,241,.7)',borderRadius:4},
+      {label:`${cmpYear}`,data:compPrev,backgroundColor:'rgba(99,102,241,.25)',borderRadius:4}
+    ]
+  },{indexAxis:'y',plugins:{legend:{display:true,position:'bottom'}},scales:{x:{ticks:{callback:v=>fc(v)}}}});
+
+  // Monthly summary table
+  let tbl=`<div style="overflow-x:auto"><table class="yearly-table"><thead><tr><th>חודש</th><th>הכנסות</th><th>הוצאות</th><th>חיסכון</th><th>הפקדות</th></tr></thead><tbody>`;
+  let totInc=0,totExp=0,totSav=0,totDep=0;
+  for(let m=0;m<12;m++){
+    const t=cur.monthly[m];
+    totInc+=t.income;totExp+=t.expenses;totSav+=t.savings;totDep+=t.deposits;
+    if(t.income===0&&t.expenses===0)continue;
+    tbl+=`<tr><td>${HM[m]}</td><td>${fc(t.income)}</td><td>${fc(t.expenses)}</td><td class="${t.savings>=0?'positive':'negative'}">${fc(t.savings)}</td><td>${fc(t.deposits)}</td></tr>`;
+  }
+  tbl+=`<tr><td>סה״כ</td><td>${fc(totInc)}</td><td>${fc(totExp)}</td><td class="${totSav>=0?'positive':'negative'}">${fc(totSav)}</td><td>${fc(totDep)}</td></tr>`;
+  tbl+='</tbody></table></div>';
+  document.getElementById('yearlyMonthTable').innerHTML=tbl;
+}
+
 // ===== SAVINGS TAB =====
 function renderSavings(){
   try{
@@ -2849,7 +3051,7 @@ function saveEditGoal(idx){
   saveData();closeModal();renderSavings();toast('יעד עודכן');
 }
 
-function deleteGoal(idx){showModal(`<h3>⚠️ מחיקת יעד</h3><p>למחוק את "${esc(D.savings.goals[idx].name)}"?</p><div class="modal-actions"><button class="modal-btn danger" onclick="D.savings.goals.splice(${idx},1);saveData();closeModal();renderSavings();toast('יעד נמחק')">מחק</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`)}
+function deleteGoal(idx){showModal(`<h3>⚠️ מחיקת יעד</h3><p>למחוק את "${esc(D.savings.goals[idx].name)}"?</p><div class="modal-actions"><button class="modal-btn danger" onclick="pushUndo();D.savings.goals.splice(${idx},1);saveData();closeModal();renderSavings();toast('יעד נמחק')">מחק</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`)}
 
 function completeGoal(idx){
   const g=D.savings.goals.splice(idx,1)[0];
@@ -2930,7 +3132,7 @@ function saveEditFixedSaving(idx){
 }
 
 function deleteFixedSaving(idx){
-  showModal(`<h3>⚠️ מחיקת חיסכון קבוע</h3><p>למחוק את "${esc(D.savings.fixedSavings[idx].name)}"?</p><div class="modal-actions"><button class="modal-btn danger" onclick="D.savings.fixedSavings.splice(${idx},1);saveData();closeModal();renderSavings();toast('חיסכון קבוע נמחק')">מחק</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
+  showModal(`<h3>⚠️ מחיקת חיסכון קבוע</h3><p>למחוק את "${esc(D.savings.fixedSavings[idx].name)}"?</p><div class="modal-actions"><button class="modal-btn danger" onclick="pushUndo();D.savings.fixedSavings.splice(${idx},1);saveData();closeModal();renderSavings();toast('חיסכון קבוע נמחק')">מחק</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
 }
 
 function quickDeposit(goalKey,idx){
@@ -3199,6 +3401,7 @@ function removeChild(idx){
 }
 
 function confirmRemoveChild(idx){
+  pushUndo();
   const child=D.config.children[idx];
   D.config.children.splice(idx,1);
   // Remove from months
@@ -3247,6 +3450,7 @@ function removeCat(idx){
     <div class="modal-actions"><button class="modal-btn danger" onclick="confirmRemoveCat(${idx})">מחק</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
 }
 function confirmRemoveCat(idx){
+  pushUndo();
   const catName=D.config.categories[idx].name;
   D.config.categories.splice(idx,1);
   Object.values(D.months).forEach(m=>{delete m.expenses[catName]});
@@ -3800,25 +4004,30 @@ function importBankStatement(event){
 
         // Try primary amount column, then fallback (סכום קנייה), then secondary (credit)
         let amtStr=String(row[amtCol]||'').replace(/[,]/g,'');
-        let amt=parseFloat(amtStr.replace(/[^\d.-]/g,''))||0;
+        let rawAmt=parseFloat(amtStr.replace(/[^\d.-]/g,''))||0;
+        let amt=rawAmt;
         // For credit card: if primary amount is 0 or very small, try fallback column
         if(amtFallbackCol!==-1&&amtFallbackCol!==amtCol){
           const fbStr=String(row[amtFallbackCol]||'').replace(/[,]/g,'');
           const fbAmt=parseFloat(fbStr.replace(/[^\d.-]/g,''))||0;
           if(fbAmt>0&&(amt===0||amt<1)){amt=fbAmt}
-          // Dedup: if same reference number seen, keep the one with larger amount
+          // Dedup by reference number (credit card CashBack rows)
           const refCol=header.findIndex((h)=>(String(h||'')).includes('אסמכתא'));
           if(refCol!==-1){
             const ref=String(row[refCol]||'').trim();
-            if(ref&&seenRefs[ref]){
-              // Keep the larger amount (the actual charge, not the discount row)
-              if(amt>seenRefs[ref].amount){
-                transactions[seenRefs[ref].idx].amount=Math.round(amt);
-                seenRefs[ref].amount=amt;
+            // Only dedup if ref looks like an actual reference number (long digits)
+            if(ref&&ref.length>8&&/^\d+$/.test(ref)){
+              if(seenRefs[ref]){
+                // Keep the row with the larger PRIMARY column amount (actual charge, not CashBack)
+                if(rawAmt>seenRefs[ref].rawAmt){
+                  const finalAmt=rawAmt>0?rawAmt:fbAmt;
+                  transactions[seenRefs[ref].idx].amount=Math.round(finalAmt);
+                  seenRefs[ref].rawAmt=rawAmt;
+                }
+                continue; // skip duplicate row
               }
-              continue; // skip duplicate row
+              seenRefs[ref]={idx:transactions.length,rawAmt:rawAmt};
             }
-            if(ref)seenRefs[ref]={idx:transactions.length,amount:amt};
           }
         }
         if(amt===0&&amtCol2!==-1){
@@ -3910,6 +4119,7 @@ function showBankImportPreview(transactions){
 }
 
 function confirmBankImport(){
+  pushUndo();
   const transactions=window._bankTransactions||[];
   const unclassified=window._bankUnclassified||[];
   const key=mk(curMonth,curYear);
@@ -4155,11 +4365,21 @@ function hideLoginScreen(){
 }
 
 // ===== FIREBASE FAMILY =====
+const INVITE_EXPIRY_MS=72*60*60*1000; // 72 hours
 function generateInviteCode(){
   const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   const arr=new Uint8Array(8);crypto.getRandomValues(arr);
   let code='';for(let i=0;i<8;i++)code+=chars[arr[i]%chars.length];
   return code;
+}
+function resolveInvite(val){
+  // Backward compat: old format stored plain familyId string
+  if(typeof val==='string')return{familyId:val,expired:false};
+  if(val&&val.familyId){
+    const age=Date.now()-(val.createdAt||0);
+    return{familyId:val.familyId,expired:age>INVITE_EXPIRY_MS};
+  }
+  return{familyId:null,expired:true};
 }
 
 async function resolveFamily(user,retries=0){
@@ -4253,7 +4473,7 @@ async function createNewFamily(familyName,useLocalData){
     const familyEntry={name:fName,role:'admin',joinedAt:Date.now()};
     await fbDb.ref('userFamilies/'+fbUser.uid+'/families/'+fbFamilyId).set(familyEntry);
     await fbDb.ref('userFamilies/'+fbUser.uid+'/activeFamily').set(fbFamilyId);
-    await fbDb.ref('invites/'+inviteCode).set(fbFamilyId);
+    await fbDb.ref('invites/'+inviteCode).set({familyId:fbFamilyId,createdAt:Date.now()});
     userFamilies.push({familyId:fbFamilyId,name:fName,role:'admin'});
     showInviteCode(inviteCode);
   }catch(e){console.error('createFamily error:',e);toast('שגיאה ביצירת משפחה: '+e.message)}
@@ -4270,7 +4490,7 @@ function showInviteCode(code){
     <div class="login-title">המשפחה נוצרה!</div>
     <div class="login-subtitle">שלחו את הקוד הבא כדי להזמין למשתתפים לתקציב</div>
     <div class="invite-code-display">${code}</div>
-    <p style="font-size:.82rem;color:var(--text-secondary)">הקוד חד-פעמי. שמרו אותו!</p>
+    <p style="font-size:.82rem;color:var(--text-secondary)">הקוד חד-פעמי ותקף ל-72 שעות. שמרו אותו!</p>
     <button class="modal-btn primary" style="margin-top:16px" onclick="finishFamilySetup()">המשך לאפליקציה →</button>`;
 }
 
@@ -4290,7 +4510,9 @@ async function joinWithCode(){
   try{
     const snap=await fbDb.ref('invites/'+code).once('value');
     if(!snap.exists()){document.getElementById('joinStatus').textContent='קוד לא נמצא. בדקו שהועתק נכון';return}
-    fbFamilyId=snap.val();
+    const inv=resolveInvite(snap.val());
+    if(inv.expired){await fbDb.ref('invites/'+code).remove();document.getElementById('joinStatus').textContent='קוד ההזמנה פג תוקף (72 שעות). בקשו קוד חדש';return}
+    fbFamilyId=inv.familyId;
     // Get family name
     let familyName='תקציב';
     try{const ms=await fbDb.ref('families/'+fbFamilyId+'/meta/name').once('value');if(ms.exists())familyName=ms.val();}catch(e){}
@@ -4547,12 +4769,6 @@ function showUserMenu(){
     </div>`;
   }
 
-  // Share with friends
-  html+=`<div style="background:var(--primary-bg);border-radius:var(--radius-sm);padding:12px;margin-bottom:10px">
-    <div style="font-weight:600;font-size:.88rem;margin-bottom:4px;color:var(--primary)">💡 שיתוף עם חברים</div>
-    <div style="font-size:.82rem;color:var(--text-secondary)">שלחו את קובץ ה-HTML לחבר — הם יתחברו עם Google שלהם ויקבלו תקציב נפרד לחלוטין. או צרו תקציב חדש והזמינו אותם עם קוד.</div>
-  </div>`;
-
   html+=`<div class="modal-actions" style="margin-top:14px">
     <button class="modal-btn danger" onclick="signOut()">🚪 התנתק</button>
     <button class="modal-btn cancel" onclick="closeModal()">סגור</button>
@@ -4580,16 +4796,32 @@ function showUserMenu(){
       }
     });
 
-    // Load invite code
-    fbDb.ref('invites').orderByValue().equalTo(fbFamilyId).once('value').then(snap=>{
+    // Load invite code (new format: object with familyId + createdAt)
+    fbDb.ref('invites').orderByChild('familyId').equalTo(fbFamilyId).once('value').then(async snap=>{
       const area=document.getElementById('profileInviteArea');
       if(!area)return;
       if(snap.exists()){
-        const code=Object.keys(snap.val())[0];
-        area.innerHTML=renderInviteDisplay(code);
+        const entries=snap.val();
+        const code=Object.keys(entries)[0];
+        const inv=resolveInvite(entries[code]);
+        if(inv.expired){
+          await fbDb.ref('invites/'+code).remove();
+          area.innerHTML=`<div style="font-weight:600;font-size:.88rem;margin-bottom:6px">🔗 הזמנה לתקציב</div>
+            <div style="font-size:.78rem;color:var(--text-secondary);margin-bottom:8px">קוד קודם פג תוקף</div>
+            <button class="btn-sm primary" onclick="generateNewInvite()">צור קוד הזמנה חדש</button>`;
+        }else{
+          area.innerHTML=renderInviteDisplay(code,entries[code].createdAt);
+        }
       }else{
-        area.innerHTML=`<div style="font-weight:600;font-size:.88rem;margin-bottom:6px">🔗 הזמנה לתקציב</div>
-          <button class="btn-sm primary" onclick="generateNewInvite()">צור קוד הזמנה חדש</button>`;
+        // Fallback: check old format (plain string value)
+        const oldSnap=await fbDb.ref('invites').orderByValue().equalTo(fbFamilyId).once('value');
+        if(oldSnap.exists()){
+          const code=Object.keys(oldSnap.val())[0];
+          area.innerHTML=renderInviteDisplay(code);
+        }else{
+          area.innerHTML=`<div style="font-weight:600;font-size:.88rem;margin-bottom:6px">🔗 הזמנה לתקציב</div>
+            <button class="btn-sm primary" onclick="generateNewInvite()">צור קוד הזמנה חדש</button>`;
+        }
       }
     }).catch(e=>{
       console.error('Invite load error:',e);
@@ -4620,12 +4852,21 @@ async function showShareModal(){
   </div>`);
   // Load invite code
   try{
-    const snap=await fbDb.ref('invites').orderByValue().equalTo(fbFamilyId).once('value');
+    let snap=await fbDb.ref('invites').orderByChild('familyId').equalTo(fbFamilyId).once('value');
+    // Fallback to old format
+    if(!snap.exists())snap=await fbDb.ref('invites').orderByValue().equalTo(fbFamilyId).once('value');
     const area=document.getElementById('shareInviteArea');
     if(!area)return;
     if(snap.exists()){
-      const code=Object.keys(snap.val())[0];
-      area.innerHTML=renderInviteDisplay(code);
+      const entries=snap.val();
+      const code=Object.keys(entries)[0];
+      const inv=resolveInvite(entries[code]);
+      if(inv.expired){
+        await fbDb.ref('invites/'+code).remove();
+        area.innerHTML=`<div style="font-size:.78rem;color:var(--text-secondary);margin-bottom:8px">קוד קודם פג תוקף</div><button class="modal-btn primary" onclick="generateShareInvite()">🔗 צור קוד הזמנה חדש</button>`;
+      }else{
+        area.innerHTML=renderInviteDisplay(code,entries[code]?.createdAt);
+      }
     }else{
       area.innerHTML=`<button class="modal-btn primary" onclick="generateShareInvite()">🔗 צור קוד הזמנה</button>`;
     }
@@ -4651,7 +4892,7 @@ async function showShareModal(){
 
 async function generateShareInvite(){
   const code=generateInviteCode();
-  await fbDb.ref('invites/'+code).set(fbFamilyId);
+  await fbDb.ref('invites/'+code).set({familyId:fbFamilyId,createdAt:Date.now()});
   const area=document.getElementById('shareInviteArea');
   if(area)area.innerHTML=renderInviteDisplay(code);
   toast('קוד הזמנה נוצר!');
@@ -4659,15 +4900,24 @@ async function generateShareInvite(){
 
 async function generateNewInvite(){
   const code=generateInviteCode();
-  await fbDb.ref('invites/'+code).set(fbFamilyId);
+  await fbDb.ref('invites/'+code).set({familyId:fbFamilyId,createdAt:Date.now()});
   const area=document.getElementById('profileInviteArea');
   if(area)area.innerHTML=renderInviteDisplay(code);
   toast('קוד הזמנה: '+code);
 }
-function renderInviteDisplay(code){
+function renderInviteDisplay(code,createdAt){
   const link=window.location.href.split('?')[0]+'?invite='+code;
+  let expiryNote='';
+  if(createdAt){
+    const remaining=INVITE_EXPIRY_MS-(Date.now()-createdAt);
+    if(remaining>0){
+      const hrs=Math.floor(remaining/3600000);
+      expiryNote=`<div style="font-size:.72rem;color:var(--text-secondary);text-align:center;margin-top:4px">⏱️ פג תוקף בעוד ${hrs} שעות</div>`;
+    }
+  }
   return `<div style="font-weight:600;font-size:.88rem;margin-bottom:6px">🔗 קוד הזמנה</div>
     <div class="invite-code-display" style="font-size:1.3rem;padding:8px">${code}</div>
+    ${expiryNote}
     <div style="display:flex;gap:6px;margin-top:8px;justify-content:center;flex-wrap:wrap">
       <button class="btn-sm primary" onclick="navigator.clipboard.writeText('${link}');toast('הקישור הועתק!')">📋 העתק קישור ישיר</button>
       <button class="btn-sm" onclick="navigator.clipboard.writeText('${code}');toast('הקוד הועתק!')">📋 העתק קוד</button>
@@ -4810,7 +5060,9 @@ async function doJoinBudget(){
   try{
     const snap=await fbDb.ref('invites/'+code).once('value');
     if(!snap.exists()){document.getElementById('joinBudgetStatus').textContent='קוד לא נמצא';return}
-    const targetFamilyId=snap.val();
+    const inv=resolveInvite(snap.val());
+    if(inv.expired){await fbDb.ref('invites/'+code).remove();document.getElementById('joinBudgetStatus').textContent='קוד ההזמנה פג תוקף (72 שעות). בקשו קוד חדש';return}
+    const targetFamilyId=inv.familyId;
     // Check not already a member
     if(userFamilies.some(f=>f.familyId===targetFamilyId)){document.getElementById('joinBudgetStatus').textContent='כבר חבר/ה בתקציב זה';return}
     // Get family name
@@ -4868,15 +5120,26 @@ async function showFamilySettings(familyId){
 
   // Invite code
   try{
-    const snap=await fbDb.ref('invites').orderByValue().equalTo(familyId).once('value');
+    let snap=await fbDb.ref('invites').orderByChild('familyId').equalTo(familyId).once('value');
+    if(!snap.exists())snap=await fbDb.ref('invites').orderByValue().equalTo(familyId).once('value');
     const area=document.getElementById('familyInviteArea');
     if(!area)return;
     if(snap.exists()){
-      const code=Object.keys(snap.val())[0];
-      area.innerHTML=`<div style="background:var(--bg);border-radius:var(--radius-sm);padding:10px;text-align:center">
-        <div style="font-size:.82rem;font-weight:600;margin-bottom:4px">🔗 קוד הזמנה</div>
-        <div style="font-family:monospace;font-size:1.3rem;font-weight:700;letter-spacing:3px;color:var(--primary)">${code}</div>
-      </div>`;
+      const entries=snap.val();
+      const code=Object.keys(entries)[0];
+      const inv=resolveInvite(entries[code]);
+      if(inv.expired){
+        await fbDb.ref('invites/'+code).remove();
+        area.innerHTML=`<div style="font-size:.78rem;color:var(--text-secondary);margin-bottom:6px">קוד קודם פג תוקף</div><button class="modal-btn" style="width:100%" onclick="generateInviteForFamily('${familyId}')">🔗 צור קוד הזמנה חדש</button>`;
+      }else{
+        let expiryNote='';
+        if(entries[code]?.createdAt){const hrs=Math.floor((INVITE_EXPIRY_MS-(Date.now()-entries[code].createdAt))/3600000);if(hrs>0)expiryNote=`<div style="font-size:.68rem;color:var(--text-secondary)">⏱️ פג תוקף בעוד ${hrs} שעות</div>`;}
+        area.innerHTML=`<div style="background:var(--bg);border-radius:var(--radius-sm);padding:10px;text-align:center">
+          <div style="font-size:.82rem;font-weight:600;margin-bottom:4px">🔗 קוד הזמנה</div>
+          <div style="font-family:monospace;font-size:1.3rem;font-weight:700;letter-spacing:3px;color:var(--primary)">${code}</div>
+          ${expiryNote}
+        </div>`;
+      }
     }else{
       area.innerHTML=`<button class="modal-btn" style="width:100%" onclick="generateInviteForFamily('${familyId}')">🔗 צור קוד הזמנה חדש</button>`;
     }
@@ -4899,7 +5162,7 @@ async function saveFamilySettings(familyId){
 
 async function generateInviteForFamily(familyId){
   const code=generateInviteCode();
-  await fbDb.ref('invites/'+code).set(familyId);
+  await fbDb.ref('invites/'+code).set({familyId,createdAt:Date.now()});
   toast('קוד הזמנה: '+code);
   showFamilySettings(familyId);
 }
@@ -5066,6 +5329,7 @@ function removeEvent(idx){
 }
 
 function confirmRemoveEvent(idx){
+  pushUndo();
   const name=D.config.events[idx].name;
   D.config.events.splice(idx,1);
   saveData();closeModal();renderAdmin();
