@@ -2014,6 +2014,8 @@ function renderAlerts(){
 
   // Over budget categories
   (D.config.categories||[]).forEach(cat=>{
+    if(cat.isChildrenCategory&&D.config.children.length===0)return;
+    if(cat.id==='pet'&&(!D.config.pet||!D.config.pet.enabled))return;
     const cd=data.expenses[cat.name];if(!cd)return;
     const p=cd.budget||0;
     let a=0;cd.items.forEach(i=>{a+=(i.amount||0)});
@@ -2069,6 +2071,8 @@ function renderAlerts(){
   const prevKey=curMonth>0?mk(curMonth-1,curYear):mk(11,curYear-1);
   if(D.months[prevKey]){
     (D.config.categories||[]).forEach(cat=>{
+      if(cat.isChildrenCategory&&D.config.children.length===0)return;
+      if(cat.id==='pet'&&(!D.config.pet||!D.config.pet.enabled))return;
       const cd=data.expenses[cat.name],pd=(D.months[prevKey].expenses||{})[cat.name];
       if(!cd||!pd)return;
       let curA=0,prevA=0;
@@ -2169,9 +2173,11 @@ function updateDashboard(){
       <div class="savings-ring"><svg width="60" height="60" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--border-light)" stroke-width="5"/><circle cx="32" cy="32" r="26" fill="none" stroke="${ringColor}" stroke-width="5" stroke-dasharray="${circ}" stroke-dashoffset="${dash}" stroke-linecap="round"/></svg><span class="ring-text" style="color:${ringColor}">${savPct}%</span></div>
     </div>`;
 
-  // Category data
+  // Category data (skip hidden categories)
   const catNames=[],catActuals=[],catBudgets=[];
   (D.config.categories||[]).forEach(cat=>{
+    if(cat.isChildrenCategory&&D.config.children.length===0)return;
+    if(cat.id==='pet'&&(!D.config.pet||!D.config.pet.enabled))return;
     const cd=data.expenses[cat.name];if(!cd)return;
     let a=0;cd.items.forEach(i=>{a+=(i.amount||0)});
     const b=cd.budget||0;
@@ -2192,8 +2198,12 @@ function updateDashboard(){
   for(let m=0;m<12;m++){const k=mk(m,year);lineL.push(HM[m]);lineD.push(D.months[k]?calcTotals(k).savings:null)}
   renderChart('chartLine','line',{labels:lineL,datasets:[{label:'חיסכון',data:lineD,borderColor:'#16A34A',backgroundColor:'rgba(22,163,74,.1)',fill:true,tension:.3,pointRadius:5,pointBackgroundColor:lineD.map(v=>v!==null&&v<0?'#EF4444':'#16A34A'),spanGaps:false}]},{plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`חיסכון: ${fc(ctx.parsed.y)}`}}},scales:{y:{ticks:{callback:v=>fc(v),color:getComputedStyle(document.documentElement).getPropertyValue('--text-secondary')}},x:{ticks:{font:{family:'Heebo',size:11},color:getComputedStyle(document.documentElement).getPropertyValue('--text-secondary')}}}});
 
-  // Chart 4: Stacked
-  const allCats=(D.config.categories||[]).map(c=>c.name);
+  // Chart 4: Stacked (skip hidden categories)
+  const allCats=(D.config.categories||[]).filter(c=>{
+    if(c.isChildrenCategory&&D.config.children.length===0)return false;
+    if(c.id==='pet'&&(!D.config.pet||!D.config.pet.enabled))return false;
+    return true;
+  }).map(c=>c.name);
   const sDS=allCats.map((cn,ci)=>({label:cn,data:[],backgroundColor:CC[ci%CC.length],borderRadius:2}));
   const sL=[];
   for(let m=0;m<12;m++){const k=mk(m,year);sL.push(HM[m]);allCats.forEach((cn,ci)=>{let t=0;if(D.months[k]&&D.months[k].expenses[cn])(D.months[k].expenses[cn].items||[]).forEach(i=>t+=(i.amount||0));sDS[ci].data.push(t)})}
@@ -2262,6 +2272,8 @@ function renderHealthScore(income,expenses,savings){
   const key=mk(curMonth,curYear);const data=getMonth(key);
   let overCount=0,catCount=0;
   (D.config.categories||[]).forEach(cat=>{
+    if(cat.isChildrenCategory&&D.config.children.length===0)return;
+    if(cat.id==='pet'&&(!D.config.pet||!D.config.pet.enabled))return;
     const cd=data.expenses[cat.name];if(!cd)return;
     const p=cd.budget||0;
     let a=0;cd.items.forEach(i=>{a+=(i.amount||0)});
