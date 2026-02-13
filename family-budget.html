@@ -112,6 +112,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);direction:rt
 .num-input{width:100%;max-width:105px;padding:5px 7px;border:1px solid transparent;border-radius:var(--radius-xs);font-family:var(--font);font-size:.85rem;text-align:center;background:transparent;color:var(--text);transition:var(--transition);min-height:38px;direction:ltr}
 .num-input:hover{border-color:var(--border);background:var(--border-light)}
 .num-input:focus{outline:none;border-color:var(--primary);background:var(--primary-bg);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.add-row-btn{width:28px;height:28px;border:1px solid transparent;background:none;color:var(--text-light);cursor:pointer;border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;font-size:.75rem;transition:var(--transition);opacity:.5;padding:0}
+.add-row-btn:hover{background:var(--success-bg,rgba(22,163,74,.1));color:var(--success);border-color:var(--success);opacity:1}
 .move-btn{width:30px;height:30px;border:1px solid transparent;background:none;color:var(--text-light);cursor:pointer;border-radius:var(--radius-xs);display:flex;align-items:center;justify-content:center;font-size:.7rem;transition:var(--transition);opacity:.6}
 .move-btn:hover{background:var(--primary-bg);color:var(--primary);border-color:var(--primary);opacity:1}
 .delete-btn{width:34px;height:34px;border:none;background:none;color:var(--text-light);cursor:pointer;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.85rem;transition:var(--transition)}
@@ -522,7 +524,7 @@ body{padding-bottom:0;background:#fff}
 <tfoot><tr class="subtotal-row"><td>סה״כ הוצאות אחרות</td><td class="number-cell" id="miscTotalCell">₪ 0</td><td></td></tr></tfoot></table>
 <button class="add-item-btn" onclick="addMiscItem()">+ הוסף פריט</button>
 </div></div>
-<div class="section-title">💵 הכנסות <button class="section-add-btn" onclick="addIncomeRow()" title="הוסף מקור הכנסה">+</button></div>
+<div class="section-title">💵 הכנסות <button class="section-add-btn" onclick="addIncomeRow()" title="הוסף מקור הכנסה">+</button><button class="section-add-btn" onclick="showIncomeDefaults()" title="הגדרות הכנסות ברירת מחדל" style="font-size:.75rem">⚙️</button></div>
 <div class="category-card expanded"><div class="category-body" style="max-height:none">
 <table class="data-table"><thead><tr><th class="owner-cell"></th><th>מקור</th><th class="number-cell">סכום</th><th class="actions-cell"></th></tr></thead>
 <tbody id="incomeBody"></tbody>
@@ -1692,7 +1694,7 @@ function renderBudget(){
             <td class="owner-cell">${ownerBadge(item.owner||'shared',catDef.name,ii,'expense')}</td>
             <td class="item-name"><div style="display:flex;align-items:center;gap:6px">${isEvt?'<span style="font-size:.85rem;cursor:help" title="אירוע שנתי">📅</span>':`<button class="lock-btn${isFixed?' locked':''}" onclick="toggleFixed(this.closest('[data-cat]').dataset.cat,${ii})" title="${isFixed?'נעול — לחצי לשחרור':'לחצי לנעול כהוצאה קבועה'}">${isFixed?'🔒':'🔓'}</button>`}<div>${esc(item.name)}<span class="provider-text${item.provider?' has-provider':''}" onclick="setProvider(this.closest('[data-cat]').dataset.cat,${ii})">${item.provider?'🏢 '+esc(item.provider):'+ ספק'}</span></div></div></td>
             <td class="number-cell"><input class="num-input" type="number" min="0" value="${item.amount||0}" oninput="updateItem(this.closest('[data-cat]').dataset.cat,${ii},this.value)" onfocus="this.select()"></td>
-            <td class="actions-cell"><button class="move-btn" onclick="moveItem(this.closest('[data-cat]').dataset.cat,${ii})" title="העבר לקטגוריה אחרת"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/><path d="M12 11v6m0 0l-3-3m3 3l3-3"/></svg></button><button class="delete-btn" onclick="removeItem(this.closest('[data-cat]').dataset.cat,${ii})">✕</button></td>
+            <td class="actions-cell"><button class="add-row-btn" onclick="quickAddRow(this.closest('[data-cat]').dataset.cat,${ii})" title="הוסף שורה נוספת">➕</button><button class="move-btn" onclick="moveItem(this.closest('[data-cat]').dataset.cat,${ii})" title="העבר לקטגוריה אחרת"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/><path d="M12 11v6m0 0l-3-3m3 3l3-3"/></svg></button><button class="delete-btn" onclick="removeItem(this.closest('[data-cat]').dataset.cat,${ii})">✕</button></td>
           </tr>`;
         }).join('')}</tbody>
         <tfoot><tr class="subtotal-row"><td></td><td>סה״כ ${esc(catDef.name)}</td><td class="number-cell">${fc(totalSpent)}</td><td></td></tr></tfoot>
@@ -2090,6 +2092,32 @@ function confirmAddItem(){
   toast(`"${name}" נוסף${isFixed?' (קבוע 🔒)':''}`);
 }
 
+function quickAddRow(catName,idx){
+  const key=mk(curMonth,curYear);const data=getMonth(key);
+  const item=data.expenses[catName].items[idx];
+  if(!item)return;
+  window._quickCat=catName;window._quickName=item.name;
+  showModal(`<h3>➕ שורה נוספת — ${esc(item.name)}</h3>
+    <p style="font-size:.82rem;color:var(--text-secondary)">הוספת הוצאה נוספת תחת "${esc(item.name)}" בקטגוריית ${esc(catName)}</p>
+    <div class="modal-field"><label>בית עסק / פירוט</label><input class="modal-input" type="text" id="qrProvider" placeholder="לדוגמה: שם המסעדה, שם החנות"></div>
+    <div class="modal-field"><label>סכום</label><div class="modal-currency-wrap"><input class="modal-input ltr" type="number" id="qrAmount" min="0" placeholder="0"></div></div>
+    <div class="modal-actions"><button class="modal-btn primary" onclick="confirmQuickRow()">הוסף</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
+  setTimeout(()=>{const i=document.getElementById('qrProvider');if(i)i.focus()},250);
+}
+function confirmQuickRow(){
+  const catName=window._quickCat;const name=window._quickName;
+  const provider=(document.getElementById('qrProvider').value||'').trim();
+  const amount=Math.max(0,parseInt(document.getElementById('qrAmount').value)||0);
+  if(!amount&&!provider){toast('נא להזין סכום או פירוט');return}
+  pushUndo();
+  const key=mk(curMonth,curYear);
+  const newItem={name,amount,isDefault:false,owner:'shared'};
+  if(provider)newItem.provider=provider;
+  getMonth(key).expenses[catName].items.push(newItem);
+  saveData();closeModal();renderBudgetKeepOpen();
+  toast(`שורה נוספת ל"${name}" — ${provider||fc(amount)}`);
+}
+
 function removeItem(catName,idx){
   const key=mk(curMonth,curYear);const data=getMonth(key);
   const item=data.expenses[catName].items[idx];
@@ -2210,6 +2238,44 @@ function confirmAddIncome(){
   if(isFixed)newInc.fixed=true;
   getMonth(mk(curMonth,curYear)).income.push(newInc);
   saveData();closeModal();renderBudgetKeepOpen();toast(`"${source}" נוסף${isFixed?' (קבוע 🔒)':''}`);
+}
+
+function showIncomeDefaults(){
+  const sources=D.config.incomeSources||[];
+  let rows=sources.map((src,i)=>`
+    <li style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <input class="modal-input" value="${esc(src.name)}" style="flex:1" id="incDef_name_${i}" placeholder="שם המקור">
+      <input class="modal-input ltr" type="number" value="${src.defaultAmount||0}" min="0" style="width:100px;direction:ltr;text-align:right" id="incDef_amt_${i}" placeholder="סכום">
+      <button class="btn-sm danger" onclick="removeIncomeDefault(${i})">✕</button>
+    </li>`).join('');
+  showModal(`<h3>💵 הגדרות הכנסות ברירת מחדל</h3>
+    <p style="font-size:.78rem;color:var(--text-secondary);margin-bottom:12px">מקורות ההכנסה וסכומי ברירת המחדל שמופיעים אוטומטית בכל חודש חדש</p>
+    <ul id="incDefaultsList" style="list-style:none;padding:0;margin:0 0 12px">${rows||'<li style="color:var(--text-light);text-align:center;padding:12px;font-size:.85rem">אין מקורות ברירת מחדל</li>'}</ul>
+    <button class="add-item-btn" onclick="addIncomeDefault()" style="margin-bottom:16px">+ הוסף מקור</button>
+    <div class="modal-actions"><button class="modal-btn primary" onclick="saveIncomeDefaults()">שמור</button><button class="modal-btn cancel" onclick="closeModal()">ביטול</button></div>`);
+}
+
+function addIncomeDefault(){
+  D.config.incomeSources=D.config.incomeSources||[];
+  D.config.incomeSources.push({name:'',defaultAmount:0});
+  saveData();showIncomeDefaults();
+}
+
+function removeIncomeDefault(idx){
+  D.config.incomeSources.splice(idx,1);
+  saveData();showIncomeDefaults();
+}
+
+function saveIncomeDefaults(){
+  const sources=D.config.incomeSources||[];
+  sources.forEach((src,i)=>{
+    const nameEl=document.getElementById('incDef_name_'+i);
+    const amtEl=document.getElementById('incDef_amt_'+i);
+    if(nameEl)src.name=nameEl.value.trim();
+    if(amtEl)src.defaultAmount=parseInt(amtEl.value)||0;
+  });
+  D.config.incomeSources=sources.filter(s=>s.name);
+  saveData();closeModal();toast('הגדרות הכנסות נשמרו');
 }
 
 function removeIncome(idx){
@@ -3232,20 +3298,7 @@ function renderAdmin(){
     <button class="add-item-btn" onclick="addCategory()">+ הוסף קטגוריה</button>
   </div>`;
 
-  // Income Sources Management
-  html+=`<div class="admin-section">
-    <h3>💵 ניהול הכנסות ברירת מחדל</h3>
-    <ul class="admin-list">
-      ${(D.config.incomeSources||[]).map((src,i)=>`
-        <li>
-          <input class="admin-input" value="${esc(src.name)}" style="flex:1" onchange="D.config.incomeSources[${i}].name=this.value;saveData()">
-          <input class="admin-input ltr" type="number" value="${src.defaultAmount||0}" min="0" style="width:100px;direction:ltr;text-align:right" onchange="D.config.incomeSources[${i}].defaultAmount=parseInt(this.value)||0;saveData()">
-          <button class="btn-sm danger" onclick="D.config.incomeSources.splice(${i},1);saveData();renderAdmin()">✕</button>
-        </li>
-      `).join('')}
-    </ul>
-    <button class="add-item-btn" onclick="D.config.incomeSources.push({name:'',defaultAmount:0});saveData();renderAdmin()">+ הוסף מקור</button>
-  </div>`;
+  // Income Sources — now managed via ⚙️ in Budget tab (showIncomeDefaults)
 
   // Events Management
   html+=`<div class="admin-section">
