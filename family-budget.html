@@ -259,7 +259,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);direction:rt
 .wizard-child-card .child-row input{flex:1;min-width:100px}
 
 /* Modal */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s ease}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:5000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s ease}
 .modal-overlay.active{opacity:1;pointer-events:all}
 .modal{background:var(--card);border-radius:var(--radius);padding:24px;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.2);transform:scale(.95);transition:transform .2s ease;max-height:85vh;overflow-y:auto}
 .modal-overlay.active .modal{transform:scale(1)}
@@ -4319,6 +4319,7 @@ function showFamilyManager(){
         ${isActive?'<span style="color:var(--primary);font-weight:700;font-size:.82rem">✓ פעיל</span>'
         :`<button class="btn-sm primary" onclick="switchFamily('${fam.familyId}')">מעבר</button>`}
         ${fam.role==='admin'?`<button class="btn-sm" style="font-size:.75rem" onclick="showFamilySettings('${fam.familyId}')">⚙️</button>`:''}
+        <button class="btn-sm" style="font-size:.7rem;color:var(--danger);border-color:var(--danger)" onclick="confirmLeaveFamily('${fam.familyId}','${esc(fam.name||'תקציב')}')">עזיבה</button>
       </div>`;
     }
     html+=`</div>`;
@@ -4464,6 +4465,58 @@ async function generateInviteForFamily(familyId){
   await fbDb.ref('invites/'+code).set(familyId);
   toast('קוד הזמנה: '+code);
   showFamilySettings(familyId);
+}
+
+function confirmLeaveFamily(familyId,familyName){
+  const isActive=familyId===fbFamilyId;
+  const otherFamilies=userFamilies.filter(f=>f.familyId!==familyId);
+  showModal(`<div style="text-align:center">
+    <div style="font-size:2rem;margin-bottom:8px">👋</div>
+    <h3 style="margin-bottom:8px">עזיבת תקציב</h3>
+    <div style="font-size:.88rem;margin-bottom:6px">בטוח/ה שברצונך לעזוב את <strong>${familyName}</strong>?</div>
+    <div style="font-size:.78rem;color:var(--text-secondary);margin-bottom:14px">הנתונים לא יימחקו — תוכל/י להצטרף מחדש עם קוד הזמנה חדש.</div>
+    ${isActive&&otherFamilies.length===0?'<div style="font-size:.78rem;color:var(--warning);margin-bottom:10px;font-weight:600">⚠️ אין תקציבים אחרים — תועבר/י למסך יצירת תקציב חדש</div>':''}
+    <div class="modal-actions">
+      <button class="modal-btn" style="background:var(--danger);color:#fff" onclick="leaveFamily('${familyId}')">עזוב/י</button>
+      <button class="modal-btn cancel" onclick="closeModal();showFamilyManager()">ביטול</button>
+    </div>
+  </div>`);
+}
+
+async function leaveFamily(familyId){
+  if(!fbUser||!fbDb){toast('יש להתחבר תחילה');return}
+  try{
+    const isActive=familyId===fbFamilyId;
+    // Disconnect listeners if leaving active family
+    if(isActive&&fbRef){fbRef.off();fbRef=null}
+    // Mark offline and remove from family members
+    await fbDb.ref('families/'+familyId+'/members/'+fbUser.uid).remove();
+    // Remove from user's family list
+    await fbDb.ref('userFamilies/'+fbUser.uid+'/families/'+familyId).remove();
+    // Update local state
+    userFamilies=userFamilies.filter(f=>f.familyId!==familyId);
+    // Handle active family change
+    if(isActive){
+      fbFamilyId=null;
+      if(userFamilies.length>0){
+        // Switch to first remaining family
+        closeModal();
+        toast('עזבת את התקציב');
+        await switchFamily(userFamilies[0].familyId);
+      }else{
+        // No families left — clear active and show options
+        await fbDb.ref('userFamilies/'+fbUser.uid+'/activeFamily').remove();
+        D=freshData();
+        closeModal();
+        toast('עזבת את התקציב');
+        showFamilyManager();
+      }
+    }else{
+      closeModal();
+      toast('עזבת את התקציב');
+      showFamilyManager();
+    }
+  }catch(e){toast('שגיאה: '+e.message);console.error('Leave family error:',e)}
 }
 
 // ===== INITIALIZATION =====
