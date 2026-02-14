@@ -19,14 +19,11 @@
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366F1'/><text x='50' y='50' text-anchor='middle' dominant-baseline='central' font-size='55' font-weight='700' fill='white' font-family='Arial'>₪</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700&display=swap" rel="stylesheet">
-<script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" integrity="sha384-ZaR6mWzmJtrRibZ1Vm7SoHFr8OXjyAuGAXalGDKqbxFT18oi/z+oZLIRFkpeNor1" crossorigin="anonymous"></script>
-<script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" integrity="sha384-I1LYojsZ5RM1cOda44Z2h42Qa6YfsQ1XkXxREnhp4ueYBR/4d1pG1K+NZM537Vsj" crossorigin="anonymous"></script>
-<script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js" integrity="sha384-g5H2aNdtgRBYOBLsuOAuHvUXWnw4bswmU+tYjmGc1G3JfKxl79uWwV4sQarJsLwu" crossorigin="anonymous"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" integrity="sha384-vsrfeLOOY6KuIYKDlmVH5UiBmgIdB1oEf7p01YgWHuqmOHfZr374+odEv96n9tNC" crossorigin="anonymous"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" crossorigin="anonymous"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" crossorigin="anonymous"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js" crossorigin="anonymous"></script>
 <style>
 :root{
 --primary:#2563EB;--primary-light:#3B82F6;--primary-dark:#1D4ED8;--primary-bg:#EFF6FF;
@@ -2607,6 +2604,9 @@ function dismissAlert(id){
 
 // ===== DASHBOARD =====
 function updateDashboard(){
+  ensureChart().then(()=>_renderDashboard()).catch(e=>console.warn('Chart.js load failed:',e));
+}
+function _renderDashboard(){
   const month=parseInt(document.getElementById('dashMonthSelect').value);
   const year=parseInt(document.getElementById('dashYearInput').value);
   const key=mk(month,year);
@@ -3863,9 +3863,9 @@ function showItemTrend(catName,itemName){
     </div>
     <canvas id="trendChart" width="500" height="250"></canvas>
     <div class="modal-actions"><button class="modal-btn cancel" onclick="closeModal()">סגור</button></div>`);
-  setTimeout(()=>{
+  ensureChart().then(()=>{
     const ctx=document.getElementById('trendChart');
-    if(!ctx||typeof Chart==='undefined')return;
+    if(!ctx)return;
     new Chart(ctx,{type:'line',data:{labels,datasets:[{
       label:itemName,data:values,borderColor:'#6366F1',backgroundColor:'rgba(99,102,241,.15)',
       fill:true,tension:.3,pointRadius:4,pointBackgroundColor:'#6366F1'
@@ -4028,7 +4028,8 @@ function exportPDF(mode){
 }
 
 function downloadImportTemplate(){
-  if(typeof XLSX==='undefined'){toast('SheetJS לא נטען');return}
+  ensureXLSX().then(()=>_downloadImportTemplate()).catch(()=>toast('שגיאה בטעינת SheetJS'));return}
+function _downloadImportTemplate(){
   const wb=XLSX.utils.book_new();
   const cats=D.config.categories||[];
   const rows=[['תבנית ייבוא — תקציב משפחתי'],[''],['הוראות: מלאו סכומים בעמודה B ליד כל פריט. ניתן להוסיף פריטים חדשים.'],['']];
@@ -4052,7 +4053,8 @@ function downloadImportTemplate(){
 
 // ===== EXCEL EXPORT =====
 function exportExcel(mode){
-  if(typeof XLSX==='undefined'){toast('SheetJS לא נטען');return}
+  ensureXLSX().then(()=>_exportExcel(mode)).catch(()=>toast('שגיאה בטעינת SheetJS'));return}
+function _exportExcel(mode){
   const wb=XLSX.utils.book_new();
 
   if(mode==='month'){
@@ -4136,8 +4138,9 @@ function exportExcel(mode){
 
 // ===== EXCEL IMPORT =====
 function importExcel(event){
-  if(typeof XLSX==='undefined'){toast('SheetJS לא נטען');return}
   const file=event.target.files[0];if(!file)return;
+  ensureXLSX().then(()=>_importExcel(file)).catch(()=>toast('שגיאה בטעינת SheetJS'));return}
+function _importExcel(file){
   const reader=new FileReader();
   reader.onload=function(e){
     try{
@@ -4328,6 +4331,9 @@ function classifyTransaction(desc){
 function importBankStatement(event){
   const file=event.target.files[0];if(!file)return;
   const isCSV=file.name.toLowerCase().endsWith('.csv');
+  if(!isCSV){ensureXLSX().then(()=>_doBankImport(file,false)).catch(()=>toast('שגיאה בטעינת SheetJS'));return}
+  _doBankImport(file,true);return}
+function _doBankImport(file,isCSV){
   const reader=new FileReader();
   reader.onload=function(e){
     try{
@@ -5895,6 +5901,12 @@ function init(){
     initApp();
   }
 }
+
+// Lazy-load Chart.js and SheetJS on demand (not at startup)
+function loadScript(url){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=url;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
+let _chartReady=null,_xlsxReady=null;
+function ensureChart(){if(typeof Chart!=='undefined')return Promise.resolve();if(!_chartReady)_chartReady=loadScript('https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js');return _chartReady}
+function ensureXLSX(){if(typeof XLSX!=='undefined')return Promise.resolve();if(!_xlsxReady)_xlsxReady=loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');return _xlsxReady}
 
 document.addEventListener('DOMContentLoaded',()=>{try{init()}catch(e){console.error('Init error:',e);document.body.innerHTML='<div style="padding:40px;text-align:center;direction:rtl;font-family:sans-serif"><h2>שגיאה בטעינה</h2><p>'+e.message+'</p></div>'}})
 </script>
