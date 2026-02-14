@@ -5402,20 +5402,81 @@ async function removeMember(uid,name,email){
     closeModal();
     toast('המשתמש הוסר מהתקציב');
     if(sendEmail&&email){
-      const now=new Date();
-      const dateStr=now.toLocaleDateString('he-IL',{day:'numeric',month:'long',year:'numeric'});
-      const timeStr=now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
-      const budgetName=userFamilies.find(f=>f.familyId===fbFamilyId)?.name||'התקציב המשותף';
-      const adminName=fbUser?.displayName||'מנהל/ת התקציב';
-      const subject=encodeURIComponent(`הוסרת מהתקציב — ${budgetName}`);
-      const body=encodeURIComponent(`שלום ${name},\n\nהודעה זו נשלחה כדי ליידע אותך שהוסרת מהתקציב "${budgetName}".\n\nתאריך: ${dateStr}\nשעה: ${timeStr}\nעל ידי: ${adminName}\n\nאם לדעתך מדובר בטעות, ניתן לפנות למנהל/ת התקציב.\n\nבברכה,\nמערכת תקציב משפחתי`);
-      window.open(`mailto:${email}?subject=${subject}&body=${body}`,'_blank');
+      sendRemovalEmail(name,email);
     }
     showShareModal();
   }catch(e){
     console.error('Remove member error:',e);
     toast('שגיאה בהסרת המשתמש — ייתכן שחסרות הרשאות');
   }
+}
+
+function sendRemovalEmail(name,email){
+  const now=new Date();
+  const dateStr=now.toLocaleDateString('he-IL',{day:'numeric',month:'long',year:'numeric'});
+  const timeStr=now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+  const budgetName=esc(userFamilies.find(f=>f.familyId===fbFamilyId)?.name||'התקציב המשותף');
+  const adminName=esc(fbUser?.displayName||'מנהל/ת התקציב');
+  const adminEmail=esc(fbUser?.email||'');
+  const year=now.getFullYear();
+  const w=window.open('','_blank');if(!w)return;
+  w.document.write(`<!DOCTYPE html><html dir="rtl" lang="he"><head><meta charset="UTF-8"><title>הודעת הסרה מתקציב</title></head><body style="margin:0;padding:0;background:#F1F5F9;font-family:'Segoe UI',Tahoma,Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#F1F5F9;padding:24px 0">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%">
+
+<!-- HEADER -->
+<tr><td style="background:linear-gradient(135deg,#2563EB,#1D4ED8);border-radius:12px 12px 0 0;padding:32px 24px;text-align:center">
+  <div style="font-size:2.5rem;margin-bottom:8px">💰</div>
+  <div style="color:#fff;font-size:1.4rem;font-weight:700;margin-bottom:4px">תקציב משפחתי</div>
+  <div style="color:rgba(255,255,255,.8);font-size:.85rem">ניהול פיננסי חכם</div>
+</td></tr>
+
+<!-- BODY -->
+<tr><td style="background:#FFFFFF;padding:32px 28px">
+  <h2 style="color:#1E293B;font-size:1.15rem;margin:0 0 16px;font-weight:600">שלום ${esc(name)},</h2>
+  <p style="color:#64748B;font-size:.92rem;line-height:1.7;margin:0 0 20px">ברצוננו ליידע אותך כי הגישה שלך לתקציב <strong style="color:#1E293B">"${budgetName}"</strong> הוסרה.</p>
+
+  <!-- Details card -->
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;margin:0 0 20px">
+    <tr><td style="padding:16px 20px">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr><td style="padding:6px 0;color:#64748B;font-size:.85rem;width:30px">📅</td><td style="padding:6px 0;color:#64748B;font-size:.85rem;width:60px">תאריך:</td><td style="padding:6px 0;color:#1E293B;font-size:.85rem;font-weight:600">${esc(dateStr)}</td></tr>
+        <tr><td style="padding:6px 0;color:#64748B;font-size:.85rem">🕐</td><td style="padding:6px 0;color:#64748B;font-size:.85rem">שעה:</td><td style="padding:6px 0;color:#1E293B;font-size:.85rem;font-weight:600">${esc(timeStr)}</td></tr>
+        <tr><td style="padding:6px 0;color:#64748B;font-size:.85rem">👤</td><td style="padding:6px 0;color:#64748B;font-size:.85rem">על ידי:</td><td style="padding:6px 0;color:#1E293B;font-size:.85rem;font-weight:600">${adminName}</td></tr>
+      </table>
+    </td></tr>
+  </table>
+
+  <p style="color:#64748B;font-size:.88rem;line-height:1.6;margin:0 0 20px">אם לדעתך מדובר בטעות, ניתן לפנות למנהל/ת התקציב${adminEmail?` בכתובת <a href="mailto:${adminEmail}" style="color:#2563EB;text-decoration:none;font-weight:600">${adminEmail}</a>`:''} ולבקש הזמנה מחדש.</p>
+
+  <!-- Divider -->
+  <div style="border-top:1px solid #E2E8F0;margin:20px 0"></div>
+
+  <p style="color:#94A3B8;font-size:.8rem;line-height:1.5;margin:0">שימו לב: הנתונים שהזנת בתקציב נשמרים ולא נמחקו. רק הגישה שלך לתקציב הוסרה.</p>
+</td></tr>
+
+<!-- FOOTER -->
+<tr><td style="background:#1E293B;border-radius:0 0 12px 12px;padding:24px 28px;text-align:center">
+  <div style="font-size:1.2rem;margin-bottom:6px">💰</div>
+  <div style="color:#fff;font-size:.85rem;font-weight:600;margin-bottom:4px">תקציב משפחתי — ניהול פיננסי חכם</div>
+  <div style="color:#94A3B8;font-size:.72rem;margin-bottom:8px">הודעה זו נשלחה אוטומטית ממערכת תקציב משפחתי</div>
+  <div style="border-top:1px solid #334155;margin:12px 0"></div>
+  <div style="color:#64748B;font-size:.68rem">&copy; ${year} תקציב משפחתי. כל הזכויות שמורות.</div>
+</td></tr>
+
+</table>
+</td></tr>
+</table>
+
+<div style="text-align:center;padding:16px">
+  <p style="color:#64748B;font-size:.82rem;margin:0 0 12px">העתיקו את תוכן המייל ושלחו ל: <strong>${esc(email)}</strong></p>
+  <button onclick="document.execCommand('selectAll');document.execCommand('copy');alert('התוכן הועתק!')" style="background:#2563EB;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:.88rem;cursor:pointer;font-weight:600">📋 העתק הכל</button>
+  <span style="margin:0 6px;color:#94A3B8">|</span>
+  <a href="mailto:${esc(email)}?subject=${encodeURIComponent('הוסרת מהתקציב — '+budgetName)}&body=${encodeURIComponent('שלום '+name+',\\n\\nברצוננו ליידע אותך כי הגישה שלך לתקציב \\"'+budgetName+'\\" הוסרה.\\n\\nתאריך: '+dateStr+'\\nשעה: '+timeStr+'\\nעל ידי: '+adminName+'\\n\\nאם לדעתך מדובר בטעות, ניתן לפנות למנהל/ת התקציב ולבקש הזמנה מחדש.\\n\\nבברכה,\\nמערכת תקציב משפחתי')}" style="background:#16A34A;color:#fff;text-decoration:none;padding:10px 24px;border-radius:8px;font-size:.88rem;font-weight:600;display:inline-block">✉️ שלח במייל</a>
+</div>
+</body></html>`);
+  w.document.close();
 }
 
 function appointAdmin(uid,name){
