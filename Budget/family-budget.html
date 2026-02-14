@@ -1141,7 +1141,7 @@ async function wizardJoinWithCode(){
     try{const ms=await fbDb.ref('families/'+fbFamilyId+'/meta/name').once('value');if(ms.exists())familyName=ms.val();}catch(e){}
     await fbDb.ref('families/'+fbFamilyId+'/members/'+fbUser.uid).set({
       email:fbUser.email,displayName:fbUser.displayName||'',photoURL:fbUser.photoURL||'',
-      partnerSlot:2,online:true,lastSeen:firebase.database.ServerValue.TIMESTAMP
+      partnerSlot:2,role:'member',online:true,lastSeen:firebase.database.ServerValue.TIMESTAMP
     });
     await fbDb.ref('userFamilies/'+fbUser.uid+'/families/'+fbFamilyId).set({name:familyName,role:'member',joinedAt:Date.now()});
     await fbDb.ref('userFamilies/'+fbUser.uid+'/activeFamily').set(fbFamilyId);
@@ -4698,6 +4698,7 @@ let fbRef=null;
 let isOnline=true;
 let skipFirebaseSync=false; // prevent re-render loops
 let userFamilies=[]; // [{familyId, name, role:'admin'|'member', createdAt}]
+function isFamilyAdmin(){const fam=userFamilies.find(f=>f.familyId===fbFamilyId);return fam?.role==='admin'}
 
 // ===== FIREBASE CONFIG =====
 const FB_CONFIG={
@@ -4907,7 +4908,7 @@ async function createNewFamily(familyName,useLocalData){
       data:D,
       meta:{createdAt:firebase.database.ServerValue.TIMESTAMP,createdBy:fbUser.uid,name:fName},
       members:{
-        [fbUser.uid]:{email:fbUser.email,displayName:fbUser.displayName||'',photoURL:fbUser.photoURL||'',partnerSlot:1,online:true,lastSeen:firebase.database.ServerValue.TIMESTAMP}
+        [fbUser.uid]:{email:fbUser.email,displayName:fbUser.displayName||'',photoURL:fbUser.photoURL||'',partnerSlot:1,role:'admin',online:true,lastSeen:firebase.database.ServerValue.TIMESTAMP}
       }
     });
     // Add to user's families list
@@ -4960,7 +4961,7 @@ async function joinWithCode(){
     // Add as member with slot 2
     await fbDb.ref('families/'+fbFamilyId+'/members/'+fbUser.uid).set({
       email:fbUser.email,displayName:fbUser.displayName||'',photoURL:fbUser.photoURL||'',
-      partnerSlot:2,online:true,lastSeen:firebase.database.ServerValue.TIMESTAMP
+      partnerSlot:2,role:'member',online:true,lastSeen:firebase.database.ServerValue.TIMESTAMP
     });
     // Add to user's families list
     await fbDb.ref('userFamilies/'+fbUser.uid+'/families/'+fbFamilyId).set({name:familyName,role:'member',joinedAt:Date.now()});
@@ -4986,6 +4987,18 @@ async function connectToFamily(familyId,user){
     myRef.child('online').onDisconnect().set(false);
     myRef.child('lastSeen').onDisconnect().set(firebase.database.ServerValue.TIMESTAMP);
   }catch(e){console.warn('Presence update failed:',e)}
+  // Auto-fix admin role for family creator (backward compat)
+  try{
+    const metaSnap=await fbDb.ref('families/'+familyId+'/meta/createdBy').once('value');
+    if(metaSnap.exists()&&metaSnap.val()===user.uid){
+      const fam=userFamilies.find(f=>f.familyId===familyId);
+      if(fam&&fam.role!=='admin'){
+        fam.role='admin';
+        await fbDb.ref('userFamilies/'+user.uid+'/families/'+familyId+'/role').set('admin');
+        await fbDb.ref('families/'+familyId+'/members/'+user.uid+'/role').set('admin');
+      }
+    }
+  }catch(e){}
   // Load data from Firebase
   try{
     const snap=await fbRef.once('value');
@@ -5221,16 +5234,17 @@ function showUserMenu(){
     fbDb.ref('families/'+fbFamilyId+'/members').once('value').then(snap=>{
       const members=snap.val();if(!members)return;
       const others=Object.entries(members).filter(([uid])=>uid!==fbUser.uid);
+      const amAdmin=isFamilyAdmin();
       const area=document.getElementById('profilePartnerArea');
       if(!area)return;
       if(others.length>0){
         area.innerHTML=others.map(([uid,p])=>`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
           ${p.photoURL?`<img src="${esc(p.photoURL)}" style="width:36px;height:36px;border-radius:50%">`
           :`<div style="width:36px;height:36px;border-radius:50%;background:var(--primary-bg);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700">${esc((p.displayName||'?')[0])}</div>`}
-          <div style="flex:1"><div style="font-weight:600;font-size:.88rem">${esc(p.displayName||'שותף/ה')}</div>
+          <div style="flex:1"><div style="font-weight:600;font-size:.88rem">${esc(p.displayName||'שותף/ה')}${p.role==='admin'?' <span style="font-size:.65rem;background:var(--success);color:#fff;padding:1px 5px;border-radius:4px">מנהל/ת</span>':''}</div>
           <div style="font-size:.75rem;color:var(--text-secondary)">${esc(p.email||'')}</div>
           <div style="font-size:.72rem">${p.online?'🟢 מחובר/ת כעת':'⚫ לא מחובר/ת'}</div></div>
-          <button class="btn-sm" style="background:var(--danger-bg);color:var(--danger);font-size:.7rem;padding:3px 8px" onclick="confirmRemoveMember('${uid}','${esc(p.displayName||'')}')">הסר</button>
+          ${amAdmin?`<button class="btn-sm" style="background:var(--danger-bg);color:var(--danger);font-size:.7rem;padding:3px 8px" onclick="confirmRemoveMember('${uid}','${esc(p.displayName||'')}')">הסר</button>`:''}
         </div>`).join('');
       }else{
         area.innerHTML=`<div style="font-size:.85rem;color:var(--text-secondary)">עדיין לא הצטרפו שותפים. שלחו קוד הזמנה!</div>`;
@@ -5319,14 +5333,26 @@ async function showShareModal(){
     const area=document.getElementById('sharePartnerArea');
     if(!area)return;
     const others=Object.entries(members).filter(([uid])=>uid!==fbUser.uid);
+    const amAdmin=isFamilyAdmin();
+    const myRole=members[fbUser.uid]?.role||'member';
     if(others.length>0){
-      area.innerHTML=`<div style="font-weight:600;font-size:.85rem;margin-bottom:8px">👥 חברי תקציב</div>`+others.map(([uid,m])=>`<div style="display:flex;align-items:center;gap:8px;padding:10px;background:var(--bg);border-radius:var(--radius-sm);margin-bottom:6px">
+      area.innerHTML=`<div style="font-weight:600;font-size:.85rem;margin-bottom:8px">👥 חברי תקציב</div>`
+        +`<div style="display:flex;align-items:center;gap:8px;padding:10px;background:var(--primary-bg);border-radius:var(--radius-sm);margin-bottom:6px">
+        ${fbUser.photoURL?`<img src="${esc(fbUser.photoURL)}" style="width:32px;height:32px;border-radius:50%">`:`<div style="width:32px;height:32px;border-radius:50%;background:var(--primary-bg);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700">${esc((fbUser.displayName||'?')[0])}</div>`}
+        <div style="flex:1;text-align:right"><div style="font-weight:600;font-size:.85rem">${esc(fbUser.displayName||'')} <span style="font-size:.68rem;background:var(--primary);color:#fff;padding:1px 6px;border-radius:4px">את/ה</span>${amAdmin?' <span style="font-size:.68rem;background:var(--success);color:#fff;padding:1px 6px;border-radius:4px">מנהל/ת</span>':''}</div>
+        <div style="font-size:.7rem;color:var(--text-secondary)">${esc(fbUser.email||'')}</div></div></div>`
+        +others.map(([uid,m])=>{
+        const isMemAdmin=m.role==='admin';
+        return `<div style="display:flex;align-items:center;gap:8px;padding:10px;background:var(--bg);border-radius:var(--radius-sm);margin-bottom:6px">
         ${m.photoURL?`<img src="${esc(m.photoURL)}" style="width:32px;height:32px;border-radius:50%">`:`<div style="width:32px;height:32px;border-radius:50%;background:var(--primary-bg);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700">${esc((m.displayName||'?')[0])}</div>`}
-        <div style="flex:1;text-align:right"><div style="font-weight:600;font-size:.85rem">${esc(m.displayName||'')}</div>
+        <div style="flex:1;text-align:right"><div style="font-weight:600;font-size:.85rem">${esc(m.displayName||'')}${isMemAdmin?' <span style="font-size:.68rem;background:var(--success);color:#fff;padding:1px 6px;border-radius:4px">מנהל/ת</span>':''}</div>
         <div style="font-size:.7rem;color:var(--text-secondary)">${esc(m.email||'')}</div>
         <div style="font-size:.68rem;color:${m.online?'var(--success)':'var(--text-light)'}">${m.online?'🟢 מחובר/ת כעת':'⚫ לא מחובר/ת'}</div></div>
-        <button class="btn-sm" style="background:var(--danger-bg);color:var(--danger);font-size:.72rem;padding:4px 10px" onclick="confirmRemoveMember('${uid}','${esc(m.displayName||'')}')">הסר</button>
-      </div>`).join('');
+        ${amAdmin?`<div style="display:flex;flex-direction:column;gap:4px">
+          ${!isMemAdmin?`<button class="btn-sm" style="background:var(--success-bg);color:var(--success);font-size:.68rem;padding:3px 8px" onclick="appointAdmin('${uid}','${esc(m.displayName||'')}')">מנה מנהל/ת</button>`:''}
+          <button class="btn-sm" style="background:var(--danger-bg);color:var(--danger);font-size:.68rem;padding:3px 8px" onclick="confirmRemoveMember('${uid}','${esc(m.displayName||'')}')">הסר</button>
+        </div>`:''}
+      </div>`}).join('');
     }else{
       area.innerHTML='<p style="font-size:.8rem;color:var(--text-light)">טרם הצטרפו שותפים לתקציב</p>';
     }
@@ -5350,6 +5376,7 @@ async function generateNewInvite(){
 }
 
 function confirmRemoveMember(uid,name){
+  if(!isFamilyAdmin()){toast('רק מנהל/ת התקציב יכול/ה להסיר חברים');return}
   showModal(`<div style="text-align:center;padding:10px">
     <div style="font-size:2.5rem;margin-bottom:10px">⚠️</div>
     <h3>הסרת ${esc(name)} מהתקציב</h3>
@@ -5363,15 +5390,42 @@ function confirmRemoveMember(uid,name){
 
 async function removeMember(uid){
   if(!fbDb||!fbFamilyId){toast('שגיאה — אין חיבור');return}
+  if(!isFamilyAdmin()){toast('רק מנהל/ת התקציב יכול/ה להסיר חברים');return}
   try{
     await fbDb.ref('families/'+fbFamilyId+'/members/'+uid).remove();
-    await fbDb.ref('userFamilies/'+uid+'/'+fbFamilyId).remove();
+    await fbDb.ref('userFamilies/'+uid+'/families/'+fbFamilyId).remove();
     closeModal();
     toast('המשתמש הוסר מהתקציב');
     showShareModal();
   }catch(e){
     console.error('Remove member error:',e);
     toast('שגיאה בהסרת המשתמש — ייתכן שחסרות הרשאות');
+  }
+
+function appointAdmin(uid,name){
+  if(!isFamilyAdmin()){toast('רק מנהל/ת יכול/ה למנות מנהל/ת');return}
+  showModal(`<div style="text-align:center;padding:10px">
+    <div style="font-size:2.5rem;margin-bottom:10px">👑</div>
+    <h3>מינוי ${esc(name)} כמנהל/ת</h3>
+    <p style="font-size:.85rem;color:var(--text-secondary);margin:12px 0">${esc(name)} יקבל/תקבל הרשאות ניהול מלאות:<br>הסרת חברים, מינוי מנהלים, וניהול הזמנות.</p>
+    <div class="modal-actions">
+      <button class="modal-btn primary" onclick="doAppointAdmin('${uid}')">מנה מנהל/ת</button>
+      <button class="modal-btn cancel" onclick="closeModal()">ביטול</button>
+    </div>
+  </div>`);
+}
+
+async function doAppointAdmin(uid){
+  if(!fbDb||!fbFamilyId||!isFamilyAdmin())return;
+  try{
+    await fbDb.ref('families/'+fbFamilyId+'/members/'+uid+'/role').set('admin');
+    await fbDb.ref('userFamilies/'+uid+'/families/'+fbFamilyId+'/role').set('admin');
+    closeModal();
+    toast('המשתמש מונה כמנהל/ת');
+    showShareModal();
+  }catch(e){
+    console.error('Appoint admin error:',e);
+    toast('שגיאה — ייתכן שחסרות הרשאות');
   }
 }
 function renderInviteDisplay(code,createdAt){
@@ -5544,7 +5598,7 @@ async function doJoinBudget(){
     // Add as member
     await fbDb.ref('families/'+targetFamilyId+'/members/'+fbUser.uid).set({
       email:fbUser.email,displayName:fbUser.displayName||'',photoURL:fbUser.photoURL||'',
-      partnerSlot:2,online:true,lastSeen:firebase.database.ServerValue.TIMESTAMP
+      partnerSlot:2,role:'member',online:true,lastSeen:firebase.database.ServerValue.TIMESTAMP
     });
     await fbDb.ref('userFamilies/'+fbUser.uid+'/families/'+targetFamilyId).set({name:familyName,role:'member',joinedAt:Date.now()});
     await fbDb.ref('invites/'+code).remove();
