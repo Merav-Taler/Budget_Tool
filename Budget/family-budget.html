@@ -1148,6 +1148,7 @@ async function wizardJoinWithCode(){
     await fbDb.ref('invites/'+code).remove();
     userFamilies.push({familyId:fbFamilyId,name:familyName,role:'member'});
     toast('הצטרפתם לתקציב!');
+    sendJoinEmail(fbUser.displayName||fbUser.email,fbUser.email,familyName);
     hideWizard();
     await connectToFamily(fbFamilyId,fbUser);
   }catch(e){
@@ -4969,6 +4970,7 @@ async function joinWithCode(){
     await fbDb.ref('invites/'+code).remove();
     userFamilies.push({familyId:fbFamilyId,name:familyName,role:'member'});
     toast('הצטרפתם למשפחה!');
+    sendJoinEmail(fbUser.displayName||fbUser.email,fbUser.email,familyName);
     finishFamilySetup();
   }catch(e){document.getElementById('joinStatus').textContent='שגיאה: '+e.message}
 }
@@ -5479,6 +5481,82 @@ function sendRemovalEmail(name,email){
   w.document.close();
 }
 
+function sendJoinEmail(memberName,memberEmail,budgetName){
+  const now=new Date();
+  const dateStr=now.toLocaleDateString('he-IL',{day:'numeric',month:'long',year:'numeric'});
+  const timeStr=now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+  const bName=esc(budgetName||'התקציב');
+  const mName=esc(memberName);
+  const mEmail=esc(memberEmail);
+  const year=now.getFullYear();
+  const appUrl=window.location.href.split('?')[0];
+  // Send to admin — notify them a new member joined
+  const adminEmail=esc(fbUser?.email||'');
+  const adminName=esc(fbUser?.displayName||'');
+  const w=window.open('','_blank');if(!w)return;
+  w.document.write(`<!DOCTYPE html><html dir="rtl" lang="he"><head><meta charset="UTF-8"><title>חבר/ה חדש/ה הצטרף/ה לתקציב</title></head><body style="margin:0;padding:0;background:#F1F5F9;font-family:'Segoe UI',Tahoma,Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#F1F5F9;padding:24px 0">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%">
+
+<!-- HEADER -->
+<tr><td style="background:linear-gradient(135deg,#16A34A,#15803D);border-radius:12px 12px 0 0;padding:32px 24px;text-align:center">
+  <div style="font-size:2.5rem;margin-bottom:8px">🎉</div>
+  <div style="color:#fff;font-size:1.4rem;font-weight:700;margin-bottom:4px">חבר/ה חדש/ה בתקציב!</div>
+  <div style="color:rgba(255,255,255,.8);font-size:.85rem">תקציב משפחתי — ניהול פיננסי חכם</div>
+</td></tr>
+
+<!-- BODY -->
+<tr><td style="background:#FFFFFF;padding:32px 28px">
+  <h2 style="color:#1E293B;font-size:1.15rem;margin:0 0 16px;font-weight:600">שלום${adminName?' '+adminName:''},</h2>
+  <p style="color:#64748B;font-size:.92rem;line-height:1.7;margin:0 0 20px">ברצוננו לבשר לך כי <strong style="color:#1E293B">${mName}</strong> הצטרף/ה לתקציב <strong style="color:#1E293B">"${bName}"</strong> בהצלחה!</p>
+
+  <!-- Details card -->
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;margin:0 0 20px">
+    <tr><td style="padding:16px 20px">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr><td style="padding:6px 0;color:#16A34A;font-size:.85rem;width:30px">👤</td><td style="padding:6px 0;color:#64748B;font-size:.85rem;width:60px">שם:</td><td style="padding:6px 0;color:#1E293B;font-size:.85rem;font-weight:600">${mName}</td></tr>
+        <tr><td style="padding:6px 0;color:#16A34A;font-size:.85rem">✉️</td><td style="padding:6px 0;color:#64748B;font-size:.85rem">מייל:</td><td style="padding:6px 0;color:#1E293B;font-size:.85rem;font-weight:600">${mEmail}</td></tr>
+        <tr><td style="padding:6px 0;color:#16A34A;font-size:.85rem">📅</td><td style="padding:6px 0;color:#64748B;font-size:.85rem">תאריך:</td><td style="padding:6px 0;color:#1E293B;font-size:.85rem;font-weight:600">${esc(dateStr)}</td></tr>
+        <tr><td style="padding:6px 0;color:#16A34A;font-size:.85rem">🕐</td><td style="padding:6px 0;color:#64748B;font-size:.85rem">שעה:</td><td style="padding:6px 0;color:#1E293B;font-size:.85rem;font-weight:600">${esc(timeStr)}</td></tr>
+      </table>
+    </td></tr>
+  </table>
+
+  <p style="color:#64748B;font-size:.88rem;line-height:1.6;margin:0 0 20px">${mName} יכול/ה כעת לצפות ולערוך את התקציב המשותף. ניתן לנהל הרשאות ולהסיר חברים דרך לחצן השיתוף באפליקציה.</p>
+
+  <!-- CTA Button -->
+  <div style="text-align:center;margin:24px 0">
+    <a href="${esc(appUrl)}" style="background:#2563EB;color:#fff;text-decoration:none;padding:12px 32px;border-radius:8px;font-size:.92rem;font-weight:600;display:inline-block">💰 פתח את התקציב</a>
+  </div>
+
+  <!-- Divider -->
+  <div style="border-top:1px solid #E2E8F0;margin:20px 0"></div>
+
+  <p style="color:#94A3B8;font-size:.8rem;line-height:1.5;margin:0">טיפ: ניתן לנהל את חברי התקציב ולמנות מנהלים נוספים דרך מסך השיתוף.</p>
+</td></tr>
+
+<!-- FOOTER -->
+<tr><td style="background:#1E293B;border-radius:0 0 12px 12px;padding:24px 28px;text-align:center">
+  <div style="font-size:1.2rem;margin-bottom:6px">💰</div>
+  <div style="color:#fff;font-size:.85rem;font-weight:600;margin-bottom:4px">תקציב משפחתי — ניהול פיננסי חכם</div>
+  <div style="color:#94A3B8;font-size:.72rem;margin-bottom:8px">הודעה זו נשלחה אוטומטית ממערכת תקציב משפחתי</div>
+  <div style="border-top:1px solid #334155;margin:12px 0"></div>
+  <div style="color:#64748B;font-size:.68rem">&copy; ${year} תקציב משפחתי. כל הזכויות שמורות.</div>
+</td></tr>
+
+</table>
+</td></tr>
+</table>
+
+<div style="text-align:center;padding:16px">
+  <p style="color:#64748B;font-size:.82rem;margin:0 0 12px">שלחו הודעה זו לעצמכם לתיעוד, או התעלמו ממנה</p>
+  <a href="mailto:${adminEmail}?subject=${encodeURIComponent(mName+' הצטרף/ה לתקציב — '+bName)}&body=${encodeURIComponent('שלום,\\n\\n'+mName+' ('+mEmail+') הצטרף/ה לתקציב \\"'+bName+'\\" בתאריך '+dateStr+' בשעה '+timeStr+'.\\n\\nניתן לנהל חברים דרך מסך השיתוף באפליקציה.\\n\\nבברכה,\\nמערכת תקציב משפחתי')}" style="background:#16A34A;color:#fff;text-decoration:none;padding:10px 24px;border-radius:8px;font-size:.88rem;font-weight:600;display:inline-block">✉️ שלח לעצמי במייל</a>
+</div>
+</body></html>`);
+  w.document.close();
+}
+
 function appointAdmin(uid,name){
   if(!isFamilyAdmin()){toast('רק מנהל/ת יכול/ה למנות מנהל/ת');return}
   showModal(`<div style="text-align:center;padding:10px">
@@ -5682,6 +5760,7 @@ async function doJoinBudget(){
     userFamilies.push({familyId:targetFamilyId,name:familyName,role:'member'});
     closeModal();
     toast('הצטרפת ל: '+familyName);
+    sendJoinEmail(fbUser.displayName||fbUser.email,fbUser.email,familyName);
     await switchFamily(targetFamilyId);
   }catch(e){document.getElementById('joinBudgetStatus').textContent='שגיאה: '+e.message}
 }
