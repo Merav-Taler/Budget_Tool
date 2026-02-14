@@ -1135,7 +1135,7 @@ async function wizardJoinWithCode(){
     const snap=await fbDb.ref('invites/'+code).once('value');
     if(!snap.exists()){status.style.color='var(--danger)';status.textContent='קוד לא נמצא. בדקו שהועתק נכון';return}
     const inv=resolveInvite(snap.val());
-    if(inv.expired){await fbDb.ref('invites/'+code).remove();status.style.color='var(--danger)';status.textContent='קוד ההזמנה פג תוקף (72 שעות). בקשו קוד חדש';return}
+    if(inv.expired){await fbDb.ref('invites/'+code).remove();status.style.color='var(--danger)';status.textContent='קוד ההזמנה פג תוקף (24 שעות). בקשו קוד חדש';return}
     fbFamilyId=inv.familyId;
     let familyName='תקציב';
     try{const ms=await fbDb.ref('families/'+fbFamilyId+'/meta/name').once('value');if(ms.exists())familyName=ms.val();}catch(e){}
@@ -4806,7 +4806,7 @@ function hideLoginScreen(){
 }
 
 // ===== FIREBASE FAMILY =====
-const INVITE_EXPIRY_MS=72*60*60*1000; // 72 hours
+const INVITE_EXPIRY_MS=24*60*60*1000; // 24 hours
 function generateInviteCode(){
   const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   const arr=new Uint8Array(8);crypto.getRandomValues(arr);
@@ -4952,7 +4952,7 @@ async function joinWithCode(){
     const snap=await fbDb.ref('invites/'+code).once('value');
     if(!snap.exists()){document.getElementById('joinStatus').textContent='קוד לא נמצא. בדקו שהועתק נכון';return}
     const inv=resolveInvite(snap.val());
-    if(inv.expired){await fbDb.ref('invites/'+code).remove();document.getElementById('joinStatus').textContent='קוד ההזמנה פג תוקף (72 שעות). בקשו קוד חדש';return}
+    if(inv.expired){await fbDb.ref('invites/'+code).remove();document.getElementById('joinStatus').textContent='קוד ההזמנה פג תוקף (24 שעות). בקשו קוד חדש';return}
     fbFamilyId=inv.familyId;
     // Get family name
     let familyName='תקציב';
@@ -5224,14 +5224,14 @@ function showUserMenu(){
       const area=document.getElementById('profilePartnerArea');
       if(!area)return;
       if(others.length>0){
-        const[,p]=others[0];
-        area.innerHTML=`<div style="display:flex;align-items:center;gap:10px">
-          ${p.photoURL?`<img src="${p.photoURL}" style="width:36px;height:36px;border-radius:50%">`
-          :`<div style="width:36px;height:36px;border-radius:50%;background:var(--primary-bg);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700">${(p.displayName||'?')[0]}</div>`}
-          <div><div style="font-weight:600;font-size:.88rem">${p.displayName||'שותף/ה'}</div>
-          <div style="font-size:.75rem;color:var(--text-secondary)">${p.email||''}</div>
+        area.innerHTML=others.map(([uid,p])=>`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          ${p.photoURL?`<img src="${esc(p.photoURL)}" style="width:36px;height:36px;border-radius:50%">`
+          :`<div style="width:36px;height:36px;border-radius:50%;background:var(--primary-bg);color:var(--primary);display:flex;align-items:center;justify-content:center;font-weight:700">${esc((p.displayName||'?')[0])}</div>`}
+          <div style="flex:1"><div style="font-weight:600;font-size:.88rem">${esc(p.displayName||'שותף/ה')}</div>
+          <div style="font-size:.75rem;color:var(--text-secondary)">${esc(p.email||'')}</div>
           <div style="font-size:.72rem">${p.online?'🟢 מחובר/ת כעת':'⚫ לא מחובר/ת'}</div></div>
-        </div>`;
+          <button class="btn-sm" style="background:var(--danger-bg);color:var(--danger);font-size:.7rem;padding:3px 8px" onclick="confirmRemoveMember('${uid}','${esc(p.displayName||'')}')">הסר</button>
+        </div>`).join('');
       }else{
         area.innerHTML=`<div style="font-size:.85rem;color:var(--text-secondary)">עדיין לא הצטרפו שותפים. שלחו קוד הזמנה!</div>`;
       }
@@ -5320,10 +5320,12 @@ async function showShareModal(){
     if(!area)return;
     const others=Object.entries(members).filter(([uid])=>uid!==fbUser.uid);
     if(others.length>0){
-      area.innerHTML=others.map(([,m])=>`<div style="display:flex;align-items:center;gap:8px;justify-content:center;padding:8px;background:var(--bg);border-radius:var(--radius-sm)">
-        ${m.photoURL?`<img src="${m.photoURL}" style="width:28px;height:28px;border-radius:50%">`:`<div style="width:28px;height:28px;border-radius:50%;background:var(--primary-bg);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700">${(m.displayName||'?')[0]}</div>`}
-        <span style="font-weight:600;font-size:.85rem">${esc(m.displayName||'')}</span>
-        <span style="font-size:.72rem;color:${m.online?'var(--success)':'var(--text-light)'}">${m.online?'🟢 מחובר/ת':'⚫ לא מחובר/ת'}</span>
+      area.innerHTML=`<div style="font-weight:600;font-size:.85rem;margin-bottom:8px">👥 חברי תקציב</div>`+others.map(([uid,m])=>`<div style="display:flex;align-items:center;gap:8px;padding:10px;background:var(--bg);border-radius:var(--radius-sm);margin-bottom:6px">
+        ${m.photoURL?`<img src="${esc(m.photoURL)}" style="width:32px;height:32px;border-radius:50%">`:`<div style="width:32px;height:32px;border-radius:50%;background:var(--primary-bg);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700">${esc((m.displayName||'?')[0])}</div>`}
+        <div style="flex:1;text-align:right"><div style="font-weight:600;font-size:.85rem">${esc(m.displayName||'')}</div>
+        <div style="font-size:.7rem;color:var(--text-secondary)">${esc(m.email||'')}</div>
+        <div style="font-size:.68rem;color:${m.online?'var(--success)':'var(--text-light)'}">${m.online?'🟢 מחובר/ת כעת':'⚫ לא מחובר/ת'}</div></div>
+        <button class="btn-sm" style="background:var(--danger-bg);color:var(--danger);font-size:.72rem;padding:4px 10px" onclick="confirmRemoveMember('${uid}','${esc(m.displayName||'')}')">הסר</button>
       </div>`).join('');
     }else{
       area.innerHTML='<p style="font-size:.8rem;color:var(--text-light)">טרם הצטרפו שותפים לתקציב</p>';
@@ -5346,14 +5348,44 @@ async function generateNewInvite(){
   if(area)area.innerHTML=renderInviteDisplay(code);
   toast('קוד הזמנה: '+code);
 }
+
+function confirmRemoveMember(uid,name){
+  showModal(`<div style="text-align:center;padding:10px">
+    <div style="font-size:2.5rem;margin-bottom:10px">⚠️</div>
+    <h3>הסרת ${esc(name)} מהתקציב</h3>
+    <p style="font-size:.85rem;color:var(--text-secondary);margin:12px 0">פעולה זו תסיר את ${esc(name)} מהתקציב המשותף.<br>הנתונים יישארו שמורים, אך ${esc(name)} לא יוכל/תוכל עוד לגשת אליהם.</p>
+    <div class="modal-actions">
+      <button class="modal-btn danger" onclick="removeMember('${uid}')">הסר מהתקציב</button>
+      <button class="modal-btn cancel" onclick="closeModal()">ביטול</button>
+    </div>
+  </div>`);
+}
+
+async function removeMember(uid){
+  if(!fbDb||!fbFamilyId){toast('שגיאה — אין חיבור');return}
+  try{
+    await fbDb.ref('families/'+fbFamilyId+'/members/'+uid).remove();
+    await fbDb.ref('userFamilies/'+uid+'/'+fbFamilyId).remove();
+    closeModal();
+    toast('המשתמש הוסר מהתקציב');
+    showShareModal();
+  }catch(e){
+    console.error('Remove member error:',e);
+    toast('שגיאה בהסרת המשתמש — ייתכן שחסרות הרשאות');
+  }
+}
 function renderInviteDisplay(code,createdAt){
   const link=window.location.href.split('?')[0]+'?invite='+code;
-  let expiryNote='';
+  let expiryNote=`<div style="font-size:.75rem;color:var(--warning);text-align:center;margin-top:6px;padding:4px 8px;background:var(--warning-bg,#FFF7ED);border-radius:6px">⏱️ תוקף הקוד: 24 שעות מרגע היצירה</div>`;
   if(createdAt){
     const remaining=INVITE_EXPIRY_MS-(Date.now()-createdAt);
     if(remaining>0){
       const hrs=Math.floor(remaining/3600000);
-      expiryNote=`<div style="font-size:.72rem;color:var(--text-secondary);text-align:center;margin-top:4px">⏱️ פג תוקף בעוד ${hrs} שעות</div>`;
+      const mins=Math.floor((remaining%3600000)/60000);
+      const timeStr=hrs>0?`${hrs} שעות ו-${mins} דקות`:`${mins} דקות`;
+      expiryNote=`<div style="font-size:.75rem;color:${hrs<3?'var(--danger)':'var(--warning)'};text-align:center;margin-top:6px;padding:4px 8px;background:${hrs<3?'var(--danger-bg)':'var(--warning-bg,#FFF7ED)'};border-radius:6px">⏱️ פג תוקף בעוד ${timeStr}</div>`;
+    }else{
+      expiryNote=`<div style="font-size:.75rem;color:var(--danger);text-align:center;margin-top:6px;padding:4px 8px;background:var(--danger-bg);border-radius:6px">קוד זה פג תוקף</div>`;
     }
   }
   return `<div style="font-weight:600;font-size:.88rem;margin-bottom:6px">🔗 קוד הזמנה</div>
@@ -5502,7 +5534,7 @@ async function doJoinBudget(){
     const snap=await fbDb.ref('invites/'+code).once('value');
     if(!snap.exists()){document.getElementById('joinBudgetStatus').textContent='קוד לא נמצא';return}
     const inv=resolveInvite(snap.val());
-    if(inv.expired){await fbDb.ref('invites/'+code).remove();document.getElementById('joinBudgetStatus').textContent='קוד ההזמנה פג תוקף (72 שעות). בקשו קוד חדש';return}
+    if(inv.expired){await fbDb.ref('invites/'+code).remove();document.getElementById('joinBudgetStatus').textContent='קוד ההזמנה פג תוקף (24 שעות). בקשו קוד חדש';return}
     const targetFamilyId=inv.familyId;
     // Check not already a member
     if(userFamilies.some(f=>f.familyId===targetFamilyId)){document.getElementById('joinBudgetStatus').textContent='כבר חבר/ה בתקציב זה';return}
