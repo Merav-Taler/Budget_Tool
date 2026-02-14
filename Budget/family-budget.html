@@ -2955,23 +2955,6 @@ function generateInsights(key){
         }
       }
     });
-    // Category outlier: single item > 2x per-item average
-    const amounts=items.filter(i=>(i.amount||0)>0).map(i=>i.amount);
-    if(amounts.length>=3){
-      const catAvg=amounts.reduce((a,b)=>a+b,0)/amounts.length;
-      items.forEach(item=>{
-        if(item.amount>catAvg*2&&item.amount>200){
-          const id='insight_outlier_'+item.name+'_'+catName+'_'+key;
-          if(!dismissed.includes(id)){
-            insights.push({id,type:'high_charge',severity:'info',icon:'⚡',
-              title:'פריט בולט בקטגוריה',
-              description:'"'+item.name+'" ('+fc(item.amount)+') גבוה פי '+(item.amount/catAvg).toFixed(1)+' מהממוצע לפריט ב'+catName,
-              suggestion:'שקלו לפצל לקטגוריה נפרדת או לתקצב בנפרד',
-              category:catName});
-          }
-        }
-      });
-    }
   });
 
   // ===== 3. SAVINGS RECOMMENDATIONS =====
