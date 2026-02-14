@@ -5244,7 +5244,7 @@ function showUserMenu(){
           <div style="flex:1"><div style="font-weight:600;font-size:.88rem">${esc(p.displayName||'שותף/ה')}${p.role==='admin'?' <span style="font-size:.65rem;background:var(--success);color:#fff;padding:1px 5px;border-radius:4px">מנהל/ת</span>':''}</div>
           <div style="font-size:.75rem;color:var(--text-secondary)">${esc(p.email||'')}</div>
           <div style="font-size:.72rem">${p.online?'🟢 מחובר/ת כעת':'⚫ לא מחובר/ת'}</div></div>
-          ${amAdmin?`<button class="btn-sm" style="background:var(--danger-bg);color:var(--danger);font-size:.7rem;padding:3px 8px" onclick="confirmRemoveMember('${uid}','${esc(p.displayName||'')}')">הסר</button>`:''}
+          ${amAdmin?`<button class="btn-sm" style="background:var(--danger-bg);color:var(--danger);font-size:.7rem;padding:3px 8px" onclick="confirmRemoveMember('${uid}','${esc(p.displayName||'')}','${esc(p.email||'')}')">הסר</button>`:''}
         </div>`).join('');
       }else{
         area.innerHTML=`<div style="font-size:.85rem;color:var(--text-secondary)">עדיין לא הצטרפו שותפים. שלחו קוד הזמנה!</div>`;
@@ -5350,7 +5350,7 @@ async function showShareModal(){
         <div style="font-size:.68rem;color:${m.online?'var(--success)':'var(--text-light)'}">${m.online?'🟢 מחובר/ת כעת':'⚫ לא מחובר/ת'}</div></div>
         ${amAdmin?`<div style="display:flex;flex-direction:column;gap:4px">
           ${!isMemAdmin?`<button class="btn-sm" style="background:var(--success-bg);color:var(--success);font-size:.68rem;padding:3px 8px" onclick="appointAdmin('${uid}','${esc(m.displayName||'')}')">מנה מנהל/ת</button>`:''}
-          <button class="btn-sm" style="background:var(--danger-bg);color:var(--danger);font-size:.68rem;padding:3px 8px" onclick="confirmRemoveMember('${uid}','${esc(m.displayName||'')}')">הסר</button>
+          <button class="btn-sm" style="background:var(--danger-bg);color:var(--danger);font-size:.68rem;padding:3px 8px" onclick="confirmRemoveMember('${uid}','${esc(m.displayName||'')}','${esc(m.email||'')}')">הסר</button>
         </div>`:''}
       </div>`}).join('');
     }else{
@@ -5375,27 +5375,42 @@ async function generateNewInvite(){
   toast('קוד הזמנה: '+code);
 }
 
-function confirmRemoveMember(uid,name){
+function confirmRemoveMember(uid,name,email){
   if(!isFamilyAdmin()){toast('רק מנהל/ת התקציב יכול/ה להסיר חברים');return}
+  const eName=esc(name);const eEmail=esc(email||'');
   showModal(`<div style="text-align:center;padding:10px">
     <div style="font-size:2.5rem;margin-bottom:10px">⚠️</div>
-    <h3>הסרת ${esc(name)} מהתקציב</h3>
-    <p style="font-size:.85rem;color:var(--text-secondary);margin:12px 0">פעולה זו תסיר את ${esc(name)} מהתקציב המשותף.<br>הנתונים יישארו שמורים, אך ${esc(name)} לא יוכל/תוכל עוד לגשת אליהם.</p>
+    <h3>הסרת ${eName} מהתקציב</h3>
+    <p style="font-size:.85rem;color:var(--text-secondary);margin:12px 0">פעולה זו תסיר את ${eName} מהתקציב המשותף.<br>הנתונים יישארו שמורים, אך ${eName} לא יוכל/תוכל עוד לגשת אליהם.</p>
+    <label style="display:flex;align-items:center;gap:6px;justify-content:center;font-size:.82rem;margin:8px 0;cursor:pointer">
+      <input type="checkbox" id="sendRemoveEmail" checked> שלח הודעה במייל על ההסרה
+    </label>
     <div class="modal-actions">
-      <button class="modal-btn danger" onclick="removeMember('${uid}')">הסר מהתקציב</button>
+      <button class="modal-btn danger" onclick="removeMember('${uid}','${eName}','${eEmail}')">הסר מהתקציב</button>
       <button class="modal-btn cancel" onclick="closeModal()">ביטול</button>
     </div>
   </div>`);
 }
 
-async function removeMember(uid){
+async function removeMember(uid,name,email){
   if(!fbDb||!fbFamilyId){toast('שגיאה — אין חיבור');return}
   if(!isFamilyAdmin()){toast('רק מנהל/ת התקציב יכול/ה להסיר חברים');return}
+  const sendEmail=document.getElementById('sendRemoveEmail')?.checked;
   try{
     await fbDb.ref('families/'+fbFamilyId+'/members/'+uid).remove();
     await fbDb.ref('userFamilies/'+uid+'/families/'+fbFamilyId).remove();
     closeModal();
     toast('המשתמש הוסר מהתקציב');
+    if(sendEmail&&email){
+      const now=new Date();
+      const dateStr=now.toLocaleDateString('he-IL',{day:'numeric',month:'long',year:'numeric'});
+      const timeStr=now.toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+      const budgetName=userFamilies.find(f=>f.familyId===fbFamilyId)?.name||'התקציב המשותף';
+      const adminName=fbUser?.displayName||'מנהל/ת התקציב';
+      const subject=encodeURIComponent(`הוסרת מהתקציב — ${budgetName}`);
+      const body=encodeURIComponent(`שלום ${name},\n\nהודעה זו נשלחה כדי ליידע אותך שהוסרת מהתקציב "${budgetName}".\n\nתאריך: ${dateStr}\nשעה: ${timeStr}\nעל ידי: ${adminName}\n\nאם לדעתך מדובר בטעות, ניתן לפנות למנהל/ת התקציב.\n\nבברכה,\nמערכת תקציב משפחתי`);
+      window.open(`mailto:${email}?subject=${subject}&body=${body}`,'_blank');
+    }
     showShareModal();
   }catch(e){
     console.error('Remove member error:',e);
