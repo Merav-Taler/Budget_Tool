@@ -198,6 +198,32 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);direction:rt
 .alert-banner.amber{background:var(--warning-bg);color:#92400E}
 .alert-banner.blue{background:var(--primary-bg);color:var(--primary)}
 
+/* Financial Insights */
+.insights-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;cursor:pointer;user-select:none}
+.insights-header h3{font-size:.95rem;font-weight:700;display:flex;align-items:center;gap:8px;margin:0}
+.insights-badge{font-size:.7rem;padding:2px 8px;border-radius:10px;font-weight:600}
+.insights-badge.danger{background:var(--danger-bg);color:var(--danger)}
+.insights-badge.warning{background:var(--warning-bg);color:#92400E}
+.insights-badge.info{background:var(--primary-bg);color:var(--primary)}
+.insight-group{margin-bottom:8px}
+.insight-group-header{display:flex;align-items:center;gap:6px;padding:6px 0;font-size:.82rem;font-weight:600;color:var(--text-secondary);cursor:pointer;user-select:none}
+.insight-group-header .chevron{transition:transform .2s;font-size:.7rem}
+.insight-group.collapsed .insight-group-body{display:none}
+.insight-group.collapsed .chevron{transform:rotate(-90deg)}
+.insight-card{display:flex;gap:10px;padding:10px 12px;border-radius:8px;margin-bottom:6px;font-size:.82rem;position:relative;border:1px solid var(--border-light);transition:border-color .2s}
+.insight-card:hover{border-color:var(--primary-light)}
+.insight-card .insight-icon{font-size:1.15rem;flex-shrink:0;margin-top:2px}
+.insight-card .insight-body{flex:1;min-width:0}
+.insight-card .insight-title{font-weight:600;margin-bottom:2px;color:var(--text)}
+.insight-card .insight-desc{color:var(--text-secondary);font-size:.78rem;margin-bottom:4px}
+.insight-card .insight-suggestion{font-size:.75rem;padding:3px 8px;border-radius:6px;margin-top:4px;display:inline-block}
+.insight-card.danger .insight-suggestion{background:var(--danger-bg);color:var(--danger)}
+.insight-card.warning .insight-suggestion{background:var(--warning-bg);color:#92400E}
+.insight-card.info .insight-suggestion{background:var(--primary-bg);color:var(--primary)}
+.insight-card.success .insight-suggestion{background:var(--success-bg);color:var(--success)}
+.insight-card .insight-close{position:absolute;top:6px;left:6px;background:none;border:none;cursor:pointer;font-size:.75rem;opacity:.3;color:var(--text);padding:2px}
+.insight-card .insight-close:hover{opacity:1}
+
 /* Data Management / Admin */
 .dm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:20px}
 .dm-btn{display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px 12px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;font-family:var(--font);font-size:.8rem;font-weight:500;color:var(--text);transition:var(--transition);box-shadow:var(--card-shadow)}
@@ -623,6 +649,7 @@ body{padding-bottom:0;background:#fff}
 <div class="chart-card" id="savingsChartCard"><h3>💰 הפקדות חיסכון</h3><div class="chart-wrapper"><canvas id="chartSavings"></canvas></div></div>
 <div class="chart-card"><h3>🏥 בריאות פיננסית</h3><div id="healthScoreContainer"></div></div>
 <div class="chart-card"><h3>👫 השוואה אישית</h3><div id="comparisonContainer"></div></div>
+<div class="chart-card" style="grid-column:1/-1;display:none" id="insightsCard"><div id="insightsContainer"></div></div>
 </div>
 </div>
 <!-- Yearly dashboard -->
@@ -2721,6 +2748,8 @@ function _renderDashboard(){
   renderHealthScore(income,expenses,savings);
   // Personal Comparison
   renderComparison(data);
+  // Financial Insights
+  renderInsights(key);
 }
 
 // ===== HEALTH SCORE =====
@@ -2795,6 +2824,435 @@ function renderComparison(data){
       <div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>משותף</span><span style="font-weight:600">${fc(shared)}</span></div><div style="height:8px;background:var(--border-light);border-radius:4px"><div style="height:100%;width:${shared/max*100}%;background:var(--success);border-radius:4px"></div></div></div>
       ${children>0?`<div><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span>ילדים</span><span style="font-weight:600">${fc(children)}</span></div><div style="height:8px;background:var(--border-light);border-radius:4px"><div style="height:100%;width:${children/max*100}%;background:var(--warning);border-radius:4px"></div></div></div>`:''}
     </div>`;
+}
+
+// ===== FINANCIAL INSIGHTS ENGINE =====
+function generateInsights(key){
+  const insights=[];
+  const data=D.months[key];
+  if(!data)return insights;
+  const{income,expenses,savings,deposits}=calcTotals(key);
+  const dismissed=D.settings.dismissedAlerts||[];
+  if(income===0&&expenses===0)return insights;
+
+  // Collect all items for this month
+  const allItems=[];
+  Object.entries(data.expenses||{}).forEach(([catName,cd])=>{
+    (cd.items||[]).forEach((item,idx)=>{
+      if((item.amount||0)>0)allItems.push({name:item.name,amount:item.amount,category:catName,idx});
+    });
+  });
+
+  // Collect previous month keys (up to 3 with data)
+  const allKeys=Object.keys(D.months).filter(k=>k!==key).sort();
+  const keyDate=new Date(key+'-01');
+  const prevKeys=allKeys.filter(k=>new Date(k+'-01')<keyDate).slice(-3);
+
+  // Helper: skip hidden categories
+  function skipCat(cat){
+    if(cat.isChildrenCategory&&D.config.children.length===0)return true;
+    if(cat.id==='pet'&&(!D.config.pet||!D.config.pet.enabled))return true;
+    if(cat.id==='events'&&!(D.config.events||[]).some(e=>e.enabled))return true;
+    return false;
+  }
+
+  // ===== 1. DUPLICATE CHARGES =====
+  // 1a. Exact duplicates: same name + amount in same category
+  const exactMap=new Map();
+  allItems.forEach(item=>{
+    const k=item.name+'|'+item.amount+'|'+item.category;
+    exactMap.set(k,(exactMap.get(k)||0)+1);
+  });
+  const exactFlagged=new Set();
+  exactMap.forEach((count,k)=>{
+    if(count<=1)return;
+    const[name,amount,category]=k.split('|');
+    exactFlagged.add(name+'|'+category);
+    const id='insight_dup_exact_'+name+'_'+key;
+    if(!dismissed.includes(id)){
+      insights.push({id,type:'duplicate',severity:'danger',icon:'🔴',
+        title:'חיוב כפול',
+        description:'"'+name+'" ('+fc(Number(amount))+') מופיע '+count+' פעמים ב'+category,
+        suggestion:'בדקו אם מדובר בכפילות ומחקו את העודף',
+        category,amount:Number(amount)});
+    }
+  });
+
+  // 1b. Similar amounts: same name, ±10% amount, same category
+  const byNameCat=new Map();
+  allItems.forEach(item=>{
+    const k=item.name+'|'+item.category;
+    if(!byNameCat.has(k))byNameCat.set(k,[]);
+    byNameCat.get(k).push(item);
+  });
+  byNameCat.forEach((items,k)=>{
+    if(items.length<2)return;
+    const[name,category]=k.split('|');
+    if(exactFlagged.has(name+'|'+category))return;
+    for(let i=0;i<items.length;i++){
+      for(let j=i+1;j<items.length;j++){
+        const ratio=Math.abs(items[i].amount-items[j].amount)/Math.max(items[i].amount,items[j].amount);
+        if(ratio<=0.1&&ratio>0){
+          const id='insight_dup_sim_'+name+'_'+key;
+          if(!dismissed.includes(id)){
+            insights.push({id,type:'duplicate',severity:'warning',icon:'🟡',
+              title:'חיוב דומה חשוד',
+              description:'"'+name+'" מופיע עם סכומים דומים ('+fc(items[i].amount)+' ו-'+fc(items[j].amount)+') ב'+category,
+              suggestion:'בדקו אם אחד מהם כפילות',
+              category,amount:items[i].amount});
+          }
+        }
+      }
+    }
+  });
+
+  // 1c. Cross-category duplicates
+  const byName=new Map();
+  allItems.forEach(item=>{
+    if(!byName.has(item.name))byName.set(item.name,[]);
+    byName.get(item.name).push(item);
+  });
+  byName.forEach((items,name)=>{
+    const cats=new Set(items.map(i=>i.category));
+    if(cats.size>1){
+      const id='insight_dup_cross_'+name+'_'+key;
+      if(!dismissed.includes(id)){
+        insights.push({id,type:'duplicate',severity:'warning',icon:'🔄',
+          title:'פריט בכמה קטגוריות',
+          description:'"'+name+'" מופיע בקטגוריות: '+[...cats].join(', '),
+          suggestion:'ודאו שזה מכוון ולא טעות בסיווג',
+          amount:items.reduce((s,i)=>s+i.amount,0)});
+      }
+    }
+  });
+
+  // ===== 2. UNUSUALLY HIGH CHARGES =====
+  Object.entries(data.expenses||{}).forEach(([catName,cd])=>{
+    const items=cd.items||[];
+    // Per-item: compare to 3-month historical average
+    items.forEach(item=>{
+      if((item.amount||0)===0)return;
+      const hist=[];
+      prevKeys.forEach(pk=>{
+        const pm=D.months[pk];
+        if(!pm||!pm.expenses[catName])return;
+        (pm.expenses[catName].items||[]).forEach(pi=>{
+          if(pi.name===item.name&&(pi.amount||0)>0)hist.push(pi.amount);
+        });
+      });
+      if(hist.length>=2){
+        const avg=hist.reduce((a,b)=>a+b,0)/hist.length;
+        if(item.amount>avg*1.5){
+          const pct=Math.round((item.amount-avg)/avg*100);
+          const id='insight_high_'+item.name+'_'+catName+'_'+key;
+          if(!dismissed.includes(id)){
+            insights.push({id,type:'high_charge',severity:pct>100?'danger':'warning',icon:'📈',
+              title:'חיוב גבוה במיוחד',
+              description:'"'+item.name+'" ב'+catName+': '+fc(item.amount)+' — גבוה ב-'+pct+'% מהממוצע ('+fc(Math.round(avg))+')',
+              suggestion:'בדקו אם זה חיוב חד-פעמי או עליית מחיר',
+              category:catName,amount:item.amount});
+          }
+        }
+      }
+    });
+    // Category outlier: single item > 2x per-item average
+    const amounts=items.filter(i=>(i.amount||0)>0).map(i=>i.amount);
+    if(amounts.length>=3){
+      const catAvg=amounts.reduce((a,b)=>a+b,0)/amounts.length;
+      items.forEach(item=>{
+        if(item.amount>catAvg*2&&item.amount>200){
+          const id='insight_outlier_'+item.name+'_'+catName+'_'+key;
+          if(!dismissed.includes(id)){
+            insights.push({id,type:'high_charge',severity:'info',icon:'⚡',
+              title:'פריט בולט בקטגוריה',
+              description:'"'+item.name+'" ('+fc(item.amount)+') גבוה פי '+(item.amount/catAvg).toFixed(1)+' מהממוצע לפריט ב'+catName,
+              suggestion:'שקלו לפצל לקטגוריה נפרדת או לתקצב בנפרד',
+              category:catName});
+          }
+        }
+      });
+    }
+  });
+
+  // ===== 3. SAVINGS RECOMMENDATIONS =====
+  // 3a. Savings rate gap
+  const savRate=income>0?savings/income:0;
+  if(income>0&&savRate<0.2){
+    const gap=Math.round(income*0.2-savings);
+    const id='insight_sav_rate_'+key;
+    if(gap>0&&!dismissed.includes(id)){
+      insights.push({id,type:'savings_rec',severity:savRate<0.05?'danger':'warning',icon:'💰',
+        title:'שיעור חיסכון נמוך',
+        description:'חוסכים '+Math.round(savRate*100)+'% מההכנסה (מומלץ: 20%)',
+        suggestion:'כדי להגיע ל-20% צריך לחסוך עוד '+fc(gap)+' בחודש'});
+    }
+  }
+
+  // 3b. Categories consistently over budget
+  (D.config.categories||[]).forEach(cat=>{
+    if(skipCat(cat))return;
+    let overCount=0;
+    prevKeys.forEach(pk=>{
+      const pm=D.months[pk];
+      if(!pm||!pm.expenses[cat.name])return;
+      const b=pm.expenses[cat.name].budget||0;
+      let a=0;(pm.expenses[cat.name].items||[]).forEach(i=>a+=(i.amount||0));
+      if(b>0&&a>b)overCount++;
+    });
+    if(overCount>=2){
+      const cd=data.expenses[cat.name];
+      const curActual=cd?(cd.items||[]).reduce((s,i)=>s+(i.amount||0),0):0;
+      const id='insight_chronic_over_'+cat.name+'_'+key;
+      if(!dismissed.includes(id)){
+        insights.push({id,type:'savings_rec',severity:'warning',icon:'📉',
+          title:'חריגה חוזרת ב'+cat.name,
+          description:'חריגה מהתקציב ב-'+overCount+' מתוך '+prevKeys.length+' חודשים אחרונים',
+          suggestion:'שקלו להעלות תקציב ל-'+fc(Math.round(curActual*1.1/100)*100)+' או לצמצם הוצאות',
+          category:cat.name});
+      }
+    }
+  });
+
+  // 3c. Emergency fund analysis
+  const ef=D.savings.emergency;
+  const avgExp=calcAvgMonthlyExpenses();
+  if(ef&&avgExp>0){
+    const recommended=avgExp*3;
+    if(ef.target>0&&ef.target<recommended){
+      const id='insight_ef_target_'+key;
+      if(!dismissed.includes(id)){
+        insights.push({id,type:'savings_rec',severity:ef.target<avgExp?'danger':'warning',icon:'🆘',
+          title:'יעד קרן חירום נמוך',
+          description:'יעד קרן חירום ('+fc(ef.target)+') נמוך מ-3 חודשי הוצאות ('+fc(Math.round(recommended))+')',
+          suggestion:'מומלץ להעלות את היעד ל-'+fc(Math.round(recommended))+' לפחות'});
+      }
+    }
+    if(ef.target>0&&ef.current<ef.target&&(ef.monthlyContribution||0)===0){
+      const id='insight_ef_no_contrib_'+key;
+      if(!dismissed.includes(id)){
+        insights.push({id,type:'savings_rec',severity:'warning',icon:'⚠️',
+          title:'אין הפקדה לקרן חירום',
+          description:'חסרים '+fc(ef.target-ef.current)+' להשלמת קרן החירום אך לא מוגדרת הפקדה חודשית',
+          suggestion:'הגדירו הפקדה חודשית בלשונית חסכונות'});
+      }
+    }
+  }
+
+  // ===== 4. GOAL ADVISOR =====
+  // 4a. Goal pace analysis
+  const now=new Date();
+  (D.savings.goals||[]).forEach(goal=>{
+    if(!goal.targetDate||goal.current>=goal.target)return;
+    const td=new Date(goal.targetDate);
+    const monthsLeft=Math.max(0,(td.getFullYear()-now.getFullYear())*12+(td.getMonth()-now.getMonth()));
+    if(monthsLeft===0)return;
+    const remaining=goal.target-goal.current;
+    const needed=remaining/monthsLeft;
+    if((goal.monthlyContribution||0)>0&&goal.monthlyContribution<needed*0.8){
+      const id='insight_goal_pace_'+goal.id+'_'+key;
+      if(!dismissed.includes(id)){
+        insights.push({id,type:'goal_advisor',severity:'warning',icon:'🎯',
+          title:(goal.emoji||'🎯')+' '+goal.name+' — בסכנה',
+          description:'מפקידים '+fc(goal.monthlyContribution)+'/חודש אבל צריך '+fc(Math.ceil(needed))+'/חודש כדי להגיע ליעד',
+          suggestion:'העלו הפקדה ב-'+fc(Math.ceil(needed-goal.monthlyContribution))+' או הזיזו את תאריך היעד'});
+      }
+    }
+    // Projected completion date
+    if((goal.monthlyContribution||0)>0){
+      const projMonths=Math.ceil(remaining/goal.monthlyContribution);
+      const projDate=new Date(now);
+      projDate.setMonth(projDate.getMonth()+projMonths);
+      if(projMonths>monthsLeft){
+        const id='insight_goal_late_'+goal.id+'_'+key;
+        if(!dismissed.includes(id)){
+          insights.push({id,type:'goal_advisor',severity:'info',icon:'📅',
+            title:goal.name+': תחזית הגעה',
+            description:'בקצב הנוכחי תגיעו ליעד ב'+HM[projDate.getMonth()]+' '+projDate.getFullYear()+' ('+projMonths+' חודשים)',
+            suggestion:'מאוחר ב-'+(projMonths-monthsLeft)+' חודשים מהיעד המקורי'});
+        }
+      }
+    }
+  });
+
+  // 4b. Children's savings pace
+  (D.savings.childrenSavings||[]).forEach(cs=>{
+    const child=(D.config.children||[]).find(c=>c.id===cs.childId);
+    if(!child)return;
+    const yearsLeft=Math.max(0,(cs.targetAge||18)-child.age);
+    const mLeft=yearsLeft*12;
+    if(mLeft<=0||cs.target<=0)return;
+    const remaining=cs.target-cs.current;
+    const needed=remaining/mLeft;
+    if((cs.monthlyContribution||0)>0&&cs.monthlyContribution<needed*0.7){
+      const id='insight_child_sav_'+cs.childId+'_'+key;
+      if(!dismissed.includes(id)){
+        insights.push({id,type:'goal_advisor',severity:'warning',icon:'🎓',
+          title:'חיסכון '+child.name+' לא בקצב',
+          description:'מפקידים '+fc(cs.monthlyContribution)+'/חודש, צריך '+fc(Math.ceil(needed))+'/חודש כדי להגיע ל-'+fc(cs.target)+' עד גיל '+cs.targetAge,
+          suggestion:'העלו הפקדה ב-'+fc(Math.ceil(needed-cs.monthlyContribution))+' בחודש'});
+      }
+    }
+  });
+
+  // 4c. Over-budgeted categories (consistently <60% used) — reallocate to savings
+  (D.config.categories||[]).forEach(cat=>{
+    if(skipCat(cat))return;
+    let underCount=0,totalUnder=0;
+    prevKeys.forEach(pk=>{
+      const pm=D.months[pk];
+      if(!pm||!pm.expenses[cat.name])return;
+      const b=pm.expenses[cat.name].budget||0;
+      let a=0;(pm.expenses[cat.name].items||[]).forEach(i=>a+=(i.amount||0));
+      if(b>0&&a<b*0.6){underCount++;totalUnder+=(b-a)}
+    });
+    if(underCount>=2&&prevKeys.length>=2){
+      const avgUnused=Math.round(totalUnder/underCount);
+      const id='insight_overbudget_'+cat.name+'_'+key;
+      if(!dismissed.includes(id)){
+        insights.push({id,type:'goal_advisor',severity:'success',icon:'💡',
+          title:'תקציב גבוה ב'+cat.name,
+          description:'בממוצע נשארו '+fc(avgUnused)+' לא מנוצלים בחודש — אפשר להקצות לחיסכון',
+          suggestion:'הפנו '+fc(avgUnused)+' חודשי ליעדי חיסכון',
+          category:cat.name});
+      }
+    }
+  });
+
+  // ===== 5. SPENDING TRENDS =====
+  // 5a. Category trends (3+ months)
+  const trendKeys=[...prevKeys,key];
+  (D.config.categories||[]).forEach(cat=>{
+    if(skipCat(cat))return;
+    const vals=[];
+    trendKeys.forEach(tk=>{
+      const m=D.months[tk];
+      if(!m||!m.expenses[cat.name]){vals.push(null);return}
+      let t=0;(m.expenses[cat.name].items||[]).forEach(i=>t+=(i.amount||0));
+      vals.push(t>0?t:null);
+    });
+    const valid=vals.filter(v=>v!==null);
+    if(valid.length>=3){
+      const half=Math.floor(valid.length/2);
+      const firstH=valid.slice(0,half).reduce((a,b)=>a+b,0)/half;
+      const secondH=valid.slice(half).reduce((a,b)=>a+b,0)/(valid.length-half);
+      const change=firstH>0?(secondH-firstH)/firstH:0;
+      if(change>0.2){
+        const pct=Math.round(change*100);
+        const id='insight_trend_up_'+cat.name+'_'+key;
+        if(!dismissed.includes(id)){
+          insights.push({id,type:'trend',severity:'info',icon:'📊',
+            title:'מגמת עלייה ב'+cat.name,
+            description:'הוצאות ב'+cat.name+' עלו ב-'+pct+'% בממוצע לאורך '+valid.length+' חודשים',
+            suggestion:'שימו לב למגמה — שקלו לבדוק מה משתנה',
+            category:cat.name});
+        }
+      }else if(change<-0.2){
+        const pct=Math.abs(Math.round(change*100));
+        const id='insight_trend_down_'+cat.name+'_'+key;
+        if(!dismissed.includes(id)){
+          insights.push({id,type:'trend',severity:'success',icon:'📉',
+            title:'מגמת ירידה ב'+cat.name,
+            description:'הוצאות ב'+cat.name+' ירדו ב-'+pct+'% — כל הכבוד!',
+            suggestion:'המשיכו כך!',
+            category:cat.name});
+        }
+      }
+    }
+  });
+
+  // 5b. Income stability
+  const incHist=[];
+  trendKeys.forEach(ik=>{
+    const m=D.months[ik];
+    if(!m)return;
+    let inc=0;(m.income||[]).forEach(i=>inc+=(i.amount||0));
+    if(inc>0)incHist.push(inc);
+  });
+  if(incHist.length>=3){
+    const avg=incHist.reduce((a,b)=>a+b,0)/incHist.length;
+    const variance=incHist.reduce((a,v)=>a+Math.pow(v-avg,2),0)/incHist.length;
+    const cv=Math.sqrt(variance)/avg;
+    if(cv>0.15){
+      const id='insight_income_unstable_'+key;
+      if(!dismissed.includes(id)){
+        insights.push({id,type:'trend',severity:'info',icon:'📊',
+          title:'הכנסות לא יציבות',
+          description:'שונות של '+Math.round(cv*100)+'% בהכנסות ב-'+incHist.length+' חודשים אחרונים',
+          suggestion:'שקלו לתכנן תקציב על בסיס ההכנסה הנמוכה ביותר'});
+      }
+    }
+  }
+
+  // Sort: danger > warning > info > success
+  const sev={danger:0,warning:1,info:2,success:3};
+  insights.sort((a,b)=>(sev[a.severity]||9)-(sev[b.severity]||9));
+  return insights;
+}
+
+function renderInsights(key){
+  const container=document.getElementById('insightsContainer');
+  const card=document.getElementById('insightsCard');
+  if(!container||!card)return;
+  const insights=generateInsights(key);
+  if(insights.length===0){card.style.display='none';return}
+  card.style.display='';
+
+  const groups={
+    duplicate:{label:'🔍 חיובים כפולים',items:[]},
+    high_charge:{label:'📈 חיובים חריגים',items:[]},
+    savings_rec:{label:'💰 המלצות חיסכון',items:[]},
+    goal_advisor:{label:'🎯 ייעוץ יעדים',items:[]},
+    trend:{label:'📊 מגמות',items:[]}
+  };
+  insights.forEach(ins=>{if(groups[ins.type])groups[ins.type].items.push(ins)});
+
+  const dangerN=insights.filter(i=>i.severity==='danger').length;
+  const warnN=insights.filter(i=>i.severity==='warning').length;
+  const badgeText=dangerN>0?dangerN+' דחוף':warnN>0?warnN+' שימו לב':insights.length+' תובנות';
+  const badgeCls=dangerN>0?'danger':warnN>0?'warning':'info';
+
+  let html='<div class="insights-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display===\'none\'?\'\':\'none\'">';
+  html+='<h3>🧠 תובנות פיננסיות <span class="insights-badge '+badgeCls+'">'+badgeText+'</span></h3>';
+  html+='<span style="font-size:.75rem;color:var(--text-secondary)">◀</span></div>';
+  html+='<div id="insightsBody">';
+
+  Object.entries(groups).forEach(([type,group])=>{
+    if(group.items.length===0)return;
+    html+='<div class="insight-group" id="ig_'+type+'">';
+    html+='<div class="insight-group-header" onclick="toggleInsightGroup(\''+type+'\')">';
+    html+='<span class="chevron">▼</span><span>'+group.label+'</span>';
+    html+='<span style="font-size:.72rem;color:var(--text-light)">('+group.items.length+')</span></div>';
+    html+='<div class="insight-group-body">';
+    group.items.forEach(ins=>{
+      html+='<div class="insight-card '+ins.severity+'">';
+      html+='<div class="insight-icon">'+ins.icon+'</div>';
+      html+='<div class="insight-body">';
+      html+='<div class="insight-title">'+esc(ins.title)+'</div>';
+      html+='<div class="insight-desc">'+esc(ins.description)+'</div>';
+      if(ins.suggestion)html+='<div class="insight-suggestion">'+esc(ins.suggestion)+'</div>';
+      html+='</div>';
+      html+='<button class="insight-close" onclick="dismissInsight(\''+ins.id+'\')" title="סגור">✕</button>';
+      html+='</div>';
+    });
+    html+='</div></div>';
+  });
+
+  html+='</div>';
+  container.innerHTML=html;
+}
+
+function dismissInsight(id){
+  if(!D.settings.dismissedAlerts)D.settings.dismissedAlerts=[];
+  D.settings.dismissedAlerts.push(id);
+  saveData();
+  const month=parseInt(document.getElementById('dashMonthSelect').value);
+  const year=parseInt(document.getElementById('dashYearInput').value);
+  renderInsights(mk(month,year));
+}
+
+function toggleInsightGroup(type){
+  const el=document.getElementById('ig_'+type);
+  if(el)el.classList.toggle('collapsed');
 }
 
 function renderChart(id,type,data,options){
