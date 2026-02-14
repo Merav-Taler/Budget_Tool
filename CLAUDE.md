@@ -14,7 +14,7 @@ savings goals, and a dashboard with charts and financial health scoring.
 - **CSS Custom Properties** — theming (light/dark mode)
 
 ## Architecture
-- **Single file**: `family-budget.html` contains all HTML, CSS, and JS
+- **Single file**: `Budget/family-budget.html` contains all HTML, CSS, and JS
 - **Sections** are marked with `// ===== SECTION NAME =====` comment headers
 - **Data persistence**: Firebase Realtime DB (primary) + localStorage (offline cache)
 - **RTL layout**: `dir="rtl"` on `<html>`, all text and layout flows right-to-left
@@ -80,7 +80,7 @@ D = {
 - **Modals**: use `showModal(html)` / `closeModal()`
 
 ## Testing
-1. Open `family-budget.html` in Chrome/Firefox
+1. Open `Budget/family-budget.html` in Chrome/Firefox
 2. Check browser console (F12) for errors
 3. For Firebase features: need internet + valid Firebase config
 4. For offline testing: disconnect WiFi, verify localStorage fallback
