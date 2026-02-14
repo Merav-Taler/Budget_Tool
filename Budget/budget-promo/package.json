@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
+    "preview": "npx remotion preview src/index.js",
+    "render": "npx remotion render src/index.js BudgetPromo out/promo.mp4",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
