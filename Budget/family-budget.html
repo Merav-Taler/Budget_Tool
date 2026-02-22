@@ -17,6 +17,7 @@
 <meta name="twitter:image" content="og-image.png">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%236366F1'/><stop offset='100%25' stop-color='%238B5CF6'/></linearGradient></defs><circle cx='50' cy='50' r='48' fill='url(%23g)'/><text x='50' y='50' text-anchor='middle' dominant-baseline='central' font-size='55' font-weight='700' fill='white' font-family='Arial'>₪</text></svg>">
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366F1'/><text x='50' y='50' text-anchor='middle' dominant-baseline='central' font-size='55' font-weight='700' fill='white' font-family='Arial'>₪</text></svg>">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdn.jsdelivr.net https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com wss://*.firebaseio.com https://api.openai.com; frame-src https://accounts.google.com https://*.firebaseapp.com;">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
@@ -612,7 +613,7 @@ body{padding-bottom:0;background:#fff}
   <span style="font-weight:700;font-size:.9rem;flex:1">הערות לחודש</span>
   <span id="notesLastSaved" style="font-size:.7rem;color:var(--text-light)"></span>
 </div>
-<textarea id="monthNotes" class="month-notes" placeholder="כתבו הערות, תזכורות או הודעות...&#10;לדוגמה: לשלם ארנונה עד ה-15, חתונה של דנה בשישי" oninput="saveMonthNotes()"></textarea>
+<textarea id="monthNotes" class="month-notes" maxlength="5000" placeholder="כתבו הערות, תזכורות או הודעות...&#10;לדוגמה: לשלם ארנונה עד ה-15, חתונה של דנה בשישי" oninput="saveMonthNotes()"></textarea>
 </div>
 </div>
 
@@ -686,13 +687,13 @@ body{padding-bottom:0;background:#fff}
 <button class="dm-btn" onclick="showResetModal()"><span class="dm-icon">🗑️</span><span class="dm-label">איפוס חודש</span></button>
 <button class="dm-btn" onclick="showCopyModal()"><span class="dm-icon">📋</span><span class="dm-label">העתקת תקציב</span></button>
 <button class="dm-btn" onclick="exportTemplate()"><span class="dm-icon">🔗</span><span class="dm-label">שתף תבנית</span></button>
-<button class="dm-btn" onclick="document.getElementById('bankFileInput').click()"><span class="dm-icon">🏦</span><span class="dm-label">טעינת דף חשבון</span></button>
+<button class="dm-btn" onclick="document.getElementById('bankFileInput').click()"><span class="dm-icon">🏦</span><span class="dm-label">דף חשבון / תמונה</span></button>
 <button class="dm-btn" onclick="exportPDF('month')"><span class="dm-icon">📄</span><span class="dm-label">PDF חודשי</span></button>
 <button class="dm-btn" onclick="exportPDF('year')"><span class="dm-icon">📄</span><span class="dm-label">PDF שנתי</span></button>
 </div>
 <input type="file" id="importInput" accept=".json" style="display:none" onchange="importJSON(event)">
 <input type="file" id="excelImportInput" accept=".xlsx,.xls" style="display:none" onchange="importExcel(event)">
-<input type="file" id="bankFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="importBankStatement(event)">
+<input type="file" id="bankFileInput" accept=".xlsx,.xls,.csv,.jpg,.jpeg,.png,.pdf,.heic,.webp" style="display:none" onchange="importBankStatement(event)">
 
 <div id="adminPanel"></div>
 
@@ -783,6 +784,7 @@ document.addEventListener('keydown',function(e){
 
 function uid(){return 'id_'+Math.random().toString(36).substr(2,9)}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+function vn(val,min=0,max=1e9){const n=parseFloat(val);if(isNaN(n)||!isFinite(n))return 0;return Math.max(min,Math.min(max,Math.round(n)))}
 
 // ===== OWNER HELPERS =====
 function ownerBadge(owner, catName, idx, type){
@@ -836,7 +838,7 @@ function freshData(){
     config:{
       partner1:'',partner2:'',soloMode:false,
       children:[],
-      pet:{name:'',enabled:false},
+      pet:{enabled:false,pets:[]},
       categories:DEF_CATS.map((c,i)=>({...c,order:i,items:c.items.map(n=>({name:n,isDefault:true}))})),
       incomeSources:[],
       events:[]
@@ -876,7 +878,7 @@ function migrateV1(old){
   // Detect pet
   Object.values(nd.months).forEach(m=>{
     if(m.expenses&&m.expenses['אוליבר']){
-      nd.config.pet={name:'אוליבר',enabled:true};
+      nd.config.pet={enabled:true,pets:[{id:uid(),name:'אוליבר'}]};
       // rename to pet category
       Object.values(nd.months).forEach(mo=>{
         if(mo.expenses&&mo.expenses['אוליבר']){
@@ -1097,7 +1099,7 @@ function showWizard(){
       hasChildren:(D.config.children||[]).length>0,
       children:[...(D.config.children||[])],
       hasPet:D.config.pet&&D.config.pet.enabled,
-      petName:(D.config.pet&&D.config.pet.name)||'',
+      pets:[...(D.config.pet?.pets||[])],
       incomeSources:[...(D.config.incomeSources||[])],
       savingsGoals:[...(D.savings.goals||[])],
       hasEmergency:!!(D.savings.emergency&&D.savings.emergency.target>0),
@@ -1111,7 +1113,7 @@ function showWizard(){
       categories:DEF_CATS.map(c=>({...c,enabled:c.id!=='children',items:[...c.items]})),
       partner1:'',partner2:'',
       hasChildren:false,children:[],
-      hasPet:false,petName:'',
+      hasPet:false,pets:[],
       incomeSources:[],
       savingsGoals:[],
       hasEmergency:true,emergencyTarget:0,
@@ -1236,7 +1238,11 @@ function saveWizardStep(){
       wizData.partner2=(document.getElementById('wizP2')||{}).value||'';
       wizData.soloMode=!(document.getElementById('wizHasPartner')||{}).checked;
       wizData.hasPet=!!(document.getElementById('wizHasPet')||{}).checked;
-      wizData.petName=(document.getElementById('wizPetName')||{}).value||'';
+      wizData.pets=[];
+      document.querySelectorAll('.wiz-pet-name').forEach(el=>{
+        const name=el.value.trim();
+        if(name) wizData.pets.push({id:uid(),name});
+      });
       wizData.hasChildren=!!(document.getElementById('wizHasChildren')||{}).checked;
       // Collect children
       wizData.children=[];
@@ -1290,9 +1296,13 @@ function renderWizWelcome(){
     <div style="text-align:center;font-size:3rem;margin:20px 0">💰</div>
     <div class="wizard-title">ברוכים הבאים לכלי התקציב המשפחתי</div>
     <div class="wizard-subtitle">בואו נגדיר את התקציב שלכם בכמה צעדים פשוטים</div>
-    <div class="wizard-card" onclick="wizData.startMode='new';wizNext()">
-      <div class="wc-icon">🆕</div>
-      <div><div class="wc-title">התחלה מאפס</div><div class="wc-desc">הגדירו קטגוריות, פריטים והכנסות</div></div>
+    <div class="wizard-card" onclick="wizData.startMode='new';wizData.soloMode=false;wizNext()">
+      <div class="wc-icon">👫</div>
+      <div><div class="wc-title">תקציב משותף</div><div class="wc-desc">ניהול תקציב עם שותף/ה — הוצאות משותפות ואישיות</div></div>
+    </div>
+    <div class="wizard-card" onclick="wizData.startMode='new';wizData.soloMode=true;wizNext()">
+      <div class="wc-icon">👤</div>
+      <div><div class="wc-title">תקציב אישי</div><div class="wc-desc">ניהול תקציב לאדם אחד — פשוט ומהיר</div></div>
     </div>
     <div class="wizard-card" onclick="document.getElementById('excelImportInput').click()">
       <div class="wc-icon">📗</div>
@@ -1381,11 +1391,20 @@ function renderWizPersonal(){
 
     <div class="wizard-field" style="margin-top:20px">
       <label class="wizard-check ${wizData.hasPet?'checked':''}" onclick="this.classList.toggle('checked')">
-        <input type="checkbox" id="wizHasPet" ${wizData.hasPet?'checked':''} onchange="this.parentElement.classList.toggle('checked',this.checked);document.getElementById('petNameField').style.display=this.checked?'block':'none'">
-        <span class="wch-icon">🐕</span><span class="wch-text">יש לנו חיית מחמד</span>
+        <input type="checkbox" id="wizHasPet" ${wizData.hasPet?'checked':''} onchange="this.parentElement.classList.toggle('checked',this.checked);document.getElementById('petSection').style.display=this.checked?'block':'none'">
+        <span class="wch-icon">🐕</span><span class="wch-text">יש לנו חיות מחמד</span>
       </label>
-      <div id="petNameField" style="display:${wizData.hasPet?'block':'none'};margin-top:8px">
-        <input type="text" id="wizPetName" value="${wizData.petName}" placeholder="שם החיה" style="padding:10px;border:1px solid var(--border);border-radius:var(--radius-xs);font-family:var(--font);width:100%">
+      <div id="petSection" style="display:${wizData.hasPet?'block':'none'};margin-top:8px">
+        <div id="wizPetsList">
+          ${(wizData.pets.length>0?wizData.pets:[{id:uid(),name:''}]).map((pet,i)=>`
+            <div class="wiz-pet-entry" style="display:flex;gap:8px;margin-bottom:6px;align-items:center">
+              <span>🐾</span>
+              <input type="text" class="wiz-pet-name admin-input" value="${pet.name}" placeholder="שם החיה" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:var(--radius-xs);font-family:var(--font)">
+              ${i>0?`<button class="btn-sm danger" onclick="this.closest('.wiz-pet-entry').remove()">✕</button>`:''}
+            </div>
+          `).join('')}
+        </div>
+        <button class="add-item-btn" onclick="addWizPet()">+ הוסף חיית מחמד</button>
       </div>
     </div>
 
@@ -1424,6 +1443,17 @@ function addWizChild(){
       <input type="number" class="wiz-child-age admin-input" value="5" min="0" max="18" placeholder="גיל" style="width:70px;flex:none">
       <button class="btn-sm danger" onclick="this.closest('.wiz-child-entry').remove()">✕</button>
     </div>`;
+  list.appendChild(div);
+}
+
+function addWizPet(){
+  const list=document.getElementById('wizPetsList');
+  const div=document.createElement('div');
+  div.className='wiz-pet-entry';
+  div.style.cssText='display:flex;gap:8px;margin-bottom:6px;align-items:center';
+  div.innerHTML=`<span>🐾</span>
+    <input type="text" class="wiz-pet-name admin-input" placeholder="שם החיה" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:var(--radius-xs);font-family:var(--font)">
+    <button class="btn-sm danger" onclick="this.closest('.wiz-pet-entry').remove()">✕</button>`;
   list.appendChild(div);
 }
 
@@ -1595,7 +1625,7 @@ function renderWizDone(){
       <div style="margin-bottom:8px"><strong>${wizData.soloMode?'שם:':'שותפים:'}</strong> ${wizData.soloMode?p1:p1+' ו-'+p2}</div>
       <div style="margin-bottom:8px"><strong>קטגוריות:</strong> ${catCount}</div>
       ${childCount>0?`<div style="margin-bottom:8px"><strong>ילדים:</strong> ${wizData.children.filter(c=>c.name).map(c=>c.name).join(', ')}</div>`:''}
-      ${wizData.hasPet?`<div style="margin-bottom:8px"><strong>חיית מחמד:</strong> ${wizData.petName||'ללא שם'}</div>`:''}
+      ${wizData.hasPet&&wizData.pets.length>0?`<div style="margin-bottom:8px"><strong>חיות מחמד:</strong> ${wizData.pets.map(p=>p.name).join(', ')||'ללא שם'}</div>`:''}
       <div style="margin-bottom:8px"><strong>מקורות הכנסה:</strong> ${wizData.incomeSources.length}</div>
       <div style="margin-bottom:8px"><strong>יעדי חיסכון:</strong> ${wizData.savingsGoals.length}${wizData.hasEmergency?' + קרן חירום':''}</div>
       ${(wizData.events||[]).length>0?`<div><strong>אירועים:</strong> ${wizData.events.map(e=>e.emoji+' '+e.name).join(', ')}</div>`:''}
@@ -1613,7 +1643,7 @@ function finishWizard(){
   D.config.partner1=p1;
   D.config.partner2=p2;
   D.config.soloMode=solo;
-  D.config.pet={name:wizData.petName||'',enabled:wizData.hasPet};
+  D.config.pet={enabled:wizData.hasPet,pets:wizData.pets||[]};
   D.config.children=wizData.hasChildren?wizData.children.filter(c=>c.name):[];
 
   // Build categories
@@ -1641,8 +1671,8 @@ function finishWizard(){
         }
       }
       // Pet category rename
-      if(c.id==='pet'&&wizData.hasPet&&wizData.petName){
-        cat.name=wizData.petName;
+      if(c.id==='pet'&&wizData.hasPet&&wizData.pets.length===1&&wizData.pets[0].name){
+        cat.name=wizData.pets[0].name;
         cat.icon='🐕';
       }
       cat.items=items;
@@ -3777,9 +3807,21 @@ function renderAdmin(){
       ${D.config.soloMode?'':`<div class="wizard-field" style="flex:1;min-width:140px"><label>שותף/ה</label><input class="admin-input" value="${esc(D.config.partner2)}" onchange="updatePartnerName(2,this.value)" style="width:100%"></div>`}
     </div>
     <div class="wizard-field" style="margin-bottom:10px"><label>כותרת משנה (ריק = אוטומטי)</label><input class="admin-input" value="${esc(D.settings.subtitle||'')}" placeholder="${D.config.soloMode?esc(D.config.partner1)+' — ניהול פיננסי חכם':esc(D.config.partner1)+' ו'+esc(D.config.partner2)+' — ניהול פיננסי חכם'}" onchange="D.settings.subtitle=this.value;saveData();initApp()" style="width:100%"></div>
-    <div style="display:flex;gap:10px;align-items:center">
-      <label style="font-size:.85rem"><input type="checkbox" ${D.config.pet.enabled?'checked':''} onchange="D.config.pet.enabled=this.checked;saveData();renderAdmin();renderBudget();updateSummary()"> 🐕 חיית מחמד</label>
-      ${D.config.pet.enabled?`<input class="admin-input" value="${esc(D.config.pet.name)}" placeholder="שם" onchange="updatePetName(this.value)" style="width:120px">`:''}
+    <div style="margin-top:8px">
+      <label style="font-size:.85rem"><input type="checkbox" ${D.config.pet.enabled?'checked':''} onchange="D.config.pet.enabled=this.checked;saveData();renderAdmin();renderBudget();updateSummary()"> 🐕 חיות מחמד</label>
+      ${D.config.pet.enabled?`
+        <ul class="admin-list" style="margin-top:8px">
+          ${(D.config.pet.pets||[]).map((p,i)=>`
+            <li style="gap:8px">
+              <span style="font-size:1.1rem">🐾</span>
+              <input class="admin-input" value="${esc(p.name)}" placeholder="שם" onchange="updatePetName(${i},this.value)" style="flex:1">
+              <button class="btn-sm danger" onclick="removePet(${i})">✕</button>
+            </li>
+          `).join('')}
+        </ul>
+        ${(D.config.pet.pets||[]).length===0?'<p style="color:var(--text-secondary);font-size:.82rem;padding:4px 0">הוסיפו את שמות החיות שלכם</p>':''}
+        <button class="add-item-btn" onclick="addPet()">+ הוסף חיית מחמד</button>
+      `:''}
     </div>
   </div>`;
 
@@ -3846,6 +3888,18 @@ function renderAdmin(){
     <button class="add-item-btn" onclick="addEvent()">+ הוסף אירוע</button>
   </div>`;
 
+  // AI Settings
+  const aiKey=localStorage.getItem('familyBudget_aiApiKey')||'';
+  html+=`<div class="admin-section">
+    <h3>🤖 AI — סיווג חכם</h3>
+    <p style="font-size:.82rem;color:var(--text-secondary);margin-bottom:8px">מפתח OpenAI לסיווג אוטומטי של עסקאות וקריאת תמונות</p>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <input class="admin-input ltr" id="adminAiKey" type="password" value="${aiKey}" placeholder="sk-..." style="flex:1;min-width:180px;direction:ltr;font-family:monospace;font-size:.8rem" dir="ltr">
+      <button class="btn-sm primary" onclick="const k=document.getElementById('adminAiKey').value.trim();if(k){localStorage.setItem('familyBudget_aiApiKey',k);toast('מפתח AI נשמר')}else{localStorage.removeItem('familyBudget_aiApiKey');toast('מפתח AI הוסר')}">שמור</button>
+    </div>
+    <p style="font-size:.72rem;color:var(--text-light);margin-top:4px">נשמר מקומית בלבד. משמש לסיווג עסקאות בדף חשבון ולקריאת תמונות קבלות.</p>
+  </div>`;
+
   // Reset / Wizard
   html+=`<div class="admin-section">
     <h3>🔄 איפוס</h3>
@@ -3893,18 +3947,35 @@ function toggleSoloMode(solo){
   toast(solo?'מצב אישי — תקציב ליחיד':'מצב שותפים — תקציב משותף');
 }
 
-function updatePetName(newName){
-  const oldName=D.config.pet.name;
-  D.config.pet.name=newName;
+function updatePetName(idx,newName){
+  if(!D.config.pet.pets[idx])return;
+  D.config.pet.pets[idx].name=newName;
+  updatePetCategoryName();
+  saveData();renderAdmin();renderBudget();updateSummary();toast('שם עודכן');
+}
+function addPet(){
+  if(!Array.isArray(D.config.pet.pets))D.config.pet.pets=[];
+  D.config.pet.pets.push({id:uid(),name:''});
+  saveData();renderAdmin();
+}
+function removePet(idx){
+  D.config.pet.pets.splice(idx,1);
+  if(D.config.pet.pets.length===0)D.config.pet.enabled=false;
+  updatePetCategoryName();
+  saveData();renderAdmin();renderBudget();updateSummary();
+}
+function updatePetCategoryName(){
   const petCat=D.config.categories.find(c=>c.id==='pet');
-  if(petCat&&newName){
-    const oldCatName=petCat.name;
+  if(!petCat)return;
+  const pets=(D.config.pet.pets||[]).filter(p=>p.name);
+  const oldName=petCat.name;
+  const newName=pets.length===1?pets[0].name:'חיות מחמד';
+  if(oldName!==newName){
     petCat.name=newName;
     Object.values(D.months).forEach(m=>{
-      if(m.expenses[oldCatName]){m.expenses[newName]=m.expenses[oldCatName];delete m.expenses[oldCatName]}
+      if(m.expenses[oldName]){m.expenses[newName]=m.expenses[oldName];delete m.expenses[oldName]}
     });
   }
-  saveData();renderAdmin();renderBudget();updateSummary();toast('שם עודכן');
 }
 
 function updateChildName(idx,newName){
@@ -4771,9 +4842,131 @@ function classifyTransaction(desc){
 
 function importBankStatement(event){
   const file=event.target.files[0];if(!file)return;
-  const isCSV=file.name.toLowerCase().endsWith('.csv');
+  const ext=file.name.toLowerCase().split('.').pop();
+  const imageExts=['jpg','jpeg','png','heic','webp'];
+  if(imageExts.includes(ext)||file.type.startsWith('image/')){
+    importBankImage(file);event.target.value='';return;
+  }
+  if(ext==='pdf'){importBankImage(file);event.target.value='';return}
+  const isCSV=ext==='csv';
   if(!isCSV){ensureXLSX().then(()=>_doBankImport(file,false)).catch(()=>toast('שגיאה בטעינת SheetJS'));return}
   _doBankImport(file,true);return}
+
+function importBankImage(file){
+  const apiKey=localStorage.getItem('familyBudget_aiApiKey')||'';
+  if(!apiKey){
+    showModal(`<div style="text-align:center;padding:10px">
+      <div style="font-size:2rem;margin-bottom:8px">🤖</div>
+      <h3>הגדרת AI לקריאת תמונות</h3>
+      <p style="font-size:.85rem;color:var(--text-secondary);margin:10px 0">כדי לקרוא דפי חשבון מתמונות, יש להזין מפתח API של OpenAI</p>
+      <div class="modal-field"><label class="modal-label">OpenAI API Key</label>
+        <input class="modal-input ltr" id="aiApiKeyInput" placeholder="sk-..." style="direction:ltr;font-family:monospace;font-size:.82rem" dir="ltr"></div>
+      <p style="font-size:.72rem;color:var(--text-light);margin-top:6px">המפתח נשמר מקומית בלבד ולא נשלח לשום מקום מלבד OpenAI</p>
+      <div class="modal-actions" style="margin-top:12px">
+        <button class="modal-btn primary" onclick="saveAiKey();importBankImageWithAI(window._pendingImageFile)">שמור והמשך</button>
+        <button class="modal-btn cancel" onclick="closeModal()">ביטול</button>
+      </div>
+    </div>`);
+    window._pendingImageFile=file;
+    return;
+  }
+  importBankImageWithAI(file);
+}
+
+function saveAiKey(){
+  const key=(document.getElementById('aiApiKeyInput')?.value||'').trim();
+  if(key)localStorage.setItem('familyBudget_aiApiKey',key);
+}
+
+async function importBankImageWithAI(file){
+  if(!file)return;
+  closeModal();
+  const apiKey=localStorage.getItem('familyBudget_aiApiKey');
+  if(!apiKey){toast('לא הוגדר מפתח API');return}
+  toast('מנתח תמונה עם AI...');
+  try{
+    // Convert file to base64
+    const base64=await new Promise((res,rej)=>{
+      const reader=new FileReader();
+      reader.onload=()=>res(reader.result.split(',')[1]);
+      reader.onerror=rej;
+      reader.readAsDataURL(file);
+    });
+    const mediaType=file.type||'image/jpeg';
+    const resp=await fetch('https://api.openai.com/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+      body:JSON.stringify({
+        model:'gpt-4o',
+        messages:[{role:'user',content:[
+          {type:'text',text:'Extract all financial transactions from this bank statement or receipt image. For each transaction return: description (in Hebrew if available), amount (number only, positive for expenses). Return ONLY a JSON array like: [{"desc":"description","amount":123.45}]. If no transactions found, return []. No explanation, just the JSON array.'},
+          {type:'image_url',image_url:{url:'data:'+mediaType+';base64,'+base64}}
+        ]}],
+        max_tokens:2000,temperature:0
+      })
+    });
+    if(!resp.ok){const err=await resp.text();throw new Error(err)}
+    const data=await resp.json();
+    const content=data.choices?.[0]?.message?.content||'[]';
+    // Parse JSON from response
+    const jsonMatch=content.match(/\[[\s\S]*\]/);
+    if(!jsonMatch){toast('לא נמצאו עסקאות בתמונה');return}
+    const transactions=JSON.parse(jsonMatch[0]);
+    if(!transactions.length){toast('לא נמצאו עסקאות בתמונה');return}
+    // Classify and show preview
+    showImageImportPreview(transactions);
+  }catch(e){
+    console.error('AI image import error:',e);
+    toast('שגיאה בניתוח התמונה: '+(e.message||''));
+  }
+}
+
+function showImageImportPreview(transactions){
+  const classified=transactions.map(t=>{
+    const cls=classifyTransaction(t.desc);
+    return {...t,cat:cls?.cat||'לא מסווג',item:cls?.item||t.desc,classified:!!cls};
+  });
+  const byCat={};
+  classified.forEach(t=>{
+    if(!byCat[t.cat])byCat[t.cat]=[];
+    byCat[t.cat].push(t);
+  });
+  const total=classified.reduce((s,t)=>s+(t.amount||0),0);
+  let html=`<h3>🤖 עסקאות שזוהו מהתמונה</h3>
+    <p style="font-size:.85rem;color:var(--text-secondary);margin-bottom:10px">${classified.length} עסקאות — סה"כ ${fc(total)}</p>
+    <div style="max-height:350px;overflow-y:auto;margin-bottom:12px">`;
+  Object.entries(byCat).forEach(([cat,items])=>{
+    html+=`<div style="font-weight:600;margin-top:8px;font-size:.88rem">${cat}</div>`;
+    items.forEach(t=>{
+      html+=`<div style="display:flex;justify-content:space-between;font-size:.82rem;padding:4px 14px;color:${t.classified?'var(--text)':'var(--warning)'}">
+        <span>${esc(t.item)}</span><span class="ltr">${fc(t.amount)}</span></div>`;
+    });
+  });
+  html+=`</div>
+    <div class="modal-actions">
+      <button class="modal-btn primary" onclick="confirmImageImport(${esc(JSON.stringify(classified))})">ייבא עסקאות</button>
+      <button class="modal-btn cancel" onclick="closeModal()">ביטול</button>
+    </div>`;
+  showModal(html);
+}
+
+function confirmImageImport(classified){
+  if(typeof classified==='string')classified=JSON.parse(classified);
+  const key=mk(curMonth,curYear);
+  const data=getMonth(key);
+  classified.forEach(t=>{
+    if(!t.cat||t.cat==='לא מסווג')return;
+    const existingCat=D.config.categories.find(c=>c.name===t.cat);
+    if(!existingCat)return;
+    if(!data.expenses[t.cat])data.expenses[t.cat]={budget:0,items:[]};
+    const existing=data.expenses[t.cat].items.find(i=>i.name===t.item);
+    if(existing){existing.amount=(existing.amount||0)+t.amount}
+    else{data.expenses[t.cat].items.push({name:t.item,amount:t.amount,isDefault:false,provider:t.desc})}
+  });
+  saveData();closeModal();renderBudget();updateSummary();
+  toast(`יובאו ${classified.filter(t=>t.classified).length} עסקאות בהצלחה`);
+}
+
 function _doBankImport(file,isCSV){
   const reader=new FileReader();
   reader.onload=function(e){
@@ -4973,8 +5166,12 @@ function showBankImportPreview(transactions){
 
   // Show unclassified with dropdown to assign
   if(unclassified.length>0){
+    const hasAiKey=!!localStorage.getItem('familyBudget_aiApiKey');
     html+=`<div style="background:var(--warning-bg);border-radius:var(--radius-sm);padding:10px;margin-bottom:6px">
-      <div style="font-weight:600;font-size:.88rem;margin-bottom:6px">❓ לא סווגו (${unclassified.length})</div>`;
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <div style="font-weight:600;font-size:.88rem;flex:1">❓ לא סווגו (${unclassified.length})</div>
+        <button class="btn-sm" style="font-size:.72rem" onclick="classifyWithAI()">🤖 סווג עם AI</button>
+      </div>`;
     unclassified.forEach((t,i)=>{
       html+=`<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:.78rem;flex-wrap:wrap">
         <span style="flex:1;min-width:120px">${t.desc} — ${fc(t.amount)}</span>
@@ -5044,6 +5241,72 @@ function confirmBankImport(){
   toast(`יובאו ${imported} פעולות מדף החשבון`);
   delete window._bankTransactions;
   delete window._bankUnclassified;
+}
+
+async function classifyWithAI(){
+  const apiKey=localStorage.getItem('familyBudget_aiApiKey');
+  if(!apiKey){
+    showModal(`<div style="text-align:center;padding:10px">
+      <div style="font-size:2rem;margin-bottom:8px">🤖</div>
+      <h3>סיווג חכם עם AI</h3>
+      <p style="font-size:.85rem;color:var(--text-secondary);margin:10px 0">הזינו מפתח OpenAI API לסיווג אוטומטי של עסקאות</p>
+      <div class="modal-field"><label class="modal-label">OpenAI API Key</label>
+        <input class="modal-input ltr" id="aiApiKeyInput" placeholder="sk-..." style="direction:ltr;font-family:monospace;font-size:.82rem" dir="ltr"></div>
+      <p style="font-size:.72rem;color:var(--text-light);margin-top:6px">המפתח נשמר מקומית בלבד</p>
+      <div class="modal-actions" style="margin-top:12px">
+        <button class="modal-btn primary" onclick="saveAiKey();closeModal();classifyWithAI()">שמור והמשך</button>
+        <button class="modal-btn cancel" onclick="closeModal()">ביטול</button>
+      </div>
+    </div>`);
+    return;
+  }
+  const unclassified=window._bankUnclassified||[];
+  if(!unclassified.length){toast('אין עסקאות לסיווג');return}
+  const cats=D.config.categories.map(c=>c.name);
+  toast('מסווג עסקאות עם AI...');
+  try{
+    const descs=unclassified.map(t=>t.desc);
+    const resp=await fetch('https://api.openai.com/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+      body:JSON.stringify({
+        model:'gpt-4o-mini',
+        messages:[{role:'user',content:`Classify these Hebrew financial transactions into budget categories.
+Available categories: ${cats.join(', ')}
+
+Transactions:
+${descs.map((d,i)=>`${i+1}. ${d}`).join('\n')}
+
+Return ONLY a JSON array with objects: [{"idx":0,"cat":"category name","item":"short item name in Hebrew"}]
+Match to the most relevant existing category. If unsure, use "חריגות".`}],
+        max_tokens:1000,temperature:0
+      })
+    });
+    if(!resp.ok)throw new Error('API error: '+resp.status);
+    const data=await resp.json();
+    const content=data.choices?.[0]?.message?.content||'[]';
+    const jsonMatch=content.match(/\[[\s\S]*\]/);
+    if(!jsonMatch){toast('AI לא הצליח לסווג');return}
+    const results=JSON.parse(jsonMatch[0]);
+    let updated=0;
+    results.forEach(r=>{
+      if(r.idx>=0&&r.idx<unclassified.length&&r.cat&&cats.includes(r.cat)){
+        unclassified[r.idx].cat=r.cat;
+        unclassified[r.idx].item=r.item||unclassified[r.idx].desc.substring(0,25);
+        unclassified[r.idx].classified=true;
+        // Update dropdown if visible
+        const sel=document.querySelector(`.bank-cat-select[data-idx="${r.idx}"]`);
+        if(sel)sel.value=r.cat;
+        updated++;
+      }
+    });
+    toast(`AI סיווג ${updated} מתוך ${unclassified.length} עסקאות`);
+    // Refresh preview to show updated classifications
+    showBankImportPreview(window._bankTransactions);
+  }catch(e){
+    console.error('AI classify error:',e);
+    toast('שגיאה בסיווג AI: '+(e.message||''));
+  }
 }
 
 // ===== SHARING =====
@@ -5474,9 +5737,13 @@ function ensureDataIntegrity(d){
   if(!d.config.partner1&&d.config.partner1!=='')d.config.partner1='';
   if(!d.config.partner2&&d.config.partner2!=='')d.config.partner2='';
   if(d.config.soloMode===undefined)d.config.soloMode=false;
-  if(!d.config.pet||typeof d.config.pet!=='object')d.config.pet={name:'',enabled:false};
+  if(!d.config.pet||typeof d.config.pet!=='object')d.config.pet={enabled:false,pets:[]};
   if(d.config.pet.enabled===undefined)d.config.pet.enabled=false;
-  if(!d.config.pet.name&&d.config.pet.name!=='')d.config.pet.name='';
+  // Migrate old single-pet format to multi-pet
+  if(!Array.isArray(d.config.pet.pets)){
+    d.config.pet.pets=[];
+    if(d.config.pet.name){d.config.pet.pets.push({id:uid(),name:d.config.pet.name})}
+  }
   if(!Array.isArray(d.config.categories)||d.config.categories.length===0)d.config.categories=fresh.config.categories;
   if(!Array.isArray(d.config.children))d.config.children=[];
   if(!Array.isArray(d.config.incomeSources))d.config.incomeSources=[];
@@ -5941,17 +6208,21 @@ function showFamilyManager(){
     html+=`<div style="margin-bottom:14px">`;
     for(const fam of userFamilies){
       const isActive=fam.familyId===fbFamilyId;
-      html+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:${isActive?'var(--primary-bg)':'var(--bg)'};border-radius:var(--radius-sm);margin-bottom:6px;border:${isActive?'2px solid var(--primary)':'1px solid var(--border)'}">
-        <div style="flex:1">
-          <div style="font-weight:600;font-size:.9rem">${fam.name||'תקציב'}</div>
-          <div style="font-size:.72rem;color:var(--text-secondary)">${fam.role==='admin'?'מנהל/ת':'חבר/ה'}${isActive?' — פעיל':''}</div>
+      html+=`<div style="padding:10px 12px;background:${isActive?'var(--primary-bg)':'var(--bg)'};border-radius:var(--radius-sm);margin-bottom:6px;border:${isActive?'2px solid var(--primary)':'1px solid var(--border)'}">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:.9rem">${fam.name||'תקציב'}</div>
+            <div style="font-size:.72rem;color:var(--text-secondary)">${fam.role==='admin'?'מנהל/ת':'חבר/ה'}${isActive?' — פעיל':''}</div>
+          </div>
+          ${isActive?'<span style="color:var(--primary);font-weight:700;font-size:.82rem">✓ פעיל</span>'
+          :`<button class="btn-sm primary" onclick="switchFamily('${fam.familyId}')" style="white-space:nowrap">מעבר</button>`}
         </div>
-        ${isActive?'<span style="color:var(--primary);font-weight:700;font-size:.82rem">✓ פעיל</span>'
-        :`<button class="btn-sm primary" onclick="switchFamily('${fam.familyId}')">מעבר</button>`}
-        <button class="btn-sm" style="font-size:.75rem" onclick="shareFamilyFromManager('${fam.familyId}')" title="שיתוף">🔗</button>
-        <button class="btn-sm" style="font-size:.75rem" onclick="renameBudget('${fam.familyId}')" title="שנה שם">✏️</button>
-        ${fam.role==='admin'?`<button class="btn-sm" style="font-size:.75rem" onclick="showFamilySettings('${fam.familyId}')">⚙️</button>`:''}
-        <button class="btn-sm" style="font-size:.7rem;color:var(--danger);border-color:var(--danger)" onclick="confirmLeaveFamily('${fam.familyId}','${esc(fam.name||'תקציב')}')">עזיבה</button>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn-sm" style="font-size:.75rem;flex:1;min-width:60px" onclick="shareFamilyFromManager('${fam.familyId}')">🔗 שיתוף</button>
+          <button class="btn-sm" style="font-size:.75rem;flex:1;min-width:60px" onclick="renameBudget('${fam.familyId}')">✏️ שינוי שם</button>
+          ${fam.role==='admin'?`<button class="btn-sm" style="font-size:.75rem;flex:1;min-width:60px" onclick="showFamilySettings('${fam.familyId}')">⚙️ הגדרות</button>`:''}
+          <button class="btn-sm" style="font-size:.75rem;flex:1;min-width:60px;color:var(--danger);border-color:var(--danger)" onclick="confirmLeaveFamily('${fam.familyId}','${esc(fam.name||'תקציב')}')">👋 עזיבה</button>
+        </div>
       </div>`;
     }
     html+=`</div>`;
