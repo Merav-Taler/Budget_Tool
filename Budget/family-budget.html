@@ -7093,15 +7093,21 @@ function renderDashForecast(){
 // ===== INITIALIZATION =====
 function initApp(){
   const p1=D.config.partner1,p2=D.config.partner2;
-  if(D.settings.subtitle){document.getElementById('appSubtitle').textContent=D.settings.subtitle}
-  else if(p1){
-    let sub=D.config.soloMode?`${p1} — ניהול פיננסי חכם`:(p2?`${p1} ו${p2} — ניהול פיננסי חכם`:`${p1} — ניהול פיננסי חכם`);
-    // Show family name if multiple families
-    if(userFamilies.length>1){
-      const active=userFamilies.find(f=>f.familyId===fbFamilyId);
-      if(active?.name)sub=active.name;
+  const titleEl=document.getElementById('appTitle');
+  const subEl=document.getElementById('appSubtitle');
+  const activeFam=userFamilies.find(f=>f.familyId===fbFamilyId);
+  if(userFamilies.length>1&&activeFam){
+    // Multiple budgets — show which one is active in the main title
+    const budgetName=activeFam.name||D.settings.subtitle||(p1&&p2?`${p1} ו${p2}`:p1||'תקציב');
+    titleEl.textContent='💰 '+budgetName;
+    const partnerLabel=D.config.soloMode?p1:(p1&&p2?`${p1} ו${p2}`:p1||'');
+    subEl.textContent=partnerLabel?partnerLabel+' — ניהול פיננסי חכם':'ניהול פיננסי חכם';
+  }else{
+    titleEl.textContent='💰 תקציב משפחתי';
+    if(D.settings.subtitle){subEl.textContent=D.settings.subtitle}
+    else if(p1){
+      subEl.textContent=D.config.soloMode?`${p1} — ניהול פיננסי חכם`:(p2?`${p1} ו${p2} — ניהול פיננסי חכם`:`${p1} — ניהול פיננסי חכם`);
     }
-    document.getElementById('appSubtitle').textContent=sub;
   }
   populateMonthSelects();
   renderBudget();
