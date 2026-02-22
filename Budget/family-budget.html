@@ -3778,7 +3778,7 @@ function renderAdmin(){
     </div>
     <div class="wizard-field" style="margin-bottom:10px"><label>כותרת משנה (ריק = אוטומטי)</label><input class="admin-input" value="${esc(D.settings.subtitle||'')}" placeholder="${D.config.soloMode?esc(D.config.partner1)+' — ניהול פיננסי חכם':esc(D.config.partner1)+' ו'+esc(D.config.partner2)+' — ניהול פיננסי חכם'}" onchange="D.settings.subtitle=this.value;saveData();initApp()" style="width:100%"></div>
     <div style="display:flex;gap:10px;align-items:center">
-      <label style="font-size:.85rem"><input type="checkbox" ${D.config.pet.enabled?'checked':''} onchange="D.config.pet.enabled=this.checked;saveData();renderAdmin()"> 🐕 חיית מחמד</label>
+      <label style="font-size:.85rem"><input type="checkbox" ${D.config.pet.enabled?'checked':''} onchange="D.config.pet.enabled=this.checked;saveData();renderAdmin();renderBudget();updateSummary()"> 🐕 חיית מחמד</label>
       ${D.config.pet.enabled?`<input class="admin-input" value="${esc(D.config.pet.name)}" placeholder="שם" onchange="updatePetName(this.value)" style="width:120px">`:''}
     </div>
   </div>`;
@@ -3904,7 +3904,7 @@ function updatePetName(newName){
       if(m.expenses[oldCatName]){m.expenses[newName]=m.expenses[oldCatName];delete m.expenses[oldCatName]}
     });
   }
-  saveData();renderAdmin();toast('שם עודכן');
+  saveData();renderAdmin();renderBudget();updateSummary();toast('שם עודכן');
 }
 
 function updateChildName(idx,newName){
@@ -5948,6 +5948,7 @@ function showFamilyManager(){
         </div>
         ${isActive?'<span style="color:var(--primary);font-weight:700;font-size:.82rem">✓ פעיל</span>'
         :`<button class="btn-sm primary" onclick="switchFamily('${fam.familyId}')">מעבר</button>`}
+        <button class="btn-sm" style="font-size:.75rem" onclick="shareFamilyFromManager('${fam.familyId}')" title="שיתוף">🔗</button>
         <button class="btn-sm" style="font-size:.75rem" onclick="renameBudget('${fam.familyId}')" title="שנה שם">✏️</button>
         ${fam.role==='admin'?`<button class="btn-sm" style="font-size:.75rem" onclick="showFamilySettings('${fam.familyId}')">⚙️</button>`:''}
         <button class="btn-sm" style="font-size:.7rem;color:var(--danger);border-color:var(--danger)" onclick="confirmLeaveFamily('${fam.familyId}','${esc(fam.name||'תקציב')}')">עזיבה</button>
@@ -6137,6 +6138,43 @@ async function generateInviteForFamily(familyId){
   await fbDb.ref('invites/'+code).set({familyId,createdAt:Date.now()});
   toast('קוד הזמנה: '+code);
   showFamilySettings(familyId);
+}
+
+async function shareFamilyFromManager(familyId){
+  const fam=userFamilies.find(f=>f.familyId===familyId);
+  const fname=esc(fam?.name||'תקציב');
+  closeModal();
+  showModal(`<div style="text-align:center;padding:10px">
+    <div style="font-size:2rem;margin-bottom:8px">🔗</div>
+    <h3>שיתוף: ${fname}</h3>
+    <div id="shareFamArea" style="margin:14px 0"><div style="font-size:.82rem;color:var(--text-light)">טוען...</div></div>
+    <div class="modal-actions"><button class="modal-btn cancel" onclick="closeModal();showFamilyManager()">חזרה</button></div>
+  </div>`);
+  try{
+    let snap=await fbDb.ref('invites').orderByChild('familyId').equalTo(familyId).once('value');
+    if(!snap.exists())snap=await fbDb.ref('invites').orderByValue().equalTo(familyId).once('value');
+    const area=document.getElementById('shareFamArea');if(!area)return;
+    if(snap.exists()){
+      const entries=snap.val();const code=Object.keys(entries)[0];
+      const inv=resolveInvite(entries[code]);
+      if(inv.expired){
+        await fbDb.ref('invites/'+code).remove();
+        area.innerHTML=`<div style="font-size:.82rem;color:var(--text-secondary);margin-bottom:8px">קוד קודם פג תוקף</div><button class="modal-btn primary" onclick="generateShareForFamily('${familyId}')">🔗 צור קוד הזמנה חדש</button>`;
+      }else{
+        area.innerHTML=renderInviteDisplay(code,entries[code]?.createdAt);
+      }
+    }else{
+      area.innerHTML=`<button class="modal-btn primary" onclick="generateShareForFamily('${familyId}')">🔗 צור קוד הזמנה</button>`;
+    }
+  }catch(e){const a=document.getElementById('shareFamArea');if(a)a.innerHTML='<span style="color:var(--danger);font-size:.82rem">שגיאה בטעינת קוד</span>'}
+}
+
+async function generateShareForFamily(familyId){
+  const code=generateInviteCode();
+  await fbDb.ref('invites/'+code).set({familyId,createdAt:Date.now()});
+  const area=document.getElementById('shareFamArea');
+  if(area)area.innerHTML=renderInviteDisplay(code);
+  toast('קוד הזמנה נוצר!');
 }
 
 function confirmLeaveFamily(familyId,familyName){
