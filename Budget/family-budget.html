@@ -6320,11 +6320,11 @@ function showFamilyManager(){
           ${isActive?'<span style="color:var(--primary);font-weight:700;font-size:.82rem">✓ פעיל</span>'
           :`<button class="btn-sm primary" onclick="switchFamily('${fam.familyId}')" style="white-space:nowrap">מעבר</button>`}
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="btn-sm" style="font-size:.75rem;flex:1;min-width:60px" onclick="shareFamilyFromManager('${fam.familyId}')">🔗 שיתוף</button>
-          <button class="btn-sm" style="font-size:.75rem;flex:1;min-width:60px" onclick="renameBudget('${fam.familyId}')">✏️ שינוי שם</button>
-          ${fam.role==='admin'?`<button class="btn-sm" style="font-size:.75rem;flex:1;min-width:60px" onclick="showFamilySettings('${fam.familyId}')">⚙️ הגדרות</button>`:''}
-          <button class="btn-sm" style="font-size:.75rem;flex:1;min-width:60px;color:var(--danger);border-color:var(--danger)" onclick="confirmLeaveFamily('${fam.familyId}','${esc(fam.name||'תקציב')}')">👋 עזיבה</button>
+        <div style="display:flex;gap:6px">
+          <button class="btn-sm hdr-tooltip" style="font-size:1rem;padding:5px 8px" onclick="shareFamilyFromManager('${fam.familyId}')" data-tip="שיתוף">🔗</button>
+          <button class="btn-sm hdr-tooltip" style="font-size:1rem;padding:5px 8px" onclick="renameBudget('${fam.familyId}')" data-tip="שינוי שם">✏️</button>
+          ${fam.role==='admin'?`<button class="btn-sm hdr-tooltip" style="font-size:1rem;padding:5px 8px" onclick="showFamilySettings('${fam.familyId}')" data-tip="הגדרות">⚙️</button>`:''}
+          <button class="btn-sm hdr-tooltip" style="font-size:1rem;padding:5px 8px;color:var(--danger);border-color:var(--danger)" onclick="confirmLeaveFamily('${fam.familyId}','${esc(fam.name||'תקציב')}')" data-tip="עזיבה">👋</button>
         </div>
       </div>`;
     }
