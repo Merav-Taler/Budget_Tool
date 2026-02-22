@@ -450,6 +450,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);direction:rt
 .actions-cell-inner{display:inline-flex;align-items:center;gap:2px}
 .confetti{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999}
 
+/* Viewer mode */
+.viewer-mode .num-input,.viewer-mode .income-source-input,.viewer-mode .month-notes{pointer-events:none;opacity:.6}
+.viewer-mode .add-item-btn,.viewer-mode .add-row-btn,.viewer-mode .delete-btn,.viewer-mode .lock-btn,.viewer-mode .move-btn,.viewer-mode .note-btn,.viewer-mode .section-add-btn,.viewer-mode .fab{display:none!important}
+
 /* Responsive */
 @media(max-width:768px){
 .app-header{padding:10px 14px}.app-header h1{font-size:1rem}
@@ -1000,7 +1004,9 @@ function undo(){
     if(btn)btn.style.display='none';
   }
 }
+function isViewer(){return window._myFamilyRole==='viewer'}
 function saveData(){
+  if(isViewer()){toast('אין לך הרשאות עריכה — מצב צפייה בלבד');return}
   clearTimeout(saveTimer);
   saveTimer=setTimeout(()=>{
     try{localStorage.setItem(SK,JSON.stringify(D))}catch(e){console.error('Save error:',e)}
@@ -5820,6 +5826,11 @@ async function connectToFamily(familyId,user){
     }
     loadDataLocal();
   }
+  // Store my role for permission checks
+  try{
+    const myMemSnap=await fbDb.ref('families/'+familyId+'/members/'+user.uid+'/role').once('value');
+    window._myFamilyRole=myMemSnap.val()||'member';
+  }catch(e){window._myFamilyRole='member'}
   // Setup listeners
   attachRealtimeListener();
   setupConnectionMonitor();
@@ -6152,14 +6163,21 @@ async function showShareModal(){
         <div style="flex:1;text-align:right"><div style="font-weight:600;font-size:.85rem">${esc(fbUser.displayName||'')} <span style="font-size:.68rem;background:var(--primary);color:#fff;padding:1px 6px;border-radius:4px">את/ה</span>${amAdmin?' <span style="font-size:.68rem;background:var(--success);color:#fff;padding:1px 6px;border-radius:4px">מנהל/ת</span>':''}</div>
         <div style="font-size:.7rem;color:var(--text-secondary)">${esc(fbUser.email||'')}</div></div></div>`
         +others.map(([uid,m])=>{
-        const isMemAdmin=m.role==='admin';
+        const role=m.role||'member';
+        const roleBadge=role==='admin'?'<span style="font-size:.68rem;background:var(--success);color:#fff;padding:1px 6px;border-radius:4px">מנהל/ת</span>'
+          :role==='viewer'?'<span style="font-size:.68rem;background:var(--text-light);color:#fff;padding:1px 6px;border-radius:4px">צופה</span>'
+          :'<span style="font-size:.68rem;background:var(--primary);color:#fff;padding:1px 6px;border-radius:4px">עורך/ת</span>';
         return `<div style="display:flex;align-items:center;gap:8px;padding:10px;background:var(--bg);border-radius:var(--radius-sm);margin-bottom:6px">
         ${m.photoURL?`<img src="${esc(m.photoURL)}" style="width:32px;height:32px;border-radius:50%">`:`<div style="width:32px;height:32px;border-radius:50%;background:var(--primary-bg);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700">${esc((m.displayName||'?')[0])}</div>`}
-        <div style="flex:1;text-align:right"><div style="font-weight:600;font-size:.85rem">${esc(m.displayName||'')}${isMemAdmin?' <span style="font-size:.68rem;background:var(--success);color:#fff;padding:1px 6px;border-radius:4px">מנהל/ת</span>':''}</div>
+        <div style="flex:1;text-align:right"><div style="font-weight:600;font-size:.85rem">${esc(m.displayName||'')} ${roleBadge}</div>
         <div style="font-size:.7rem;color:var(--text-secondary)">${esc(m.email||'')}</div>
         <div style="font-size:.68rem;color:${m.online?'var(--success)':'var(--text-light)'}">${m.online?'🟢 מחובר/ת כעת':'⚫ לא מחובר/ת'}</div></div>
         ${amAdmin?`<div style="display:flex;flex-direction:column;gap:4px">
-          ${!isMemAdmin?`<button class="btn-sm" style="background:var(--success-bg);color:var(--success);font-size:.68rem;padding:3px 8px" onclick="appointAdmin('${uid}','${esc(m.displayName||'')}')">מנה מנהל/ת</button>`:''}
+          <select style="font-family:var(--font);font-size:.7rem;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--card);color:var(--text);cursor:pointer" onchange="changeMemberRole('${uid}',this.value)">
+            <option value="admin"${role==='admin'?' selected':''}>👑 מנהל/ת</option>
+            <option value="member"${role==='member'?' selected':''}>✏️ עורך/ת</option>
+            <option value="viewer"${role==='viewer'?' selected':''}>👁️ צופה</option>
+          </select>
           <button class="btn-sm" style="background:var(--danger-bg);color:var(--danger);font-size:.68rem;padding:3px 8px" onclick="confirmRemoveMember('${uid}','${esc(m.displayName||'')}','${esc(m.email||'')}')">הסר</button>
         </div>`:''}
       </div>`}).join('');
@@ -6242,6 +6260,22 @@ async function doAppointAdmin(uid){
     console.error('Appoint admin error:',e);
     toast('שגיאה — ייתכן שחסרות הרשאות');
   }
+}
+async function changeMemberRole(uid,newRole){
+  if(!fbDb||!fbFamilyId||!isFamilyAdmin()){toast('רק מנהל/ת יכול/ה לשנות הרשאות');return}
+  const roleNames={admin:'מנהל/ת',member:'עורך/ת',viewer:'צופה'};
+  try{
+    await fbDb.ref('families/'+fbFamilyId+'/members/'+uid+'/role').set(newRole);
+    try{await fbDb.ref('userFamilies/'+uid+'/families/'+fbFamilyId+'/role').set(newRole)}catch(e){}
+    toast(`הרשאות עודכנו ל${roleNames[newRole]||newRole}`);
+  }catch(e){
+    console.error('Change role error:',e);
+    toast('שגיאה בעדכון הרשאות');
+  }
+}
+function getMemberRole(){
+  if(!fbDb||!fbFamilyId||!fbUser)return 'admin';
+  return window._myFamilyRole||'admin';
 }
 function renderInviteDisplay(code,createdAt){
   const link=window.location.href.split('?')[0]+'?invite='+code;
@@ -6453,13 +6487,21 @@ async function showFamilySettings(familyId){
     const area=document.getElementById('familyMembersArea');
     if(!area)return;
     let mhtml='<div style="font-weight:600;font-size:.88rem;margin-bottom:8px">👥 חברים</div>';
+    const amSettingsAdmin=isFamilyAdmin();
     Object.entries(members).forEach(([uid,m])=>{
       const isMe=uid===fbUser.uid;
-      mhtml+=`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;${!isMe?'':''}">
+      const role=m.role||'member';
+      const roleLabel=role==='admin'?'👑 מנהל/ת':role==='viewer'?'👁️ צופה':'✏️ עורך/ת';
+      mhtml+=`<div style="display:flex;align-items:center;gap:8px;padding:6px 0">
         ${m.photoURL?`<img src="${m.photoURL}" style="width:28px;height:28px;border-radius:50%">`
         :`<div style="width:28px;height:28px;border-radius:50%;background:var(--primary-bg);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700">${(m.displayName||'?')[0]}</div>`}
         <div style="flex:1"><div style="font-size:.85rem;font-weight:500">${m.displayName||''}${isMe?' (את/ה)':''}</div><div style="font-size:.72rem;color:var(--text-secondary)">${m.email||''}</div></div>
-        <span style="font-size:.7rem;color:${m.online?'var(--success)':'var(--text-light)'}">${m.online?'🟢 מחובר/ת':'⚫ לא מחובר/ת'}</span>
+        ${amSettingsAdmin&&!isMe?`<select style="font-family:var(--font);font-size:.7rem;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--card);color:var(--text);cursor:pointer" onchange="changeMemberRole('${uid}',this.value)">
+          <option value="admin"${role==='admin'?' selected':''}>👑 מנהל/ת</option>
+          <option value="member"${role==='member'?' selected':''}>✏️ עורך/ת</option>
+          <option value="viewer"${role==='viewer'?' selected':''}>👁️ צופה</option>
+        </select>`:`<span style="font-size:.72rem;color:var(--text-secondary)">${roleLabel}</span>`}
+        <span style="font-size:.7rem;color:${m.online?'var(--success)':'var(--text-light)'}">${m.online?'🟢':'⚫'}</span>
       </div>`;
     });
     area.innerHTML=mhtml;
@@ -7114,6 +7156,13 @@ function initApp(){
   updateSummary();
   applyDarkMode();
   requestNotificationPermission();
+  // Viewer mode indicator
+  if(isViewer()){
+    subEl.textContent='👁️ מצב צפייה בלבד — '+subEl.textContent;
+    document.body.classList.add('viewer-mode');
+  }else{
+    document.body.classList.remove('viewer-mode');
+  }
   hideLoadingScreen();
 }
 function hideLoadingScreen(){
