@@ -6496,11 +6496,14 @@ async function showFamilySettings(familyId){
         ${m.photoURL?`<img src="${m.photoURL}" style="width:28px;height:28px;border-radius:50%">`
         :`<div style="width:28px;height:28px;border-radius:50%;background:var(--primary-bg);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700">${(m.displayName||'?')[0]}</div>`}
         <div style="flex:1"><div style="font-size:.85rem;font-weight:500">${m.displayName||''}${isMe?' (את/ה)':''}</div><div style="font-size:.72rem;color:var(--text-secondary)">${m.email||''}</div></div>
-        ${amSettingsAdmin&&!isMe?`<select style="font-family:var(--font);font-size:.7rem;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--card);color:var(--text);cursor:pointer" onchange="changeMemberRole('${uid}',this.value)">
-          <option value="admin"${role==='admin'?' selected':''}>👑 מנהל/ת</option>
-          <option value="member"${role==='member'?' selected':''}>✏️ עורך/ת</option>
-          <option value="viewer"${role==='viewer'?' selected':''}>👁️ צופה</option>
-        </select>`:`<span style="font-size:.72rem;color:var(--text-secondary)">${roleLabel}</span>`}
+        ${amSettingsAdmin&&!isMe?`<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+          <select style="font-family:var(--font);font-size:.7rem;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--card);color:var(--text);cursor:pointer" onchange="changeMemberRole('${uid}',this.value)">
+            <option value="admin"${role==='admin'?' selected':''}>👑 מנהל/ת</option>
+            <option value="member"${role==='member'?' selected':''}>✏️ עורך/ת</option>
+            <option value="viewer"${role==='viewer'?' selected':''}>👁️ צופה</option>
+          </select>
+          <button class="btn-sm" style="background:var(--danger-bg);color:var(--danger);font-size:.68rem;padding:3px 8px" onclick="confirmRemoveMember('${uid}','${esc(m.displayName||'')}','${esc(m.email||'')}')">הסר</button>
+        </div>`:`<span style="font-size:.72rem;color:var(--text-secondary)">${roleLabel}</span>`}
         <span style="font-size:.7rem;color:${m.online?'var(--success)':'var(--text-light)'}">${m.online?'🟢':'⚫'}</span>
       </div>`;
     });
