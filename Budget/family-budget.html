@@ -5716,6 +5716,16 @@ async function connectToFamily(familyId,user){
     }
   }catch(e){
     console.warn('Firebase data load failed, using local:',e);
+    if(e.code==='PERMISSION_DENIED'||e.message?.includes('permission')){
+      // User was likely removed from this family — clean up local reference
+      toast('אין לך גישה לתקציב זה — ייתכן שהוסרת');
+      userFamilies=userFamilies.filter(f=>f.familyId!==familyId);
+      await fbDb.ref('userFamilies/'+user.uid+'/families/'+familyId).remove().catch(()=>{});
+      const next=userFamilies[0];
+      if(next){await connectToFamily(next.familyId,user);return}
+      showFamilyChoice(user);
+      return;
+    }
     loadDataLocal();
   }
   // Setup listeners
@@ -6102,7 +6112,8 @@ async function removeMember(uid,name,email){
   if(!isFamilyAdmin()){toast('רק מנהל/ת התקציב יכול/ה להסיר חברים');return}
   try{
     await fbDb.ref('families/'+fbFamilyId+'/members/'+uid).remove();
-    await fbDb.ref('userFamilies/'+uid+'/families/'+fbFamilyId).remove();
+    // Best-effort cleanup of removed user's family list (may fail due to security rules — that's OK)
+    try{await fbDb.ref('userFamilies/'+uid+'/families/'+fbFamilyId).remove()}catch(e){}
     closeModal();
     toast('המשתמש הוסר מהתקציב');
     showShareModal();
