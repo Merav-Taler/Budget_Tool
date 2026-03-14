@@ -1,0 +1,2034 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>לומדים הקלדה עיוורת בעברית</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f0f2f5;
+  --bg2: #ffffff;
+  --bg3: #e8eaed;
+  --text: #1a1a2e;
+  --text2: #555;
+  --text3: #888;
+  --accent: #4361ee;
+  --accent2: #3a56d4;
+  --correct: #2ecc71;
+  --correct-bg: #d4efdf;
+  --incorrect: #e74c3c;
+  --incorrect-bg: #fadbd8;
+  --current-bg: #ebf5fb;
+  --current-border: #4361ee;
+  --key-bg: #ffffff;
+  --key-border: #d1d5db;
+  --key-shadow: rgba(0,0,0,0.08);
+  --card-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  --radius: 12px;
+  --finger-pinky-l: #ff6b6b;
+  --finger-ring-l: #ffa94d;
+  --finger-middle-l: #51cf66;
+  --finger-index-l: #339af0;
+  --finger-index-r: #cc5de8;
+  --finger-middle-r: #20c997;
+  --finger-ring-r: #ffa94d;
+  --finger-pinky-r: #ff6b6b;
+  --thumb: #adb5bd;
+}
+.dark {
+  --bg: #1a1a2e;
+  --bg2: #16213e;
+  --bg3: #0f3460;
+  --text: #e8e8e8;
+  --text2: #b0b0b0;
+  --text3: #777;
+  --accent: #4cc9f0;
+  --accent2: #4895ef;
+  --correct-bg: #1a4731;
+  --incorrect-bg: #4a1a1a;
+  --current-bg: #1a2e4a;
+  --current-border: #4cc9f0;
+  --key-bg: #1e2a4a;
+  --key-border: #2a3a5a;
+  --key-shadow: rgba(0,0,0,0.3);
+  --card-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Heebo', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  transition: background 0.3s, color 0.3s;
+}
+header {
+  background: var(--bg2);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--card-shadow);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.header-btns { display: flex; gap: 8px; }
+.header-btns button {
+  background: var(--bg3);
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, background 0.2s;
+  color: var(--text);
+}
+.header-btns button:hover { transform: scale(1.1); background: var(--accent); color: #fff; }
+
+/* Home Screen */
+#homeScreen { max-width: 900px; margin: 0 auto; padding: 32px 20px; }
+.home-intro { text-align: center; margin-bottom: 32px; }
+.home-intro h2 { font-size: 1.6rem; font-weight: 600; margin-bottom: 8px; }
+.home-intro p { color: var(--text2); font-size: 1.05rem; line-height: 1.6; }
+.lessons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+.lesson-card {
+  background: var(--bg2);
+  border-radius: var(--radius);
+  padding: 20px;
+  cursor: pointer;
+  box-shadow: var(--card-shadow);
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+.lesson-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+.lesson-card.completed { border-color: var(--correct); }
+.lesson-card .lesson-num {
+  width: 36px; height: 36px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 12px;
+}
+.lesson-card.completed .lesson-num { background: var(--correct); }
+.lesson-card h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 6px; }
+.lesson-card .lesson-chars { color: var(--text2); font-size: 0.95rem; margin-bottom: 8px; letter-spacing: 2px; }
+.lesson-card .lesson-stats { font-size: 0.85rem; color: var(--text3); }
+.lesson-card .completed-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  font-size: 1.3rem;
+}
+
+/* Practice Screen */
+#practiceScreen { display: none; max-width: 1000px; margin: 0 auto; padding: 20px; }
+#practiceScreen.active { display: block; }
+.practice-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.back-btn {
+  background: var(--bg3);
+  border: none;
+  padding: 8px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text);
+  transition: background 0.2s;
+}
+.back-btn:hover { background: var(--accent); color: #fff; }
+.practice-header h2 { font-size: 1.2rem; font-weight: 600; }
+.stats-bar { display: flex; gap: 16px; direction: ltr; }
+.stat-item {
+  background: var(--bg2);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  box-shadow: var(--card-shadow);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.stat-item .stat-label { color: var(--text3); font-size: 0.8rem; }
+.stat-item .stat-value { font-weight: 600; }
+
+.progress-bar-container {
+  width: 100%;
+  height: 6px;
+  background: var(--bg3);
+  border-radius: 3px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--correct));
+  border-radius: 3px;
+  transition: width 0.3s;
+  width: 0%;
+}
+
+.text-display {
+  background: var(--bg2);
+  border-radius: var(--radius);
+  padding: 28px 24px;
+  margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+  font-size: 1.7rem;
+  line-height: 2.2;
+  letter-spacing: 1px;
+  direction: rtl;
+  text-align: right;
+  min-height: 120px;
+  position: relative;
+  user-select: none;
+  outline: none;
+  cursor: text;
+}
+.text-display:focus {
+  box-shadow: 0 0 0 3px var(--accent), var(--card-shadow);
+}
+
+.start-prompt {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--text3);
+  font-size: 1.1rem;
+  pointer-events: none;
+  animation: fadeInOut 2s ease-in-out infinite;
+}
+@keyframes fadeInOut {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.char {
+  display: inline-block;
+  padding: 2px 1px;
+  border-radius: 4px;
+  transition: background 0.15s, color 0.15s;
+  position: relative;
+}
+.char.correct { background: var(--correct-bg); color: var(--correct); }
+.char.incorrect {
+  background: var(--incorrect-bg);
+  color: var(--incorrect);
+  text-decoration: underline;
+  text-decoration-color: var(--incorrect);
+}
+.char.current {
+  background: var(--current-bg);
+  border-bottom: 3px solid var(--current-border);
+  animation: pulse 1s ease-in-out infinite;
+}
+.char.space { width: 12px; }
+.char.space.correct { background: var(--correct-bg); }
+.char.space.incorrect { background: var(--incorrect-bg); }
+.char.space.current { background: var(--current-bg); border-bottom: 3px solid var(--current-border); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.finger-hint {
+  text-align: center;
+  margin-bottom: 16px;
+  font-size: 1rem;
+  color: var(--text2);
+  min-height: 28px;
+}
+.finger-hint .finger-dot {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  vertical-align: middle;
+  margin: 0 4px;
+}
+
+/* Virtual Keyboard */
+.keyboard-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  direction: ltr;
+}
+.keyboard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  direction: ltr;
+}
+.kb-row {
+  display: flex;
+  gap: 5px;
+}
+.kb-row:nth-child(2) { margin-right: 20px; }
+.kb-row:nth-child(3) { margin-right: 40px; }
+.key {
+  width: 52px;
+  height: 52px;
+  background: var(--key-bg);
+  border: 2px solid var(--key-border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  font-weight: 500;
+  font-family: 'Heebo', sans-serif;
+  box-shadow: 0 2px 4px var(--key-shadow);
+  transition: all 0.15s;
+  position: relative;
+  color: var(--text);
+}
+.key .key-en {
+  font-size: 0.55rem;
+  color: var(--text3);
+  position: absolute;
+  bottom: 3px;
+  left: 5px;
+}
+.key.home-key::after {
+  content: '';
+  position: absolute;
+  bottom: 8px;
+  width: 10px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--text3);
+}
+.key.highlight {
+  transform: scale(1.08);
+  box-shadow: 0 0 16px rgba(67, 97, 238, 0.5);
+  border-color: var(--accent);
+  z-index: 2;
+}
+.key.pressed {
+  transform: scale(0.95);
+  box-shadow: 0 1px 2px var(--key-shadow);
+}
+.key.space-key {
+  width: 280px;
+  font-size: 0.85rem;
+  color: var(--text3);
+}
+
+.key.finger-pinky-l { border-bottom: 3px solid var(--finger-pinky-l); }
+.key.finger-ring-l { border-bottom: 3px solid var(--finger-ring-l); }
+.key.finger-middle-l { border-bottom: 3px solid var(--finger-middle-l); }
+.key.finger-index-l { border-bottom: 3px solid var(--finger-index-l); }
+.key.finger-index-r { border-bottom: 3px solid var(--finger-index-r); }
+.key.finger-middle-r { border-bottom: 3px solid var(--finger-middle-r); }
+.key.finger-ring-r { border-bottom: 3px solid var(--finger-ring-r); }
+.key.finger-pinky-r { border-bottom: 3px solid var(--finger-pinky-r); }
+.key.finger-thumb { border-bottom: 3px solid var(--thumb); }
+
+.key.highlight.finger-pinky-l { border-color: var(--finger-pinky-l); box-shadow: 0 0 14px var(--finger-pinky-l); }
+.key.highlight.finger-ring-l { border-color: var(--finger-ring-l); box-shadow: 0 0 14px var(--finger-ring-l); }
+.key.highlight.finger-middle-l { border-color: var(--finger-middle-l); box-shadow: 0 0 14px var(--finger-middle-l); }
+.key.highlight.finger-index-l { border-color: var(--finger-index-l); box-shadow: 0 0 14px var(--finger-index-l); }
+.key.highlight.finger-index-r { border-color: var(--finger-index-r); box-shadow: 0 0 14px var(--finger-index-r); }
+.key.highlight.finger-middle-r { border-color: var(--finger-middle-r); box-shadow: 0 0 14px var(--finger-middle-r); }
+.key.highlight.finger-ring-r { border-color: var(--finger-ring-r); box-shadow: 0 0 14px var(--finger-ring-r); }
+.key.highlight.finger-pinky-r { border-color: var(--finger-pinky-r); box-shadow: 0 0 14px var(--finger-pinky-r); }
+
+/* Finger Legend */
+.finger-legend {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 16px;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  color: var(--text2);
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* Results Overlay */
+#resultsOverlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+#resultsOverlay.show { display: flex; }
+.results-card {
+  background: var(--bg2);
+  border-radius: 16px;
+  padding: 40px;
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  animation: slideUp 0.4s ease;
+}
+@keyframes slideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.results-card h2 { font-size: 1.6rem; margin-bottom: 8px; }
+.results-card .results-subtitle { color: var(--text2); margin-bottom: 24px; }
+.results-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.result-stat {
+  background: var(--bg);
+  padding: 16px;
+  border-radius: 12px;
+}
+.result-stat .result-value { font-size: 1.8rem; font-weight: 700; color: var(--accent); }
+.result-stat .result-label { font-size: 0.85rem; color: var(--text2); margin-top: 4px; }
+.results-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.results-btns button {
+  padding: 12px 28px;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s;
+}
+.results-btns button:hover { transform: translateY(-2px); }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-secondary { background: var(--bg3); color: var(--text); }
+
+/* Hebrew warning */
+.lang-warning {
+  background: #fff3cd;
+  color: #856404;
+  padding: 12px 20px;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 16px;
+  font-size: 0.95rem;
+  display: none;
+  direction: rtl;
+}
+.dark .lang-warning { background: #4a3f1a; color: #ffd43b; }
+.lang-warning.show { display: block; }
+
+/* Mobile warning */
+.mobile-warning {
+  display: none;
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text2);
+}
+.mobile-warning h2 { margin-bottom: 12px; }
+
+/* Star rating */
+.stars { font-size: 1.4rem; margin: 8px 0; }
+.star-filled { color: #f59f00; }
+.star-empty { color: var(--bg3); }
+
+/* Tutorial Button */
+.tutorial-btn {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  border: none;
+  padding: 14px 32px;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin: 20px auto 8px;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 16px rgba(67, 97, 238, 0.3);
+}
+.tutorial-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(67, 97, 238, 0.4); }
+.tutorial-btn-small {
+  display: inline-block;
+  background: var(--bg3);
+  color: var(--text2);
+  border: none;
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background 0.2s;
+}
+.tutorial-btn-small:hover { background: var(--accent); color: #fff; }
+
+/* Tutorial Overlay */
+#tutorialOverlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: var(--bg);
+  z-index: 300;
+  overflow-y: auto;
+}
+#tutorialOverlay.show { display: block; }
+.tutorial-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px 20px;
+}
+.tutorial-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+.tutorial-header h2 { font-size: 1.3rem; font-weight: 600; }
+.tutorial-close {
+  background: var(--bg3);
+  border: none;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  font-size: 1.3rem;
+  cursor: pointer;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tutorial-close:hover { background: var(--incorrect); color: #fff; }
+
+.step-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+.step-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--bg3);
+  transition: background 0.3s, transform 0.3s;
+  cursor: pointer;
+}
+.step-dot.active { background: var(--accent); transform: scale(1.3); }
+.step-dot.done { background: var(--correct); }
+
+.tutorial-step {
+  display: none;
+  animation: fadeIn 0.4s ease;
+}
+.tutorial-step.active { display: block; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.tutorial-card {
+  background: var(--bg2);
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: var(--card-shadow);
+  margin-bottom: 24px;
+}
+.tutorial-card h3 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--accent);
+}
+.tutorial-card p {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: var(--text2);
+  margin-bottom: 12px;
+}
+.tutorial-card p:last-child { margin-bottom: 0; }
+.tutorial-card strong { color: var(--text); }
+.tutorial-card .highlight-text {
+  background: var(--current-bg);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.tutorial-tip {
+  background: var(--current-bg);
+  border-right: 4px solid var(--accent);
+  padding: 14px 18px;
+  border-radius: 0 10px 10px 0;
+  margin: 16px 0;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.tutorial-keyboard-wrapper {
+  margin: 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  direction: ltr;
+}
+.tutorial-keyboard-wrapper .keyboard {
+  direction: ltr;
+}
+
+.finger-map {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 16px 0;
+}
+.finger-map-side {
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 16px;
+}
+.finger-map-side h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  text-align: center;
+}
+.finger-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 0.95rem;
+}
+.finger-row .finger-color {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.finger-row .finger-key {
+  background: var(--bg2);
+  border: 2px solid var(--key-border);
+  border-radius: 6px;
+  width: 32px; height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.golden-rules {
+  list-style: none;
+  padding: 0;
+}
+.golden-rules li {
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  background: var(--bg);
+  border-radius: 10px;
+  font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.golden-rules li .rule-num {
+  background: var(--accent);
+  color: #fff;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+/* Interactive exercise in tutorial */
+.exercise-prompt {
+  text-align: center;
+  font-size: 1.2rem;
+  margin: 16px 0;
+  color: var(--text);
+}
+.exercise-prompt .next-key {
+  display: inline-block;
+  background: var(--current-bg);
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  padding: 4px 14px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin: 0 6px;
+}
+.exercise-keys-done {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin: 12px 0;
+  direction: ltr;
+}
+.exercise-key-status {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 600;
+  border: 2px solid var(--key-border);
+  background: var(--key-bg);
+  transition: all 0.3s;
+}
+.exercise-key-status.done {
+  background: var(--correct-bg);
+  border-color: var(--correct);
+  color: var(--correct);
+}
+.exercise-key-status.current {
+  border-color: var(--accent);
+  animation: pulse 1s ease-in-out infinite;
+}
+.exercise-complete {
+  text-align: center;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--correct);
+  margin: 20px 0;
+}
+
+.tutorial-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+}
+.tutorial-nav button {
+  padding: 12px 28px;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.tutorial-nav button:hover { transform: translateY(-2px); }
+.tutorial-nav .btn-prev { background: var(--bg3); color: var(--text); }
+.tutorial-nav .btn-next { background: var(--accent); color: #fff; }
+.tutorial-nav .btn-finish { background: var(--correct); color: #fff; }
+
+/* Lesson Intro Overlay */
+#lessonIntro {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 250;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+#lessonIntro.show { display: flex; }
+.lesson-intro-card {
+  background: var(--bg2);
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 600px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  animation: slideUp 0.4s ease;
+}
+.lesson-intro-card h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--accent);
+}
+.lesson-intro-card .intro-subtitle {
+  color: var(--text2);
+  margin-bottom: 20px;
+  font-size: 1rem;
+}
+.intro-new-keys {
+  margin-bottom: 20px;
+}
+.intro-new-keys h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.intro-keys-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  direction: ltr;
+}
+.intro-key {
+  width: 44px; height: 44px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+  background: var(--key-bg);
+  border: 2px solid var(--key-border);
+  box-shadow: 0 2px 4px var(--key-shadow);
+}
+.lesson-intro-card .intro-tip {
+  background: var(--current-bg);
+  border-right: 4px solid var(--accent);
+  padding: 12px 16px;
+  border-radius: 0 10px 10px 0;
+  margin-bottom: 20px;
+  font-size: 0.95rem;
+}
+.lesson-intro-card .intro-start-btn {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.lesson-intro-card .intro-start-btn:hover { transform: translateY(-2px); }
+
+/* Enhanced keyboard bumps */
+.key.home-key::after {
+  content: '';
+  position: absolute;
+  bottom: 7px;
+  width: 14px;
+  height: 4px;
+  border-radius: 3px;
+  background: var(--text3);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+.key.bump-pulse::after {
+  animation: bumpPulse 1.5s ease-in-out infinite;
+  background: var(--accent);
+}
+@keyframes bumpPulse {
+  0%, 100% { transform: scaleX(1); opacity: 0.7; }
+  50% { transform: scaleX(1.4); opacity: 1; }
+}
+
+@media (max-width: 600px) {
+  .key { width: 32px; height: 38px; font-size: 0.85rem; }
+  .key .key-en { display: none; }
+  .key.space-key { width: 160px; }
+  .text-display { font-size: 1.3rem; padding: 20px 16px; }
+  .kb-row:nth-child(2) { margin-right: 12px; }
+  .kb-row:nth-child(3) { margin-right: 24px; }
+  .results-stats { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>הקלדה עיוורת בעברית</h1>
+  <div class="header-btns">
+    <button onclick="toggleSound()" id="soundBtn" title="צלילים">&#x1f50a;</button>
+    <button onclick="toggleDarkMode()" id="darkBtn" title="מצב כהה">&#x1f319;</button>
+  </div>
+</header>
+
+<div class="mobile-warning" id="mobileWarning">
+  <h2>&#x2328;&#xfe0f; נדרש מקלדת פיזית</h2>
+  <p>לימוד הקלדה עיוורת דורש מקלדת פיזית.<br>יש לפתוח בדפדפן במחשב שולחני או נייד.</p>
+</div>
+
+<main id="homeScreen">
+  <div class="home-intro">
+    <h2>ברוכים הבאים!</h2>
+    <p>לימדו הקלדה עיוורת בעברית צעד אחר צעד.<br>
+    התחילו משורת הבית והתקדמו עד הקלדה שוטפת של משפטים שלמים.</p>
+    <button class="tutorial-btn" onclick="openTutorial()">&#x1f4d6; איך מתחילים? מדריך למתחילים</button><br>
+    <button class="tutorial-btn-small" onclick="openTutorial()">&#x1f3b9; תזכורת: מיקום אצבעות ועקרונות</button>
+  </div>
+  <div class="lessons-grid" id="lessonsGrid"></div>
+</main>
+
+<main id="practiceScreen">
+  <div class="practice-header">
+    <button class="back-btn" onclick="goHome()">&#x2190; חזרה</button>
+    <h2 id="lessonTitle"></h2>
+    <div class="stats-bar">
+      <div class="stat-item">
+        <span class="stat-label">מהירות</span>
+        <span class="stat-value" id="wpmStat">0</span>
+        <span class="stat-label">מ/ד</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">דיוק</span>
+        <span class="stat-value" id="accStat">100%</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">זמן</span>
+        <span class="stat-value" id="timeStat">0:00</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="progress-bar-container">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+
+  <div class="lang-warning" id="langWarning">
+    &#x26a0;&#xfe0f; המקלדת שלך על אנגלית! יש לעבור לעברית (Cmd+Space במק, Alt+Shift בווינדוס)
+  </div>
+
+  <div class="text-display" id="textDisplay" tabindex="0"></div>
+
+  <div class="finger-hint" id="fingerHint"></div>
+
+  <div class="keyboard-container">
+    <div class="keyboard" id="keyboard"></div>
+    <div class="finger-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--finger-pinky-l)"></div> זרת</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--finger-ring-l)"></div> קמיצה</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--finger-middle-l)"></div> אמה</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--finger-index-l)"></div> אצבע שמאל</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--finger-index-r)"></div> אצבע ימין</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--finger-middle-r)"></div> אמה</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--finger-ring-r)"></div> קמיצה</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--finger-pinky-r)"></div> זרת</div>
+    </div>
+  </div>
+</main>
+
+<div id="resultsOverlay">
+  <div class="results-card">
+    <h2 id="resultsTitle"></h2>
+    <p class="results-subtitle" id="resultsSubtitle"></p>
+    <div id="resultsStars" class="stars"></div>
+    <div class="results-stats">
+      <div class="result-stat">
+        <div class="result-value" id="resWpm">0</div>
+        <div class="result-label">מילים לדקה</div>
+      </div>
+      <div class="result-stat">
+        <div class="result-value" id="resAcc">0%</div>
+        <div class="result-label">דיוק</div>
+      </div>
+      <div class="result-stat">
+        <div class="result-value" id="resTime">0:00</div>
+        <div class="result-label">זמן</div>
+      </div>
+    </div>
+    <div class="results-btns">
+      <button class="btn-primary" onclick="retryLesson()">&#x1f504; נסו שוב</button>
+      <button class="btn-secondary" id="nextLessonBtn" onclick="nextLesson()">הבא &#x2192;</button>
+      <button class="btn-secondary" onclick="goHome()">&#x1f3e0; תפריט</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tutorial Overlay -->
+<div id="tutorialOverlay">
+  <div class="tutorial-container">
+    <div class="tutorial-header">
+      <h2>&#x1f4d6; מדריך הקלדה עיוורת</h2>
+      <button class="tutorial-close" onclick="closeTutorial()">&#x2715;</button>
+    </div>
+    <div class="step-indicators" id="stepIndicators"></div>
+    <div id="tutorialSteps"></div>
+    <div class="tutorial-nav">
+      <button class="btn-prev" id="tutPrev" onclick="tutorialPrev()">&#x2190; הקודם</button>
+      <button class="btn-next" id="tutNext" onclick="tutorialNext()">הבא &#x2192;</button>
+    </div>
+  </div>
+</div>
+
+<!-- Lesson Intro Overlay -->
+<div id="lessonIntro">
+  <div class="lesson-intro-card" id="lessonIntroCard"></div>
+</div>
+
+<script>
+// ===== KEYBOARD LAYOUT =====
+const KEYBOARD_ROWS = [
+  [
+    { en: 'Q', heb: '/', finger: 'pinky-l' },
+    { en: 'W', heb: "'", finger: 'ring-l' },
+    { en: 'E', heb: 'ק', finger: 'middle-l' },
+    { en: 'R', heb: 'ר', finger: 'index-l' },
+    { en: 'T', heb: 'א', finger: 'index-l' },
+    { en: 'Y', heb: 'ט', finger: 'index-r' },
+    { en: 'U', heb: 'ו', finger: 'index-r' },
+    { en: 'I', heb: 'ן', finger: 'middle-r' },
+    { en: 'O', heb: 'ם', finger: 'ring-r' },
+    { en: 'P', heb: 'פ', finger: 'pinky-r' },
+  ],
+  [
+    { en: 'A', heb: 'ש', finger: 'pinky-l' },
+    { en: 'S', heb: 'ד', finger: 'ring-l' },
+    { en: 'D', heb: 'ג', finger: 'middle-l' },
+    { en: 'F', heb: 'כ', finger: 'index-l', home: true },
+    { en: 'G', heb: 'ע', finger: 'index-l' },
+    { en: 'H', heb: 'י', finger: 'index-r' },
+    { en: 'J', heb: 'ח', finger: 'index-r', home: true },
+    { en: 'K', heb: 'ל', finger: 'middle-r' },
+    { en: 'L', heb: 'ך', finger: 'ring-r' },
+    { en: ';', heb: 'ף', finger: 'pinky-r' },
+  ],
+  [
+    { en: 'Z', heb: 'ז', finger: 'pinky-l' },
+    { en: 'X', heb: 'ס', finger: 'ring-l' },
+    { en: 'C', heb: 'ב', finger: 'middle-l' },
+    { en: 'V', heb: 'ה', finger: 'index-l' },
+    { en: 'B', heb: 'נ', finger: 'index-l' },
+    { en: 'N', heb: 'מ', finger: 'index-r' },
+    { en: 'M', heb: 'צ', finger: 'index-r' },
+    { en: ',', heb: 'ת', finger: 'middle-r' },
+    { en: '.', heb: 'ץ', finger: 'ring-r' },
+  ]
+];
+
+const FINGER_NAMES = {
+  'pinky-l': 'זרת שמאל',
+  'ring-l': 'קמיצה שמאל',
+  'middle-l': 'אמה שמאל',
+  'index-l': 'אצבע שמאל',
+  'index-r': 'אצבע ימין',
+  'middle-r': 'אמה ימין',
+  'ring-r': 'קמיצה ימין',
+  'pinky-r': 'זרת ימין',
+  'thumb': 'אגודל',
+};
+
+const FINGER_COLORS = {
+  'pinky-l': 'var(--finger-pinky-l)', 'ring-l': 'var(--finger-ring-l)',
+  'middle-l': 'var(--finger-middle-l)', 'index-l': 'var(--finger-index-l)',
+  'index-r': 'var(--finger-index-r)', 'middle-r': 'var(--finger-middle-r)',
+  'ring-r': 'var(--finger-ring-r)', 'pinky-r': 'var(--finger-pinky-r)',
+  'thumb': 'var(--thumb)',
+};
+
+// Build char-to-key lookup
+const charToKey = {};
+KEYBOARD_ROWS.forEach(row => row.forEach(k => { charToKey[k.heb] = k; }));
+charToKey[' '] = { en: 'Space', heb: ' ', finger: 'thumb' };
+
+// ===== LESSONS =====
+const LESSONS = [
+  {
+    id: 1,
+    title: 'שורת הבית - יד ימין',
+    subtitle: 'י ח ל ך',
+    chars: ['י', 'ח', 'ל', 'ך'],
+    texts: [
+      'חי לי חל לך חיל לחי ילך חלי ליח יחל',
+      'לך חי לי יחל חיל לחי חלך ליח ילך חי',
+      'חיל ילך לחי חי לך ליח יחל חלי לי חל',
+    ]
+  },
+  {
+    id: 2,
+    title: 'שורת הבית - יד שמאל',
+    subtitle: 'ש ד ג כ ע',
+    chars: ['ש', 'ד', 'ג', 'כ', 'ע'],
+    texts: [
+      'דג כד שד עד גד שכ דע כג עד גד דגש',
+      'עד דג שד כד גד שכ דע כג דגש שדכ עד',
+      'כד גד שד דג עד שכד דגע גשד עכד דשכ',
+    ]
+  },
+  {
+    id: 3,
+    title: 'שורת הבית - שתי ידיים',
+    subtitle: 'כל שורת הבית יחד',
+    chars: ['ש', 'ד', 'ג', 'כ', 'ע', 'י', 'ח', 'ל', 'ך', 'ף'],
+    texts: [
+      'שלך גיל כלי דלי חיל שיח דגל שכל גדי עלי ליד',
+      'כלי שלך גיל דלי חיל שיח ידע כשל דגל שכל עלי',
+      'דגל גיל שלך כלי חיל ליד שיח שכל גדי עלי דלי',
+    ]
+  },
+  {
+    id: 4,
+    title: 'שורה עליונה',
+    subtitle: 'ק ר א ט ו ן ם פ + שורת הבית',
+    chars: null,
+    texts: [
+      'אור שיר דרך פרי קרא ריק כפר שקט פרק קיר גור דור',
+      'קול אויר שופר גדר קרא פרי דרך שיר טור אור ריק',
+      'שקט קיר אור דור גור פרק דרך ריק קרא שיר כפר פרי',
+    ]
+  },
+  {
+    id: 5,
+    title: 'שורה תחתונה',
+    subtitle: 'ז ס ב ה נ מ צ ת ץ + כל השאר',
+    chars: null,
+    texts: [
+      'בית שלום מים שמש ילד ספר חלב לחם דג ציפור',
+      'זמן סבב הנה צמח נתן בסך תמיד מצב שלום בית',
+      'שמש ירח בית ספר ילד מים חלב לחם צבע סוכר',
+    ]
+  },
+  {
+    id: 6,
+    title: 'מילים נפוצות',
+    subtitle: 'תרגול מילים שלמות',
+    chars: null,
+    texts: [
+      'שלום בוקר טוב ערב לילה יום שבוע חודש שנה ילד ילדה',
+      'גדול קטן יפה טוב חדש ישן ארוך קצר חזק מהיר',
+      'אוכל שותה כותב קורא הולך בא רץ ישן עומד יושב',
+      'אמא אבא אח אחות סבא סבתא בית ספר גן חבר',
+    ]
+  },
+  {
+    id: 7,
+    title: 'משפטים קצרים',
+    subtitle: 'הקלדת משפטים שלמים',
+    chars: null,
+    texts: [
+      'הילד הולך לבית הספר כל בוקר',
+      'אמא מבשלת אוכל טעים לכל המשפחה',
+      'הכלב רץ בגינה ומשחק עם הילדים',
+      'אני אוהב לקרוא ספרים בערב',
+      'השמש זורחת בשמים כל יום',
+      'המשפחה יוצאת לטיול בשבת',
+      'אבא נוסע לעבודה כל בוקר',
+      'סבתא אופה עוגה ליום הולדת',
+    ]
+  },
+  {
+    id: 8,
+    title: 'משפטים ארוכים',
+    subtitle: 'הקלדה שוטפת של טקסט',
+    chars: null,
+    texts: [
+      'אני אוהב לקרוא ספרים לפני השינה כי זה עוזר לי לחלום',
+      'השמש זורחת והציפורים שרות בחוץ והילדים משחקים בחצר',
+      'המחשב מאפשר לנו ללמוד דברים חדשים כל יום',
+      'הילדים משחקים בחצר הבית ואמא מכינה ארוחת ערב',
+      'אנחנו קונים ירקות ופירות טריים בשוק כל שבוע',
+      'הספריה פתוחה כל יום ואפשר לקרוא שם ספרים',
+    ]
+  },
+  {
+    id: 9,
+    title: 'פסקאות',
+    subtitle: 'תרגול הקלדה ברמה מתקדמת',
+    chars: null,
+    texts: [
+      'בכל בוקר אני קם ושותה כוס קפה חם ואז יוצא לעבודה',
+      'בסופי שבוע אנחנו אוהבים לטייל בטבע ולנשום אוויר צח',
+      'הילדים לומדים בבית הספר מתמטיקה עברית ואנגלית כל יום',
+      'בערב כל המשפחה יושבת יחד לאכול ארוחת ערב ולספר על היום',
+      'החורף הגיע והגשם יורד בחוץ ואנחנו יושבים בבית עם שוקו חם',
+      'בקיץ אנחנו נוסעים לים ושוחים במים הכחולים עד השקיעה',
+    ]
+  },
+  {
+    id: 10,
+    title: 'מבחן מהירות',
+    subtitle: 'בדקו את המהירות שלכם',
+    chars: null,
+    texts: [
+      'לימוד הקלדה עיוורת דורש תרגול יומי אבל התוצאות שוות את המאמץ',
+      'כשלומדים להקליד בלי להסתכל על המקלדת המהירות עולה משמעותית',
+      'הדרך הטובה ביותר ללמוד היא לתרגל קצת כל יום ולא לוותר',
+      'המטרה היא להקליד בצורה מדויקת ומהירה בלי להסתכל על האצבעות',
+      'עם תרגול קבוע כל אחד יכול ללמוד להקליד מהר ובצורה נכונה',
+    ]
+  },
+];
+
+// ===== STATE =====
+let state = {
+  screen: 'home',
+  currentLesson: null,
+  currentTextIndex: 0,
+  pos: 0,
+  results: [],
+  startTime: null,
+  timerInterval: null,
+  correctCount: 0,
+  incorrectCount: 0,
+  totalKeystrokes: 0,
+  soundEnabled: true,
+  darkMode: false,
+  audioCtx: null,
+  progress: {},
+};
+
+// ===== DOM REFS =====
+const $home = document.getElementById('homeScreen');
+const $practice = document.getElementById('practiceScreen');
+const $results = document.getElementById('resultsOverlay');
+const $lessonsGrid = document.getElementById('lessonsGrid');
+const $textDisplay = document.getElementById('textDisplay');
+const $keyboard = document.getElementById('keyboard');
+const $fingerHint = document.getElementById('fingerHint');
+const $progressBar = document.getElementById('progressBar');
+const $lessonTitle = document.getElementById('lessonTitle');
+const $wpmStat = document.getElementById('wpmStat');
+const $accStat = document.getElementById('accStat');
+const $timeStat = document.getElementById('timeStat');
+const $langWarning = document.getElementById('langWarning');
+const $mobileWarning = document.getElementById('mobileWarning');
+
+// ===== STORAGE =====
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem('hebrewTyping_progress');
+    if (raw) state.progress = JSON.parse(raw);
+  } catch(e) {}
+}
+
+function saveProgress() {
+  try {
+    localStorage.setItem('hebrewTyping_progress', JSON.stringify(state.progress));
+  } catch(e) {}
+}
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem('hebrewTyping_settings');
+    if (raw) {
+      const s = JSON.parse(raw);
+      state.darkMode = !!s.darkMode;
+      state.soundEnabled = s.soundEnabled !== false;
+    }
+  } catch(e) {}
+}
+
+function saveSettings() {
+  try {
+    localStorage.setItem('hebrewTyping_settings', JSON.stringify({
+      darkMode: state.darkMode,
+      soundEnabled: state.soundEnabled,
+    }));
+  } catch(e) {}
+}
+
+// ===== AUDIO =====
+function getAudioCtx() {
+  if (!state.audioCtx) {
+    state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return state.audioCtx;
+}
+
+function playSound(correct) {
+  if (!state.soundEnabled) return;
+  try {
+    const ctx = getAudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.value = correct ? 660 : 220;
+    gain.gain.value = 0.08;
+    osc.start(ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+    osc.stop(ctx.currentTime + 0.12);
+  } catch(e) {}
+}
+
+function playComplete() {
+  if (!state.soundEnabled) return;
+  try {
+    const ctx = getAudioCtx();
+    [523, 659, 784].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.value = 0.1;
+      osc.start(ctx.currentTime + i * 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.3);
+      osc.stop(ctx.currentTime + i * 0.15 + 0.35);
+    });
+  } catch(e) {}
+}
+
+// ===== DARK MODE =====
+function toggleDarkMode() {
+  state.darkMode = !state.darkMode;
+  document.body.classList.toggle('dark', state.darkMode);
+  document.getElementById('darkBtn').textContent = state.darkMode ? '\u2600\ufe0f' : '\ud83c\udf19';
+  saveSettings();
+}
+
+function toggleSound() {
+  state.soundEnabled = !state.soundEnabled;
+  document.getElementById('soundBtn').textContent = state.soundEnabled ? '\ud83d\udd0a' : '\ud83d\udd07';
+  saveSettings();
+}
+
+// ===== RENDER HOME =====
+function renderHome() {
+  state.screen = 'home';
+  $home.style.display = '';
+  $practice.classList.remove('active');
+  $results.classList.remove('show');
+
+  let html = '';
+  LESSONS.forEach(lesson => {
+    const prog = state.progress[lesson.id];
+    const completed = prog && prog.completed;
+    const bestWpm = prog ? prog.bestWpm || 0 : 0;
+    const bestAcc = prog ? prog.bestAccuracy || 0 : 0;
+    html += `
+      <div class="lesson-card ${completed ? 'completed' : ''}" onclick="startLesson(${lesson.id})">
+        ${completed ? '<span class="completed-badge">\u2705</span>' : ''}
+        <div class="lesson-num">${lesson.id}</div>
+        <h3>${lesson.title}</h3>
+        <div class="lesson-chars">${lesson.subtitle}</div>
+        ${prog ? `<div class="lesson-stats">\u26a1 ${bestWpm} \u05de/\u05d3 | \ud83c\udfaf ${bestAcc}%</div>` : '<div class="lesson-stats">\u05dc\u05d0 \u05d4\u05ea\u05d7\u05d9\u05dc</div>'}
+      </div>
+    `;
+  });
+  $lessonsGrid.innerHTML = html;
+}
+
+// ===== RENDER KEYBOARD =====
+function renderKeyboard() {
+  let html = '';
+  KEYBOARD_ROWS.forEach(row => {
+    html += '<div class="kb-row">';
+    row.forEach(k => {
+      const homeClass = k.home ? ' home-key' : '';
+      html += `<div class="key finger-${k.finger}${homeClass}" data-heb="${k.heb}" id="key-${k.en}">
+        ${k.heb}
+        <span class="key-en">${k.en}</span>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  // Space bar
+  html += '<div class="kb-row"><div class="key space-key finger-thumb" data-heb=" " id="key-Space">\u05E8\u05D5\u05D5\u05D7</div></div>';
+  $keyboard.innerHTML = html;
+}
+
+// ===== START LESSON =====
+function startLesson(lessonId) {
+  const lesson = LESSONS.find(l => l.id === lessonId);
+  if (!lesson) return;
+
+  // Show lesson intro first (for lessons 1-5), then start practice
+  showLessonIntro(lessonId, () => {
+    state.screen = 'practice';
+    state.currentLesson = lesson;
+    state.currentTextIndex = Math.floor(Math.random() * lesson.texts.length);
+    state.pos = 0;
+    state.correctCount = 0;
+    state.incorrectCount = 0;
+    state.totalKeystrokes = 0;
+    state.startTime = null;
+    state.results = [];
+
+    if (state.timerInterval) clearInterval(state.timerInterval);
+    state.timerInterval = null;
+
+    $home.style.display = 'none';
+    $practice.classList.add('active');
+    $results.classList.remove('show');
+    $lessonTitle.textContent = lesson.title;
+    $wpmStat.textContent = '0';
+    $accStat.textContent = '100%';
+    $timeStat.textContent = '0:00';
+    $progressBar.style.width = '0%';
+    $langWarning.classList.remove('show');
+
+    renderKeyboard();
+    renderText();
+    updateKeyboardHighlight();
+    updateFingerHint();
+
+    // Focus the text display area so keyboard events work
+    setTimeout(() => $textDisplay.focus(), 50);
+  });
+}
+
+// ===== RENDER TEXT =====
+function renderText() {
+  const text = state.currentLesson.texts[state.currentTextIndex];
+  let html = '';
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const isSpace = ch === ' ';
+    let cls = 'char';
+    if (isSpace) cls += ' space';
+
+    if (i < state.pos) {
+      cls += state.results[i] ? ' correct' : ' incorrect';
+    } else if (i === state.pos) {
+      cls += ' current';
+    }
+    html += `<span class="${cls}" data-index="${i}">${isSpace ? '&nbsp;' : ch}</span>`;
+  }
+
+  // Add start prompt if not started yet
+  if (state.pos === 0 && !state.startTime) {
+    html += '<div class="start-prompt">התחילו להקליד...</div>';
+  }
+
+  $textDisplay.innerHTML = html;
+
+  // Update progress bar
+  const pct = (state.pos / text.length) * 100;
+  $progressBar.style.width = pct + '%';
+}
+
+// ===== UPDATE KEYBOARD HIGHLIGHT =====
+function updateKeyboardHighlight() {
+  document.querySelectorAll('.key.highlight').forEach(el => el.classList.remove('highlight'));
+
+  const text = state.currentLesson.texts[state.currentTextIndex];
+  if (state.pos >= text.length) return;
+
+  const nextChar = text[state.pos];
+  const keyInfo = charToKey[nextChar];
+  if (keyInfo) {
+    const keyEl = document.getElementById('key-' + keyInfo.en);
+    if (keyEl) keyEl.classList.add('highlight');
+  }
+}
+
+// ===== UPDATE FINGER HINT =====
+function updateFingerHint() {
+  const text = state.currentLesson.texts[state.currentTextIndex];
+  if (state.pos >= text.length) {
+    $fingerHint.innerHTML = '';
+    return;
+  }
+
+  const nextChar = text[state.pos];
+  const keyInfo = charToKey[nextChar];
+  if (keyInfo) {
+    const fingerName = FINGER_NAMES[keyInfo.finger] || '';
+    const color = FINGER_COLORS[keyInfo.finger] || '#888';
+    const charDisplay = nextChar === ' ' ? 'רווח' : nextChar;
+    $fingerHint.innerHTML = `לחצו <strong>${charDisplay}</strong> עם <span class="finger-dot" style="background:${color}"></span> ${fingerName}`;
+  }
+}
+
+// ===== UPDATE STATS =====
+function updateStats() {
+  if (!state.startTime) return;
+
+  const elapsed = (Date.now() - state.startTime) / 1000;
+  const minutes = elapsed / 60;
+  const wpm = minutes > 0 ? Math.round((state.correctCount / 5) / minutes) : 0;
+  const accuracy = state.totalKeystrokes > 0
+    ? Math.round((state.correctCount / state.totalKeystrokes) * 100)
+    : 100;
+
+  $wpmStat.textContent = wpm;
+  $accStat.textContent = accuracy + '%';
+
+  const mins = Math.floor(elapsed / 60);
+  const secs = Math.floor(elapsed % 60);
+  $timeStat.textContent = mins + ':' + String(secs).padStart(2, '0');
+}
+
+// ===== HANDLE KEYPRESS =====
+function handleKeyDown(e) {
+  // Don't handle practice keys when tutorial is open
+  if (document.getElementById('tutorialOverlay').classList.contains('show')) return;
+  if (document.getElementById('lessonIntro').classList.contains('show')) return;
+  if (state.screen !== 'practice') return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+  const text = state.currentLesson.texts[state.currentTextIndex];
+  if (state.pos >= text.length) return;
+
+  // Handle Escape - go back to home
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    goHome();
+    return;
+  }
+
+  // Handle backspace
+  if (e.key === 'Backspace') {
+    e.preventDefault();
+    if (state.pos > 0) {
+      state.pos--;
+      if (state.results[state.pos]) {
+        state.correctCount--;
+      } else {
+        state.incorrectCount--;
+      }
+      state.totalKeystrokes--;
+      state.results.pop();
+      renderText();
+      updateKeyboardHighlight();
+      updateFingerHint();
+    }
+    return;
+  }
+
+  // Ignore non-character keys (Shift, Tab, etc.)
+  if (e.key.length !== 1) return;
+  e.preventDefault();
+
+  // Detect English keyboard - show warning but DON'T block input
+  if (/[a-zA-Z]/.test(e.key)) {
+    $langWarning.classList.add('show');
+    // Don't return - let the input go through (it will be marked incorrect)
+  } else if (/[\u0590-\u05FF]/.test(e.key)) {
+    // Hebrew detected - hide warning if visible
+    $langWarning.classList.remove('show');
+  }
+
+  // Start timer on first keypress
+  if (!state.startTime) {
+    state.startTime = Date.now();
+    state.timerInterval = setInterval(updateStats, 500);
+  }
+
+  const expected = text[state.pos];
+  const correct = e.key === expected;
+
+  state.results.push(correct);
+  state.totalKeystrokes++;
+  if (correct) {
+    state.correctCount++;
+    playSound(true);
+  } else {
+    state.incorrectCount++;
+    playSound(false);
+  }
+
+  // Animate key press on virtual keyboard
+  const keyInfo = charToKey[e.key];
+  if (keyInfo) {
+    const keyEl = document.getElementById('key-' + keyInfo.en);
+    if (keyEl) {
+      keyEl.classList.add('pressed');
+      setTimeout(() => keyEl.classList.remove('pressed'), 100);
+    }
+  }
+
+  state.pos++;
+  renderText();
+  updateKeyboardHighlight();
+  updateFingerHint();
+  updateStats();
+
+  // Check if lesson complete
+  if (state.pos >= text.length) {
+    if (state.timerInterval) clearInterval(state.timerInterval);
+    setTimeout(showResults, 400);
+  }
+}
+
+// ===== SHOW RESULTS =====
+function showResults() {
+  playComplete();
+
+  const elapsed = (Date.now() - state.startTime) / 1000;
+  const minutes = elapsed / 60;
+  const wpm = minutes > 0 ? Math.round((state.correctCount / 5) / minutes) : 0;
+  const accuracy = state.totalKeystrokes > 0
+    ? Math.round((state.correctCount / state.totalKeystrokes) * 100)
+    : 100;
+
+  const mins = Math.floor(elapsed / 60);
+  const secs = Math.floor(elapsed % 60);
+
+  // Star rating
+  let stars = 1;
+  if (accuracy >= 90 && wpm >= 15) stars = 3;
+  else if (accuracy >= 80 && wpm >= 10) stars = 2;
+
+  const starsHtml = Array.from({length: 3}, (_, i) =>
+    `<span class="${i < stars ? 'star-filled' : 'star-empty'}">\u2b50</span>`
+  ).join('');
+
+  const titles = ['המשיכו לתרגל!', 'כל הכבוד!', 'מצוין!', 'מעולה!'];
+  const subtitles = {
+    3: 'ביצועים מעולים! המשיכו לשיעור הבא.',
+    2: 'טוב מאוד! עוד קצת תרגול ותהיו מושלמים.',
+    1: 'התחלה טובה! נסו שוב לשפר את הדיוק.',
+  };
+
+  document.getElementById('resultsTitle').textContent = titles[Math.min(stars, titles.length) - 1];
+  document.getElementById('resultsSubtitle').textContent = subtitles[stars];
+  document.getElementById('resultsStars').innerHTML = starsHtml;
+  document.getElementById('resWpm').textContent = wpm;
+  document.getElementById('resAcc').textContent = accuracy + '%';
+  document.getElementById('resTime').textContent = mins + ':' + String(secs).padStart(2, '0');
+
+  // Show/hide next button
+  const nextBtn = document.getElementById('nextLessonBtn');
+  const nextLessonId = state.currentLesson.id + 1;
+  nextBtn.style.display = nextLessonId <= LESSONS.length ? '' : 'none';
+
+  // Save progress
+  const lessonId = state.currentLesson.id;
+  if (!state.progress[lessonId]) {
+    state.progress[lessonId] = { completed: false, bestWpm: 0, bestAccuracy: 0, attempts: 0 };
+  }
+  const prog = state.progress[lessonId];
+  prog.attempts++;
+  if (wpm > prog.bestWpm) prog.bestWpm = wpm;
+  if (accuracy > prog.bestAccuracy) prog.bestAccuracy = accuracy;
+  if (accuracy >= 70) prog.completed = true;
+  saveProgress();
+
+  $results.classList.add('show');
+}
+
+// ===== NAVIGATION =====
+function goHome() {
+  if (state.timerInterval) clearInterval(state.timerInterval);
+  $results.classList.remove('show');
+  renderHome();
+}
+
+function retryLesson() {
+  $results.classList.remove('show');
+  if (state.currentLesson) {
+    startLesson(state.currentLesson.id);
+  }
+}
+
+function nextLesson() {
+  $results.classList.remove('show');
+  const nextId = state.currentLesson.id + 1;
+  if (nextId <= LESSONS.length) {
+    startLesson(nextId);
+  } else {
+    goHome();
+  }
+}
+
+// ===== TUTORIAL SYSTEM =====
+const TUTORIAL_STEPS = [
+  {
+    title: 'מה זו הקלדה עיוורת?',
+    content: `
+      <p>הקלדה עיוורת היא היכולת להקליד <strong>בלי להסתכל על המקלדת</strong>.</p>
+      <p>הסוד הוא פשוט: כל אצבע אחראית על מקשים מסוימים. עם תרגול, האצבעות לומדות למצוא את המקשים לבד.</p>
+      <p>זה כמו לנגן בפסנתר - בהתחלה צריך להסתכל, אבל עם הזמן האצבעות זוכרות.</p>
+      <div class="tutorial-tip">&#x1f4a1; <strong>טיפ:</strong> בסוף הלימוד תוכלו להקליד מהר ובלי שגיאות, בלי להוריד את העיניים מהמסך!</div>
+    `,
+    keyboard: false,
+  },
+  {
+    title: 'הבליטות על המקלדת',
+    content: `
+      <p>הסתכלו על המקלדת שלכם ומצאו שני מקשים עם <strong>בליטה קטנה</strong> (קו בולט שמרגישים במגע).</p>
+      <p>אלו המקשים <span class="highlight-text">כ</span> (F באנגלית) ו-<span class="highlight-text">ח</span> (J באנגלית).</p>
+      <p>הבליטות האלו הן <strong>נקודת העוגן</strong> שלכם - הן עוזרות למצוא את מיקום הבית בלי להסתכל!</p>
+      <div class="tutorial-tip">&#x270b; <strong>נסו עכשיו:</strong> עצמו עיניים ומצאו את הבליטות על המקלדת שלכם. שימו את האצבעות המורות (אצבעות) על שני המקשים האלו.</div>
+    `,
+    keyboard: true,
+    highlightKeys: ['F', 'J'],
+    bumpPulse: true,
+  },
+  {
+    title: 'מיקום מנוחה - שורת הבית',
+    content: `
+      <p>כשהאצבעות המורות על <span class="highlight-text">כ</span> ו-<span class="highlight-text">ח</span>, שאר האצבעות נחות על המקשים שלידן:</p>
+      <div class="finger-map">
+        <div class="finger-map-side">
+          <h4>&#x1f91a; יד שמאל</h4>
+          <div class="finger-row"><div class="finger-color" style="background:var(--finger-pinky-l)"></div> זרת &larr; <div class="finger-key">ש</div></div>
+          <div class="finger-row"><div class="finger-color" style="background:var(--finger-ring-l)"></div> קמיצה &larr; <div class="finger-key">ד</div></div>
+          <div class="finger-row"><div class="finger-color" style="background:var(--finger-middle-l)"></div> אמה &larr; <div class="finger-key">ג</div></div>
+          <div class="finger-row"><div class="finger-color" style="background:var(--finger-index-l)"></div> אצבע &larr; <div class="finger-key" style="border-bottom:3px solid var(--finger-index-l)">כ</div> &#x261d;&#xfe0f;</div>
+        </div>
+        <div class="finger-map-side">
+          <h4>&#x1f91a; יד ימין</h4>
+          <div class="finger-row">&#x261d;&#xfe0f; <div class="finger-key" style="border-bottom:3px solid var(--finger-index-r)">ח</div> &rarr; אצבע <div class="finger-color" style="background:var(--finger-index-r)"></div></div>
+          <div class="finger-row"><div class="finger-key">ל</div> &rarr; אמה <div class="finger-color" style="background:var(--finger-middle-r)"></div></div>
+          <div class="finger-row"><div class="finger-key">ך</div> &rarr; קמיצה <div class="finger-color" style="background:var(--finger-ring-r)"></div></div>
+          <div class="finger-row"><div class="finger-key">ף</div> &rarr; זרת <div class="finger-color" style="background:var(--finger-pinky-r)"></div></div>
+        </div>
+      </div>
+      <p>&#x1f44d; <strong>האגודלים</strong> נחים על מקש הרווח.</p>
+    `,
+    keyboard: true,
+    highlightKeys: ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ';'],
+    bumpPulse: true,
+  },
+  {
+    title: 'אזורי אצבעות',
+    content: `
+      <p>כל אצבע אחראית לא רק על המקש שלה בשורת הבית, אלא גם על <strong>המקשים מעליו ומתחתיו</strong>:</p>
+      <p>&#x2B06;&#xfe0f; <strong>שורה עליונה:</strong> ק ר א ט ו ן ם פ - האצבעות מושטות <strong>למעלה</strong></p>
+      <p>&#x2B07;&#xfe0f; <strong>שורה תחתונה:</strong> ז ס ב ה נ מ צ ת ץ - האצבעות מושטות <strong>למטה</strong></p>
+      <div class="tutorial-tip">&#x1f3af; <strong>הכלל החשוב:</strong> אחרי כל לחיצה, האצבע חוזרת למיקום הבית! לעולם לא "מטיילת" במקלדת.</div>
+      <p>שימו לב לצבעי המקשים במקלדת למטה - כל צבע מייצג אצבע אחרת:</p>
+    `,
+    keyboard: true,
+    highlightKeys: 'all',
+    bumpPulse: false,
+  },
+  {
+    title: 'כללי הזהב',
+    content: `
+      <p>חמישה כללים שיעזרו לכם להתקדם מהר:</p>
+      <ul class="golden-rules">
+        <li><span class="rule-num">1</span> <strong>לא מסתכלים!</strong> גם אם טועים - תתנגדו לדחף להסתכל על המקלדת</li>
+        <li><span class="rule-num">2</span> <strong>חוזרים הביתה</strong> - אחרי כל מקש, האצבעות חוזרות לשורת הבית</li>
+        <li><span class="rule-num">3</span> <strong>דיוק לפני מהירות</strong> - עדיף לאט ונכון מאשר מהר ועם שגיאות</li>
+        <li><span class="rule-num">4</span> <strong>תרגול יומי</strong> - 10 דקות כל יום עדיף על שעה פעם בשבוע</li>
+        <li><span class="rule-num">5</span> <strong>סבלנות</strong> - לוקח 2-4 שבועות עד שזה נהיה טבעי. אל תוותרו!</li>
+      </ul>
+    `,
+    keyboard: false,
+  },
+  {
+    title: 'בואו ננסה!',
+    content: `
+      <p>שימו את האצבעות על שורת הבית (מצאו את הבליטות על <span class="highlight-text">כ</span> ו-<span class="highlight-text">ח</span>).</p>
+      <p>כעת לחצו על כל מקש שמודגש במקלדת:</p>
+      <div id="exerciseArea"></div>
+    `,
+    keyboard: true,
+    interactive: true,
+  },
+];
+
+const EXERCISE_KEYS = ['כ', 'ח', 'ד', 'ל', 'ג', 'ך', 'ש', 'ף', 'ע', 'י'];
+
+let tutorialState = {
+  step: 0,
+  exercisePos: 0,
+  exerciseComplete: false,
+};
+
+function openTutorial() {
+  tutorialState.step = 0;
+  tutorialState.exercisePos = 0;
+  tutorialState.exerciseComplete = false;
+  document.getElementById('tutorialOverlay').classList.add('show');
+  renderTutorialStep();
+  document.addEventListener('keydown', handleTutorialKey);
+}
+
+function closeTutorial() {
+  document.getElementById('tutorialOverlay').classList.remove('show');
+  document.removeEventListener('keydown', handleTutorialKey);
+}
+
+function renderTutorialStep() {
+  const step = TUTORIAL_STEPS[tutorialState.step];
+  const total = TUTORIAL_STEPS.length;
+
+  // Step indicators
+  let dotsHtml = '';
+  for (let i = 0; i < total; i++) {
+    let cls = 'step-dot';
+    if (i === tutorialState.step) cls += ' active';
+    else if (i < tutorialState.step) cls += ' done';
+    dotsHtml += `<div class="${cls}" onclick="goToTutorialStep(${i})"></div>`;
+  }
+  document.getElementById('stepIndicators').innerHTML = dotsHtml;
+
+  // Step content
+  let stepsHtml = `<div class="tutorial-step active">
+    <div class="tutorial-card">
+      <h3>${step.title}</h3>
+      ${step.content}
+    </div>`;
+
+  if (step.keyboard) {
+    stepsHtml += `<div class="tutorial-keyboard-wrapper">
+      <div class="keyboard" id="tutKeyboard"></div>
+    </div>`;
+  }
+
+  stepsHtml += '</div>';
+  document.getElementById('tutorialSteps').innerHTML = stepsHtml;
+
+  // Render keyboard if needed
+  if (step.keyboard) {
+    renderTutorialKeyboard(step);
+  }
+
+  // Render interactive exercise
+  if (step.interactive) {
+    renderExercise();
+  }
+
+  // Nav buttons
+  const prevBtn = document.getElementById('tutPrev');
+  const nextBtn = document.getElementById('tutNext');
+  prevBtn.style.visibility = tutorialState.step === 0 ? 'hidden' : 'visible';
+
+  if (tutorialState.step === total - 1) {
+    nextBtn.textContent = 'סיום - בואו נתרגל!';
+    nextBtn.className = 'btn-finish';
+    nextBtn.onclick = () => { closeTutorial(); };
+  } else {
+    nextBtn.textContent = 'הבא \u2192';
+    nextBtn.className = 'btn-next';
+    nextBtn.onclick = tutorialNext;
+  }
+}
+
+function renderTutorialKeyboard(step) {
+  const container = document.getElementById('tutKeyboard');
+  if (!container) return;
+
+  let html = '';
+  KEYBOARD_ROWS.forEach(row => {
+    html += '<div class="kb-row">';
+    row.forEach(k => {
+      let cls = `key finger-${k.finger}`;
+      if (k.home) cls += ' home-key';
+      if (step.bumpPulse && k.home) cls += ' bump-pulse';
+      if (step.highlightKeys === 'all') cls += ' highlight';
+      else if (step.highlightKeys && step.highlightKeys.includes(k.en)) cls += ' highlight';
+      html += `<div class="${cls}" data-heb="${k.heb}" id="tut-key-${k.en}">
+        ${k.heb}
+        <span class="key-en">${k.en}</span>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  html += '<div class="kb-row"><div class="key space-key finger-thumb" data-heb=" " id="tut-key-Space">\u05E8\u05D5\u05D5\u05D7</div></div>';
+  container.innerHTML = html;
+}
+
+function renderExercise() {
+  const area = document.getElementById('exerciseArea');
+  if (!area) return;
+
+  if (tutorialState.exerciseComplete) {
+    area.innerHTML = '<div class="exercise-complete">\u2705 מעולה! מצאתם את כל המקשים!</div>';
+    return;
+  }
+
+  let keysHtml = '<div class="exercise-keys-done">';
+  EXERCISE_KEYS.forEach((key, i) => {
+    let cls = 'exercise-key-status';
+    if (i < tutorialState.exercisePos) cls += ' done';
+    else if (i === tutorialState.exercisePos) cls += ' current';
+    keysHtml += `<div class="${cls}">${key}</div>`;
+  });
+  keysHtml += '</div>';
+
+  const currentKey = EXERCISE_KEYS[tutorialState.exercisePos];
+  const keyInfo = charToKey[currentKey];
+  const fingerName = keyInfo ? FINGER_NAMES[keyInfo.finger] : '';
+  area.innerHTML = `
+    <div class="exercise-prompt">לחצו על <span class="next-key">${currentKey}</span> עם ${fingerName}</div>
+    ${keysHtml}
+  `;
+
+  // Highlight current key on tutorial keyboard
+  document.querySelectorAll('#tutKeyboard .key.highlight').forEach(el => el.classList.remove('highlight'));
+  if (keyInfo) {
+    const keyEl = document.getElementById('tut-key-' + keyInfo.en);
+    if (keyEl) keyEl.classList.add('highlight');
+  }
+}
+
+function handleTutorialKey(e) {
+  if (!document.getElementById('tutorialOverlay').classList.contains('show')) return;
+  const step = TUTORIAL_STEPS[tutorialState.step];
+  if (!step.interactive || tutorialState.exerciseComplete) return;
+
+  if (e.key.length !== 1) return;
+  e.preventDefault();
+
+  const expected = EXERCISE_KEYS[tutorialState.exercisePos];
+  if (e.key === expected) {
+    playSound(true);
+
+    // Animate key press
+    const keyInfo = charToKey[e.key];
+    if (keyInfo) {
+      const keyEl = document.getElementById('tut-key-' + keyInfo.en);
+      if (keyEl) {
+        keyEl.classList.add('pressed');
+        setTimeout(() => keyEl.classList.remove('pressed'), 150);
+      }
+    }
+
+    tutorialState.exercisePos++;
+    if (tutorialState.exercisePos >= EXERCISE_KEYS.length) {
+      tutorialState.exerciseComplete = true;
+      playComplete();
+    }
+    setTimeout(renderExercise, 100);
+  } else {
+    playSound(false);
+  }
+}
+
+function tutorialNext() {
+  if (tutorialState.step < TUTORIAL_STEPS.length - 1) {
+    tutorialState.step++;
+    if (TUTORIAL_STEPS[tutorialState.step].interactive) {
+      tutorialState.exercisePos = 0;
+      tutorialState.exerciseComplete = false;
+    }
+    renderTutorialStep();
+  }
+}
+
+function tutorialPrev() {
+  if (tutorialState.step > 0) {
+    tutorialState.step--;
+    renderTutorialStep();
+  }
+}
+
+function goToTutorialStep(i) {
+  tutorialState.step = i;
+  if (TUTORIAL_STEPS[i].interactive) {
+    tutorialState.exercisePos = 0;
+    tutorialState.exerciseComplete = false;
+  }
+  renderTutorialStep();
+}
+
+// ===== LESSON INTRO =====
+const LESSON_INTROS = {
+  1: {
+    tip: 'שימו את אצבעות יד ימין על שורת הבית. האצבע המורה על ח (המקש עם הבליטה), והשאר לידן.',
+    newKeys: ['י', 'ח', 'ל', 'ך'],
+    fingerInfo: 'אצבע ימין \u2192 י, ח | אמה ימין \u2192 ל | קמיצה ימין \u2192 ך',
+  },
+  2: {
+    tip: 'שימו את אצבעות יד שמאל על שורת הבית. האצבע המורה על כ (המקש עם הבליטה), והשאר לידן.',
+    newKeys: ['ש', 'ד', 'ג', 'כ', 'ע'],
+    fingerInfo: 'זרת שמאל \u2192 ש | קמיצה \u2192 ד | אמה \u2192 ג | אצבע \u2192 כ, ע',
+  },
+  3: {
+    tip: 'עכשיו שתי הידיים יחד! מצאו את הבליטות על כ וח ושימו את כל האצבעות על שורת הבית.',
+    newKeys: ['ש', 'ד', 'ג', 'כ', 'ע', 'י', 'ח', 'ל', 'ך', 'ף'],
+    fingerInfo: 'כל 8 האצבעות על שורת הבית + אגודלים על רווח',
+  },
+  4: {
+    tip: 'האצבעות נמתחות למעלה לשורה העליונה וחוזרות לשורת הבית. לא מזיזים את כף היד!',
+    newKeys: ['ק', 'ר', 'א', 'ט', 'ו', 'ן', 'ם', 'פ'],
+    fingerInfo: 'כל אצבע מושטת למעלה למקש שמעליה בשורת הבית',
+  },
+  5: {
+    tip: 'האצבעות נמתחות למטה לשורה התחתונה וחוזרות. עכשיו יש לכם את כל האותיות!',
+    newKeys: ['ז', 'ס', 'ב', 'ה', 'נ', 'מ', 'צ', 'ת', 'ץ'],
+    fingerInfo: 'כל אצבע מושטת למטה למקש שמתחתיה בשורת הבית',
+  },
+};
+
+function showLessonIntro(lessonId, onStart) {
+  const intro = LESSON_INTROS[lessonId];
+  const lesson = LESSONS.find(l => l.id === lessonId);
+  const card = document.getElementById('lessonIntroCard');
+
+  if (!intro || !lesson) {
+    // No intro for this lesson, start directly
+    onStart();
+    return;
+  }
+
+  let keysHtml = '';
+  intro.newKeys.forEach(k => {
+    const keyInfo = charToKey[k];
+    const fingerClass = keyInfo ? `finger-${keyInfo.finger}` : '';
+    keysHtml += `<div class="intro-key ${fingerClass}" style="${keyInfo ? 'border-bottom:3px solid' : ''}">${k}</div>`;
+  });
+
+  card.innerHTML = `
+    <h2>${lesson.title}</h2>
+    <p class="intro-subtitle">${lesson.subtitle}</p>
+    <div class="intro-new-keys">
+      <h4>&#x1f3b9; המקשים בשיעור הזה:</h4>
+      <div class="intro-keys-row">${keysHtml}</div>
+    </div>
+    <p style="font-size:0.9rem;color:var(--text2);margin-bottom:8px">${intro.fingerInfo}</p>
+    <div class="intro-tip">&#x1f4a1; ${intro.tip}</div>
+    <button class="intro-start-btn" id="introStartBtn">&#x1f680; מתחילים!</button>
+  `;
+
+  document.getElementById('lessonIntro').classList.add('show');
+
+  document.getElementById('introStartBtn').onclick = () => {
+    document.getElementById('lessonIntro').classList.remove('show');
+    onStart();
+  };
+}
+
+// ===== INIT =====
+function init() {
+  // Mobile detection
+  const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile/i.test(navigator.userAgent);
+  if (isMobile) {
+    $mobileWarning.style.display = 'block';
+    $home.style.display = 'none';
+    return;
+  }
+
+  loadProgress();
+  loadSettings();
+
+  // Apply settings
+  document.body.classList.toggle('dark', state.darkMode);
+  document.getElementById('darkBtn').textContent = state.darkMode ? '\u2600\ufe0f' : '\ud83c\udf19';
+  document.getElementById('soundBtn').textContent = state.soundEnabled ? '\ud83d\udd0a' : '\ud83d\udd07';
+
+  renderHome();
+  document.addEventListener('keydown', handleKeyDown);
+}
+
+init();
+</script>
+</body>
+</html>
