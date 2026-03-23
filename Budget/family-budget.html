@@ -5682,21 +5682,35 @@ async function resolveFamily(user,retries=0){
 function showFamilyChoice(user){
   const hasLocal=!!localStorage.getItem(SK);
   const el=document.getElementById('familyContent');
-  let html=`<div style="font-size:3rem;margin-bottom:12px">👨‍👩‍👧‍👦</div>
+  let html=`<div style="font-size:3rem;margin-bottom:12px">💰</div>
     <div class="login-title">שלום ${user.displayName||''}</div>
     <div class="login-subtitle">בחרו כיצד להמשיך</div>`;
   if(hasLocal){
     html+=`<div class="wizard-card" onclick="migrateLocalToFirebase()">
       <div class="wc-icon">📤</div><div><div class="wc-title">העלה נתונים קיימים</div><div class="wc-desc">יש לך נתונים מקומיים — העלה אותם לענן ושתף</div></div></div>`;
   }
-  html+=`<div class="wizard-card" onclick="createNewFamily()">
-    <div class="wc-icon">🆕</div><div><div class="wc-title">צור משפחה חדשה</div><div class="wc-desc">התחילו מאפס ושתפו קוד הזמנה</div></div></div>
+  html+=`<div class="wizard-card" id="createFamilyCard" onclick="handleCreateNewBudget()">
+    <div class="wc-icon">🆕</div><div><div class="wc-title">צור תקציב חדש</div><div class="wc-desc">התחילו מאפס ושתפו קוד הזמנה</div></div></div>
     <div class="wizard-card" onclick="showJoinFamily()">
-    <div class="wc-icon">🔗</div><div><div class="wc-title">הצטרף למשפחה</div><div class="wc-desc">מישהו שיתף אתכם קוד? הצטרפו לתקציב</div></div></div>`;
+    <div class="wc-icon">🔗</div><div><div class="wc-title">הצטרף לתקציב קיים</div><div class="wc-desc">מישהו שיתף אתכם קוד? הצטרפו לתקציב</div></div></div>`;
   el.innerHTML=html;
   document.getElementById('familyOverlay').classList.remove('hidden');
   hideLoginScreen();
   hideLoadingScreen();
+}
+
+async function handleCreateNewBudget(){
+  const card=document.getElementById('createFamilyCard');
+  if(card){card.style.opacity='.5';card.style.pointerEvents='none';card.querySelector('.wc-desc').textContent='יוצר תקציב...';}
+  try{
+    await createNewFamily();
+  }catch(e){
+    console.error('handleCreateNewBudget error:',e);
+    toast('שגיאה ביצירת תקציב — עוברים למצב מקומי');
+    document.getElementById('familyOverlay').classList.add('hidden');
+    D=freshData();
+    showWizard();
+  }
 }
 
 async function createNewFamily(familyName,useLocalData){
@@ -5732,8 +5746,8 @@ async function migrateLocalToFirebase(){
 function showInviteCode(code){
   document.getElementById('familyContent').innerHTML=`
     <div style="font-size:3rem;margin-bottom:12px">🎉</div>
-    <div class="login-title">המשפחה נוצרה!</div>
-    <div class="login-subtitle">שלחו את הקוד הבא כדי להזמין למשתתפים לתקציב</div>
+    <div class="login-title">התקציב נוצר!</div>
+    <div class="login-subtitle">שלחו את הקוד הבא כדי להזמין משתתפים לתקציב</div>
     <div class="invite-code-display">${code}</div>
     <p style="font-size:.82rem;color:var(--text-secondary)">הקוד חד-פעמי ותקף ל-72 שעות. שמרו אותו!</p>
     <button class="modal-btn primary" style="margin-top:16px" onclick="finishFamilySetup()">המשך לאפליקציה →</button>`;
