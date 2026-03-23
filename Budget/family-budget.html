@@ -6063,6 +6063,9 @@ function showUserMenu(){
   html+=`<div class="modal-actions" style="margin-top:14px">
     <button class="modal-btn danger" onclick="signOut()">🚪 התנתק</button>
     <button class="modal-btn cancel" onclick="closeModal()">סגור</button>
+  </div>
+  <div style="margin-top:20px;padding-top:14px;border-top:1px solid var(--border)">
+    <button class="modal-btn" style="width:100%;color:var(--danger);font-size:.78rem" onclick="confirmDeleteAccount()">🗑️ מחיקת חשבון ונתונים</button>
   </div>`;
   showModal(html);
 
@@ -6333,6 +6336,99 @@ function signOut(){
   document.getElementById('shareBtn').style.display='none';
   document.getElementById('partnerStatus').textContent='';
   document.getElementById('connectionStatus').style.display='none';
+}
+
+// ===== DELETE ACCOUNT & DATA =====
+function confirmDeleteAccount(){
+  const isAdmin=isFamilyAdmin();
+  const hasPartners=userFamilies.length>0;
+  let html=`<h3 style="margin-bottom:12px;color:var(--danger)">🗑️ מחיקת חשבון ונתונים</h3>
+    <p style="font-size:.88rem;margin-bottom:14px">פעולה זו אינה ניתנת לביטול.</p>
+    <div style="display:flex;flex-direction:column;gap:8px">
+    <button class="modal-btn danger" style="width:100%" onclick="deleteMyAccount(false)">
+      🧹 מחק את החשבון שלי בלבד
+    </button>
+    <p style="font-size:.75rem;color:var(--text-secondary);margin:0 0 4px">מסיר את המשתמש שלך מכל התקציבים. נתוני התקציב נשארים לשותפים.</p>`;
+  if(isAdmin){
+    html+=`<button class="modal-btn danger" style="width:100%;background:var(--danger);color:#fff" onclick="deleteMyAccount(true)">
+      ⚠️ מחק את החשבון + כל התקציבים שאני מנהל/ת
+    </button>
+    <p style="font-size:.75rem;color:var(--text-secondary);margin:0">מוחק לצמיתות את כל נתוני התקציבים שבהם את/ה מנהל/ת. לא ניתן לשחזר!</p>`;
+  }
+  html+=`</div>
+    <div class="modal-actions" style="margin-top:14px">
+      <button class="modal-btn cancel" onclick="closeModal()">ביטול</button>
+    </div>`;
+  showModal(html);
+}
+
+async function deleteMyAccount(deleteOwnedBudgets){
+  const confirmText=deleteOwnedBudgets
+    ?'אני מבין/ה שכל התקציבים שאני מנהל/ת יימחקו לצמיתות'
+    :'אני מבין/ה שהחשבון שלי יימחק';
+  const input=prompt(`לאישור סופי, הקלידו:\n"${confirmText}"`);
+  if(input!==confirmText){toast('המחיקה בוטלה');return}
+
+  closeModal();
+  toast('מוחק נתונים...');
+
+  try{
+    const uid=fbUser.uid;
+
+    // Remove from all families
+    for(const fam of userFamilies){
+      try{
+        // Remove member entry
+        await fbDb.ref('families/'+fam.familyId+'/members/'+uid).remove();
+
+        // If admin and deleteOwnedBudgets — delete the entire family
+        if(deleteOwnedBudgets&&fam.role==='admin'){
+          // Remove invites for this family
+          const invSnap=await fbDb.ref('invites').orderByChild('familyId').equalTo(fam.familyId).once('value');
+          if(invSnap.exists()){
+            const updates={};
+            Object.keys(invSnap.val()).forEach(k=>updates['/invites/'+k]=null);
+            await fbDb.ref().update(updates);
+          }
+          // Delete family data
+          await fbDb.ref('families/'+fam.familyId).remove();
+        }
+      }catch(e){console.error('Delete family data error:',e)}
+    }
+
+    // Remove userFamilies entry
+    await fbDb.ref('userFamilies/'+uid).remove();
+
+    // Clear all local data
+    localStorage.removeItem(SK);
+    localStorage.removeItem('familyBudget_aiApiKey');
+    localStorage.removeItem('familyBudget_firebaseConfig');
+
+    // Delete Firebase auth account
+    try{
+      await fbUser.delete();
+    }catch(e){
+      if(e.code==='auth/requires-recent-login'){
+        toast('נדרשת התחברות מחדש למחיקת החשבון');
+        const provider=new firebase.auth.GoogleAuthProvider();
+        await fbUser.reauthenticateWithPopup(provider);
+        await fbUser.delete();
+      }else{
+        console.error('Auth delete error:',e);
+      }
+    }
+
+    // Clean up state
+    fbUser=null;fbFamilyId=null;fbRef=null;userFamilies=[];_myFamilyRole='member';
+    document.getElementById('userBtn').style.display='none';
+    document.getElementById('shareBtn').style.display='none';
+
+    toast('החשבון והנתונים נמחקו בהצלחה');
+    setTimeout(()=>location.reload(),1500);
+  }catch(e){
+    console.error('Delete account error:',e);
+    toast('שגיאה במחיקת החשבון. נסו שוב.');
+  }
 }
 
 // ===== MULTI-FAMILY MANAGEMENT =====
