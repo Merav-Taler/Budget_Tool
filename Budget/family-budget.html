@@ -888,8 +888,8 @@ function ownerLegend(){
   if(D.config.soloMode)return '';
   const p1i=(D.config.partner1||'?')[0],p2i=(D.config.partner2||'?')[0];
   return `<div class="owner-legend">
-    <span class="owner-badge p1">${p1i}</span>${D.config.partner1||'שותף 1'}
-    <span class="owner-badge p2">${p2i}</span>${D.config.partner2||'שותף 2'}
+    <span class="owner-badge p1">${esc(p1i)}</span>${esc(D.config.partner1||'שותף 1')}
+    <span class="owner-badge p2">${esc(p2i)}</span>${esc(D.config.partner2||'שותף 2')}
     <span class="owner-badge shared">🤝</span>משותף
     <span style="margin-right:8px;opacity:.6">(לחצו לשנות)</span>
   </div>`;
@@ -1249,7 +1249,7 @@ async function wizardJoinWithCode(){
     if(e.code==='PERMISSION_DENIED'||e.message?.includes('permission')||e.message?.includes('Permission')){
       status.innerHTML='🔒 אין הרשאות. בקשו ממנהל המשפחה לבדוק את חוקי האבטחה ב-Firebase.<br><span style="font-size:.78rem">Firebase Console → Realtime Database → Rules<br>יש לוודא ש-<code>members/$uid</code> מאפשר כתיבה עצמית ו-<code>meta/name</code> מאפשר קריאה.</span>';
     }else{
-      status.textContent='שגיאה: '+e.message;
+      console.error('Wizard join error:',e);status.textContent='שגיאה בהצטרפות. בדקו את הקוד ונסו שוב.';
     }
   }
 }
@@ -2606,12 +2606,12 @@ function renderAlerts(){
     let a=0;cd.items.forEach(i=>{a+=(i.amount||0)});
     if(p>0&&a>p){
       const id='over_'+cat.name+'_'+key;
-      if(!dismissed.includes(id)) alerts.push({id,cls:'red',text:`🔴 ${cat.name}: חריגה של ${fc(a-p)} מעל התקציב`,notify:true});
+      if(!dismissed.includes(id)) alerts.push({id,cls:'red',text:`🔴 ${esc(cat.name)}: חריגה של ${fc(a-p)} מעל התקציב`,notify:true});
     }
     // Warning at 80% of budget
     if(p>0&&a>=p*0.8&&a<=p){
       const id='warn_'+cat.name+'_'+key;
-      if(!dismissed.includes(id)) alerts.push({id,cls:'amber',text:`⚠️ ${cat.name}: ${Math.round(a/p*100)}% מהתקציב נוצל (${fc(p-a)} נותרו)`});
+      if(!dismissed.includes(id)) alerts.push({id,cls:'amber',text:`⚠️ ${esc(cat.name)}: ${Math.round(a/p*100)}% מהתקציב נוצל (${fc(p-a)} נותרו)`});
     }
   });
 
@@ -2667,7 +2667,7 @@ function renderAlerts(){
       if(prevA>0&&curA>prevA*1.15){
         const pct=Math.round((curA-prevA)/prevA*100);
         const id='increase_'+cat.name+'_'+key;
-        if(!dismissed.includes(id)) alerts.push({id,cls:'blue',text:`🔵 ${cat.name} עלו ב-${pct}% לעומת חודש קודם`});
+        if(!dismissed.includes(id)) alerts.push({id,cls:'blue',text:`🔵 ${esc(cat.name)} עלו ב-${pct}% לעומת חודש קודם`});
       }
     });
   }
@@ -2679,12 +2679,12 @@ function renderAlerts(){
     if(evt.month===evMonthNum){
       const id='event_'+evt.id+'_'+key;
       const dayTxt=evt.day?` (${evt.day} ב${HM[curMonth]})`:'';
-      if(!dismissed.includes(id)) alerts.push({id,cls:'blue',text:`${evt.emoji||'📅'} אירוע החודש: ${evt.name}${dayTxt}${evt.estimatedBudget?' — תקציב: '+fc(evt.estimatedBudget):''}`});
+      if(!dismissed.includes(id)) alerts.push({id,cls:'blue',text:`${esc(evt.emoji||'📅')} אירוע החודש: ${esc(evt.name)}${esc(dayTxt)}${evt.estimatedBudget?' — תקציב: '+fc(evt.estimatedBudget):''}`});
     }
     const nextM=curMonth===11?0:curMonth+1;
     if(evt.month===nextM+1){
       const id='event_next_'+evt.id+'_'+key;
-      if(!dismissed.includes(id)) alerts.push({id,cls:'blue',text:`${evt.emoji||'📅'} בחודש הבא: ${evt.name} (${HM[nextM]})`});
+      if(!dismissed.includes(id)) alerts.push({id,cls:'blue',text:`${esc(evt.emoji||'📅')} בחודש הבא: ${esc(evt.name)} (${HM[nextM]})`});
     }
   });
 
@@ -2701,7 +2701,7 @@ function renderAlerts(){
         pd.items.filter(i=>i.childId===child.id).forEach(i=>prevA+=(i.amount||0));
         if(prevA>0&&curA>prevA*1.15){
           const id='child_'+child.id+'_'+key;
-          if(!dismissed.includes(id)) alerts.push({id,cls:'blue',text:`👶 הוצאות ${child.name} עלו ב-${Math.round((curA-prevA)/prevA*100)}% החודש`});
+          if(!dismissed.includes(id)) alerts.push({id,cls:'blue',text:`👶 הוצאות ${esc(child.name)} עלו ב-${Math.round((curA-prevA)/prevA*100)}% החודש`});
         }
       });
     }
@@ -3645,7 +3645,7 @@ function renderSavings(){
   }
 
   container.innerHTML=html;
-  }catch(e){console.error('renderSavings error:',e);const c=document.getElementById('savingsContent');if(c)c.innerHTML=`<div style="padding:20px;text-align:center;color:var(--danger)">שגיאה בטעינת חסכונות: ${e.message}</div>`}
+  }catch(e){console.error('renderSavings error:',e);const c=document.getElementById('savingsContent');if(c)c.innerHTML=`<div style="padding:20px;text-align:center;color:var(--danger)">שגיאה בטעינת חסכונות. נסו לרענן את הדף.</div>`}
 }
 
 function renderSavingsKPIs(){
@@ -4537,7 +4537,7 @@ function doCrossSearch(){
 function exportPDF(mode){
   const w=window.open('','_blank');
   if(!w){toast('נא לאפשר חלונות קופצים');return}
-  const p1=D.config.partner1||'',p2=D.config.partner2||'';
+  const p1=esc(D.config.partner1||''),p2=esc(D.config.partner2||'');
   const title=D.config.soloMode?`${p1} — תקציב`:`${p1} ו${p2} — תקציב משפחתי`;
   let body='';
   if(mode==='month'){
@@ -5034,7 +5034,7 @@ function showImageImportPreview(transactions){
     <p style="font-size:.85rem;color:var(--text-secondary);margin-bottom:10px">${classified.length} עסקאות — סה"כ ${fc(total)}</p>
     <div style="max-height:350px;overflow-y:auto;margin-bottom:12px">`;
   Object.entries(byCat).forEach(([cat,items])=>{
-    html+=`<div style="font-weight:600;margin-top:8px;font-size:.88rem">${cat}</div>`;
+    html+=`<div style="font-weight:600;margin-top:8px;font-size:.88rem">${esc(cat)}</div>`;
     items.forEach(t=>{
       html+=`<div style="display:flex;justify-content:space-between;font-size:.82rem;padding:4px 14px;color:${t.classified?'var(--text)':'var(--warning)'}">
         <span>${esc(t.item)}</span><span class="ltr">${fc(t.amount)}</span></div>`;
@@ -5254,10 +5254,10 @@ function showBankImportPreview(transactions){
   // Show classified groups
   Object.entries(groups).forEach(([catName,group])=>{
     html+=`<div style="background:var(--success-bg);border-radius:var(--radius-sm);padding:10px;margin-bottom:6px">
-      <div style="font-weight:600;font-size:.88rem;margin-bottom:4px">✅ ${catName} (${fc(group.total)})</div>`;
+      <div style="font-weight:600;font-size:.88rem;margin-bottom:4px">✅ ${esc(catName)} (${fc(group.total)})</div>`;
     group.items.forEach(t=>{
       html+=`<div style="display:flex;justify-content:space-between;font-size:.78rem;padding:2px 0;color:var(--text-secondary)">
-        <span>${t.desc} → <em>${t.item}</em></span><span>${fc(t.amount)}</span></div>`;
+        <span>${esc(t.desc)} → <em>${esc(t.item)}</em></span><span>${fc(t.amount)}</span></div>`;
     });
     html+=`</div>`;
   });
@@ -5788,7 +5788,7 @@ async function joinWithCode(){
     userFamilies.push({familyId:fbFamilyId,name:familyName,role:'member'});
     toast('הצטרפתם למשפחה!');
     finishFamilySetup();
-  }catch(e){document.getElementById('joinStatus').textContent='שגיאה: '+e.message}
+  }catch(e){console.error('Join error:',e);document.getElementById('joinStatus').textContent='שגיאה בהצטרפות. בדקו את הקוד ונסו שוב.'}
 }
 
 async function finishFamilySetup(){
@@ -6368,7 +6368,7 @@ function showFamilyManager(){
       html+=`<div style="padding:10px 12px;background:${isActive?'var(--primary-bg)':'var(--bg)'};border-radius:var(--radius-sm);margin-bottom:6px;border:${isActive?'2px solid var(--primary)':'1px solid var(--border)'}">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
           <div style="flex:1">
-            <div style="font-weight:600;font-size:.9rem">${fam.name||'תקציב'}</div>
+            <div style="font-weight:600;font-size:.9rem">${esc(fam.name||'תקציב')}</div>
             <div style="font-size:.72rem;color:var(--text-secondary)">${fam.role==='admin'?'מנהל/ת':'חבר/ה'}${isActive?' — פעיל':''}</div>
           </div>
           ${isActive?'<span style="color:var(--primary);font-weight:700;font-size:.82rem">✓ פעיל</span>'
@@ -6480,7 +6480,7 @@ async function doJoinBudget(){
     closeModal();
     toast('הצטרפת ל: '+familyName);
     await switchFamily(targetFamilyId);
-  }catch(e){document.getElementById('joinBudgetStatus').textContent='שגיאה: '+e.message}
+  }catch(e){console.error('Join budget error:',e);document.getElementById('joinBudgetStatus').textContent='שגיאה בהצטרפות. בדקו את הקוד ונסו שוב.'}
 }
 
 async function showFamilySettings(familyId){
@@ -6491,8 +6491,8 @@ async function showFamilySettings(familyId){
   let membersHtml='<div style="font-size:.85rem;color:var(--text-secondary)">טוען חברים...</div>';
   let inviteHtml='';
 
-  showModal(`<h3 style="margin-bottom:12px">⚙️ הגדרות: ${fam.name||'תקציב'}</h3>
-    <div class="modal-field"><label class="modal-label">שם התקציב</label><input class="modal-input" id="editFamilyName" value="${fam.name||''}" dir="rtl"></div>
+  showModal(`<h3 style="margin-bottom:12px">⚙️ הגדרות: ${esc(fam.name||'תקציב')}</h3>
+    <div class="modal-field"><label class="modal-label">שם התקציב</label><input class="modal-input" id="editFamilyName" value="${esc(fam.name||'')}" dir="rtl"></div>
     <div id="familyMembersArea" style="margin-top:12px;background:var(--bg);border-radius:var(--radius-sm);padding:12px">${membersHtml}</div>
     <div id="familyInviteArea" style="margin-top:10px"></div>
     <div class="modal-actions" style="margin-top:14px">
@@ -7294,12 +7294,12 @@ function init(){
 }
 
 // Lazy-load Chart.js and SheetJS on demand (not at startup)
-function loadScript(url){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=url;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
+function loadScript(url,integrity){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=url;if(integrity){s.integrity=integrity;s.crossOrigin='anonymous';}s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
 let _chartReady=null,_xlsxReady=null;
-function ensureChart(){if(typeof Chart!=='undefined')return Promise.resolve();if(!_chartReady)_chartReady=loadScript('https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js');return _chartReady}
-function ensureXLSX(){if(typeof XLSX!=='undefined')return Promise.resolve();if(!_xlsxReady)_xlsxReady=loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');return _xlsxReady}
+function ensureChart(){if(typeof Chart!=='undefined')return Promise.resolve();if(!_chartReady)_chartReady=loadScript('https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js','sha384-vsrfeLOOY6KuIYKDlmVH5UiBmgIdB1oEf7p01YgWHuqmOHfZr374+odEv96n9tNC');return _chartReady}
+function ensureXLSX(){if(typeof XLSX!=='undefined')return Promise.resolve();if(!_xlsxReady)_xlsxReady=loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js','sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw');return _xlsxReady}
 
-document.addEventListener('DOMContentLoaded',()=>{try{init()}catch(e){console.error('Init error:',e);document.body.innerHTML='<div style="padding:40px;text-align:center;direction:rtl;font-family:sans-serif"><h2>שגיאה בטעינה</h2><p>'+e.message+'</p></div>'}})
+document.addEventListener('DOMContentLoaded',()=>{try{init()}catch(e){console.error('Init error:',e);document.body.innerHTML='<div style="padding:40px;text-align:center;direction:rtl;font-family:sans-serif"><h2>שגיאה בטעינה</h2><p>'+esc(e.message)+'</p></div>'}})
 </script>
 </body>
 </html>
