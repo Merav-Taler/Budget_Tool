@@ -5690,7 +5690,7 @@ function showFamilyChoice(user){
       <div class="wc-icon">📤</div><div><div class="wc-title">העלה נתונים קיימים</div><div class="wc-desc">יש לך נתונים מקומיים — העלה אותם לענן ושתף</div></div></div>`;
   }
   html+=`<div class="wizard-card" id="createFamilyCard" onclick="handleCreateNewBudget()">
-    <div class="wc-icon">🆕</div><div><div class="wc-title">צור תקציב חדש</div><div class="wc-desc">התחילו מאפס ושתפו קוד הזמנה</div></div></div>
+    <div class="wc-icon">🆕</div><div><div class="wc-title">יצירת תקציב</div><div class="wc-desc">התחילו מאפס ושתפו קוד הזמנה</div></div></div>
     <div class="wizard-card" onclick="showJoinFamily()">
     <div class="wc-icon">🔗</div><div><div class="wc-title">הצטרף לתקציב קיים</div><div class="wc-desc">מישהו שיתף אתכם קוד? הצטרפו לתקציב</div></div></div>`;
   el.innerHTML=html;
@@ -6382,7 +6382,7 @@ function showFamilyManager(){
 
   // Actions
   html+=`<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
-    <button class="modal-btn primary" onclick="closeModal();showCreateBudgetModal()">➕ צור תקציב חדש</button>
+    <button class="modal-btn primary" onclick="closeModal();showCreateBudgetModal()">➕ יצירת תקציב</button>
     <button class="modal-btn" onclick="closeModal();showJoinBudgetModal()">🔗 הצטרף לתקציב קיים</button>
   </div>`;
 
