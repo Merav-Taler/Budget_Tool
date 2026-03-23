@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700&display=swap" rel="stylesheet">
-<script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" crossorigin="anonymous"></script>
-<script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" crossorigin="anonymous"></script>
-<script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js" crossorigin="anonymous"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" crossorigin="anonymous" integrity="sha384-ZaR6mWzmJtrRibZ1Vm7SoHFr8OXjyAuGAXalGDKqbxFT18oi/z+oZLIRFkpeNor1"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js" crossorigin="anonymous" integrity="sha384-I1LYojsZ5RM1cOda44Z2h42Qa6YfsQ1XkXxREnhp4ueYBR/4d1pG1K+NZM537Vsj"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js" crossorigin="anonymous" integrity="sha384-g5H2aNdtgRBYOBLsuOAuHvUXWnw4bswmU+tYjmGc1G3JfKxl79uWwV4sQarJsLwu"></script>
 <style>
 :root{
 --primary:#2563EB;--primary-light:#3B82F6;--primary-dark:#1D4ED8;--primary-bg:#EFF6FF;
@@ -5673,7 +5673,7 @@ async function resolveFamily(user,retries=0){
     if(e.code==='PERMISSION_DENIED'||e.message?.includes('permission')||e.message?.includes('Permission')){
       toast('אין הרשאות לקריאת נתונים. בדקו את חוקי האבטחה ב-Firebase');
     }else{
-      toast('שגיאה בטעינת נתוני משפחה: '+e.message);
+      console.error('resolveFamily:',e);toast('שגיאה בטעינת נתוני משפחה. נסו שוב.');
     }
     skipLogin();
   }
@@ -5735,7 +5735,7 @@ async function createNewFamily(familyName,useLocalData){
     await fbDb.ref('invites/'+inviteCode).set({familyId:fbFamilyId,createdAt:Date.now()});
     userFamilies.push({familyId:fbFamilyId,name:fName,role:'admin'});
     showInviteCode(inviteCode);
-  }catch(e){console.error('createFamily error:',e);toast('שגיאה ביצירת משפחה: '+e.message)}
+  }catch(e){console.error('createFamily error:',e);toast('שגיאה ביצירת תקציב. נסו שוב.')}
 }
 
 async function migrateLocalToFirebase(){
@@ -5749,7 +5749,7 @@ function showInviteCode(code){
     <div class="login-title">התקציב נוצר!</div>
     <div class="login-subtitle">שלחו את הקוד הבא כדי להזמין משתתפים לתקציב</div>
     <div class="invite-code-display">${code}</div>
-    <p style="font-size:.82rem;color:var(--text-secondary)">הקוד חד-פעמי ותקף ל-72 שעות. שמרו אותו!</p>
+    <p style="font-size:.82rem;color:var(--text-secondary)">הקוד חד-פעמי ותקף ל-24 שעות. שמרו אותו!</p>
     <button class="modal-btn primary" style="margin-top:16px" onclick="finishFamilySetup()">המשך לאפליקציה →</button>`;
 }
 
@@ -6289,8 +6289,8 @@ async function changeMemberRole(uid,newRole){
   }
 }
 function getMemberRole(){
-  if(!fbDb||!fbFamilyId||!fbUser)return 'admin';
-  return window._myFamilyRole||'admin';
+  if(!fbDb||!fbFamilyId||!fbUser)return 'member';
+  return window._myFamilyRole||'member';
 }
 function renderInviteDisplay(code,createdAt){
   const link=window.location.href.split('?')[0]+'?invite='+code;
@@ -6322,8 +6322,9 @@ function signOut(){
   }
   if(fbRef)fbRef.off();
   if(fbAuth)fbAuth.signOut();
+  localStorage.removeItem('familyBudget_aiApiKey');
   closeModal();
-  fbUser=null;fbFamilyId=null;fbRef=null;userFamilies=[];
+  fbUser=null;fbFamilyId=null;fbRef=null;userFamilies=[];window._myFamilyRole='member';
   document.getElementById('userBtn').style.display='none';
   document.getElementById('shareBtn').style.display='none';
   document.getElementById('partnerStatus').textContent='';
@@ -6508,9 +6509,9 @@ async function showFamilySettings(familyId){
       const role=m.role||'member';
       const roleLabel=role==='admin'?'👑 מנהל/ת':role==='viewer'?'👁️ צופה':'✏️ עורך/ת';
       mhtml+=`<div style="display:flex;align-items:center;gap:8px;padding:6px 0">
-        ${m.photoURL?`<img src="${m.photoURL}" style="width:28px;height:28px;border-radius:50%">`
-        :`<div style="width:28px;height:28px;border-radius:50%;background:var(--primary-bg);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700">${(m.displayName||'?')[0]}</div>`}
-        <div style="flex:1"><div style="font-size:.85rem;font-weight:500">${m.displayName||''}${isMe?' (את/ה)':''}</div><div style="font-size:.72rem;color:var(--text-secondary)">${m.email||''}</div></div>
+        ${m.photoURL?`<img src="${esc(m.photoURL)}" style="width:28px;height:28px;border-radius:50%">`
+        :`<div style="width:28px;height:28px;border-radius:50%;background:var(--primary-bg);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700">${esc((m.displayName||'?')[0])}</div>`}
+        <div style="flex:1"><div style="font-size:.85rem;font-weight:500">${esc(m.displayName||'')}${isMe?' (את/ה)':''}</div><div style="font-size:.72rem;color:var(--text-secondary)">${esc(m.email||'')}</div></div>
         ${amSettingsAdmin&&!isMe?`<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
           <select style="font-family:var(--font);font-size:.7rem;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--card);color:var(--text);cursor:pointer" onchange="changeMemberRole('${uid}',this.value)">
             <option value="admin"${role==='admin'?' selected':''}>👑 מנהל/ת</option>
