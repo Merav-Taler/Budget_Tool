@@ -6363,9 +6363,7 @@ function confirmDeleteAccount(){
 }
 
 async function deleteMyAccount(deleteOwnedBudgets){
-  const confirmText=deleteOwnedBudgets
-    ?'אני מבין/ה שכל התקציבים שאני מנהל/ת יימחקו לצמיתות'
-    :'אני מבין/ה שהחשבון שלי יימחק';
+  const confirmText=deleteOwnedBudgets?'מחק הכל':'מחק אותי';
   const input=prompt(`לאישור סופי, הקלידו:\n"${confirmText}"`);
   if(input!==confirmText){toast('המחיקה בוטלה');return}
 
