@@ -1004,7 +1004,7 @@ function undo(){
     if(btn)btn.style.display='none';
   }
 }
-function isViewer(){return window._myFamilyRole==='viewer'}
+function isViewer(){return _myFamilyRole==='viewer'}
 function saveData(){
   if(isViewer()){toast('אין לך הרשאות עריכה — מצב צפייה בלבד');return}
   clearTimeout(saveTimer);
@@ -5015,7 +5015,7 @@ async function importBankImageWithAI(file){
     showImageImportPreview(transactions);
   }catch(e){
     console.error('AI image import error:',e);
-    toast('שגיאה בניתוח התמונה: '+(e.message||''));
+    console.error('Image analysis error:',e);toast('שגיאה בניתוח התמונה. נסו שוב.');
   }
 }
 
@@ -5225,7 +5225,7 @@ function _doBankImport(file,isCSV){
 
       console.log('Bank import: found '+transactions.length+' transactions');
       showBankImportPreview(transactions);
-    }catch(err){console.error('Bank import error:',err);toast('שגיאה בקריאת הקובץ: '+err.message)}
+    }catch(err){console.error('Bank import error:',err);toast('שגיאה בקריאת הקובץ. נסו שוב.')}
   };
   if(isCSV)reader.readAsText(file,'UTF-8');
   else reader.readAsArrayBuffer(file);
@@ -5403,7 +5403,7 @@ Match to the most relevant existing category. If unsure, use "חריגות".`}],
     showBankImportPreview(window._bankTransactions);
   }catch(e){
     console.error('AI classify error:',e);
-    toast('שגיאה בסיווג AI: '+(e.message||''));
+    console.error('AI classify error:',e);toast('שגיאה בסיווג AI. נסו שוב.');
   }
 }
 
@@ -5500,6 +5500,7 @@ let fbRef=null;
 let isOnline=true;
 let skipFirebaseSync=false; // prevent re-render loops
 let userFamilies=[]; // [{familyId, name, role:'admin'|'member', createdAt}]
+let _myFamilyRole='member';
 function isFamilyAdmin(){const fam=userFamilies.find(f=>f.familyId===fbFamilyId);return fam?.role==='admin'}
 
 // ===== FIREBASE CONFIG =====
@@ -5844,8 +5845,8 @@ async function connectToFamily(familyId,user){
   // Store my role for permission checks
   try{
     const myMemSnap=await fbDb.ref('families/'+familyId+'/members/'+user.uid+'/role').once('value');
-    window._myFamilyRole=myMemSnap.val()||'member';
-  }catch(e){window._myFamilyRole='member'}
+    _myFamilyRole=myMemSnap.val()||'member';
+  }catch(e){_myFamilyRole='member'}
   // Setup listeners
   attachRealtimeListener();
   setupConnectionMonitor();
@@ -6290,7 +6291,7 @@ async function changeMemberRole(uid,newRole){
 }
 function getMemberRole(){
   if(!fbDb||!fbFamilyId||!fbUser)return 'member';
-  return window._myFamilyRole||'member';
+  return _myFamilyRole||'member';
 }
 function renderInviteDisplay(code,createdAt){
   const link=window.location.href.split('?')[0]+'?invite='+code;
@@ -6323,8 +6324,11 @@ function signOut(){
   if(fbRef)fbRef.off();
   if(fbAuth)fbAuth.signOut();
   localStorage.removeItem('familyBudget_aiApiKey');
+  if(confirm('האם למחוק את הנתונים המקומיים מהמכשיר?\n(מומלץ במכשיר משותף)')){
+    localStorage.removeItem(SK);
+  }
   closeModal();
-  fbUser=null;fbFamilyId=null;fbRef=null;userFamilies=[];window._myFamilyRole='member';
+  fbUser=null;fbFamilyId=null;fbRef=null;userFamilies=[];_myFamilyRole='member';
   document.getElementById('userBtn').style.display='none';
   document.getElementById('shareBtn').style.display='none';
   document.getElementById('partnerStatus').textContent='';
@@ -6565,7 +6569,7 @@ async function saveFamilySettings(familyId){
     toast('השם עודכן');
     closeModal();
     showFamilyManager();
-  }catch(e){toast('שגיאה: '+e.message)}
+  }catch(e){console.error('Rename family error:',e);toast('שגיאה בעדכון השם. נסו שוב.')}
 }
 
 async function generateInviteForFamily(familyId){
@@ -6661,7 +6665,7 @@ async function leaveFamily(familyId){
       toast('עזבת את התקציב');
       showFamilyManager();
     }
-  }catch(e){toast('שגיאה: '+e.message);console.error('Leave family error:',e)}
+  }catch(e){console.error('Leave family error:',e);toast('שגיאה בעזיבת התקציב. נסו שוב.')}
 }
 
 // ===== EVENTS MANAGEMENT =====
