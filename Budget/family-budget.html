@@ -5696,6 +5696,7 @@ function showFamilyChoice(user){
   el.innerHTML=html;
   document.getElementById('familyOverlay').classList.remove('hidden');
   hideLoginScreen();
+  hideLoadingScreen();
 }
 
 async function createNewFamily(familyName,useLocalData){
