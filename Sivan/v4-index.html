@@ -166,41 +166,6 @@
       transform: skewX(-10deg);
     }
 
-    /* Rotating word in subtitle */
-    .rotator {
-      display: inline-block;
-      min-width: 130px;
-      text-align: center;
-      color: var(--terracotta);
-      font-weight: 700;
-      position: relative;
-      vertical-align: baseline;
-    }
-    .rotator span {
-      position: absolute; right: 0; left: 0;
-      opacity: 0;
-      transition: opacity .5s ease, transform .5s ease;
-      transform: translateY(15px);
-    }
-    .rotator span.active {
-      opacity: 1;
-      transform: translateY(0);
-      position: relative;
-    }
-    .rotator span:nth-child(2) { color: var(--rose); }
-    .rotator span:nth-child(3) { color: var(--gold); }
-    .rotator span:nth-child(4) { color: var(--terracotta-light); }
-
-    .hero-sub {
-      font-size: 19px;
-      font-weight: 400;
-      color: var(--gray-dark);
-      margin-bottom: 44px;
-      max-width: 600px;
-      line-height: 1.85;
-      margin-left: auto;
-      margin-right: auto;
-    }
 
     .cta-btn {
       display: inline-flex;
@@ -624,7 +589,6 @@
       }
       .hero-text { order: 2; }
       .hero-image { order: 1; }
-      .hero-sub { margin: 0 auto 36px; }
       .hero-image img { max-width: 320px; margin: 0 auto; }
       .hero-image-wrap::before { width: 70px; height: 70px; top: -16px; right: -16px; }
       .hero-image-wrap::after { width: 100px; height: 100px; bottom: -22px; left: -22px; }
@@ -646,16 +610,6 @@
       <div class="hero-text">
         <span class="brand-name"><span class="dot"></span>sivan bachar</span>
         <h1 class="hero-headline"><em>הסטודיו</em></h1>
-        <p class="hero-sub">
-          ניוזלטר חודשי של
-          <span class="rotator" id="rotator">
-            <span class="active">ניסויים,</span>
-            <span>סטוריטלינג,</span>
-            <span>גילויים,</span>
-            <span>השראה,</span>
-          </span>
-          וכל מה שקורה מאחורי הקלעים של יצירת תוכן שזזים ממנו.
-        </p>
         <a href="#signup" class="cta-btn">
           אני רוצה להצטרף
           <svg style="width:18px;height:18px;fill:#fff;" viewBox="0 0 24 24"><path d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"/></svg>
@@ -822,17 +776,6 @@
   </a>
 
 <script>
-  // Rotating words in hero subtitle
-  (function(){
-    const words = document.querySelectorAll('#rotator span');
-    let i = 0;
-    setInterval(() => {
-      words[i].classList.remove('active');
-      i = (i + 1) % words.length;
-      words[i].classList.add('active');
-    }, 2200);
-  })();
-
   // Reveal on scroll
   const io = new IntersectionObserver((entries) => {
     entries.forEach(e => {
