@@ -89,6 +89,27 @@
       margin-right: auto;
     }
 
+    .rotator {
+      display: inline-block;
+      min-width: 100px;
+      text-align: center;
+      color: var(--terracotta);
+      font-weight: 700;
+      position: relative;
+      vertical-align: baseline;
+    }
+    .rotator span {
+      position: absolute; right: 0; left: 0;
+      opacity: 0;
+      transition: opacity .5s ease, transform .5s ease;
+      transform: translateY(15px);
+    }
+    .rotator span.active {
+      opacity: 1;
+      transform: translateY(0);
+      position: relative;
+    }
+
     .cta-btn {
       display: inline-block;
       background: var(--terracotta);
@@ -272,102 +293,6 @@
       line-height: 1.75;
       position: relative;
       z-index: 2;
-    }
-
-    /* ───────── TESTIMONIALS ───────── */
-    .testimonials {
-      padding: 90px 40px;
-      background: var(--cream);
-      position: relative;
-    }
-
-    .testimonials-inner {
-      max-width: 1000px;
-      margin: 0 auto;
-      position: relative;
-      z-index: 2;
-    }
-
-    .testimonials-head {
-      text-align: center;
-      margin-bottom: 56px;
-    }
-
-    .testimonials-head h2 {
-      font-size: clamp(32px, 4.5vw, 48px);
-      font-weight: 800;
-      color: var(--text);
-      letter-spacing: -0.015em;
-    }
-
-    .test-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 24px;
-    }
-
-    .test {
-      background: #fff;
-      padding: 28px 24px;
-      border-radius: 20px;
-      border: 1px solid rgba(156,86,78,.08);
-      box-shadow: 0 4px 16px rgba(0,0,0,.03);
-      transition: all .35s ease;
-      position: relative;
-    }
-    .test::before {
-      content: '"';
-      position: absolute;
-      top: -18px; right: 20px;
-      font-family: serif;
-      font-size: 64px;
-      color: var(--terracotta);
-      opacity: .15;
-      line-height: 1;
-    }
-    .test:hover {
-      transform: translateY(-6px);
-      box-shadow: 0 12px 32px rgba(156,86,78,.12);
-      border-color: var(--rose-soft);
-    }
-
-    .test-text {
-      font-size: 15px;
-      color: var(--text);
-      line-height: 1.75;
-      margin-bottom: 18px;
-      font-weight: 400;
-    }
-
-    .test-by {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .test-av {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 700;
-      font-size: 16px;
-      color: #fff;
-      flex-shrink: 0;
-      background: linear-gradient(135deg, var(--terracotta), var(--terracotta-light));
-    }
-
-    .test-nm {
-      font-weight: 700;
-      font-size: 15px;
-      color: var(--text);
-    }
-
-    .test-rl {
-      font-size: 13px;
-      color: var(--gray-dark);
     }
 
     /* ───────── FAQ ───────── */
@@ -618,9 +543,8 @@
       }
 
       .cards { grid-template-columns: 1fr; }
-      .test-grid { grid-template-columns: 1fr; }
 
-      .story, .inside, .form-section, .why, .testimonials, .faq-section { padding: 60px 24px; }
+      .story, .inside, .form-section, .why, .faq-section { padding: 60px 24px; }
       .story p { text-align: center; }
 
       .float-cta { bottom: 14px; left: 14px; padding: 12px 18px; font-size: 13px; }
@@ -635,7 +559,12 @@
       <span class="brand-name">sivan bachar</span>
       <h1 class="hero-headline"><em>הסטודיו</em></h1>
       <p class="hero-sub">
-        ניוזלטר חודשי של ניסויים, סטוריטלינג וכל מה שקורה מאחורי הקלעים של יצירת תוכן שזזים ממנו.
+        ניוזלטר חודשי של <span class="rotator">
+          <span class="active">ניסויים,</span>
+          <span>סטוריטלינג,</span>
+          <span>גילויים,</span>
+          <span>השראה,</span>
+        </span> וכל מה שקורה מאחורי הקלעים של יצירת תוכן שזזים ממנו.
       </p>
       <a href="#signup" class="cta-btn">אני רוצה להצטרף ↓</a>
     </div>
@@ -737,51 +666,6 @@
         </p>
       </div>
 
-    </div>
-  </section>
-
-  <!-- ═══ TESTIMONIALS ═══ -->
-  <section class="testimonials">
-    <div class="testimonials-inner">
-      <div class="testimonials-head reveal">
-        <span class="section-label">מה אומרות הקוראות</span>
-        <h2>המילים שהגיעו ממישהי כמו אתך</h2>
-      </div>
-
-      <div class="test-grid">
-        <div class="test reveal">
-          <p class="test-text">כל חודש אני מחכה למייל הזה. זה הרגע שלי, בו אני יושבת עם קפה וסיון מלמדת אותי משהו חדש.</p>
-          <div class="test-by">
-            <div class="test-av">י</div>
-            <div>
-              <div class="test-nm">יעל כ.</div>
-              <div class="test-rl">עדכון עם כל גיליון</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="test reveal">
-          <p class="test-text">סיוון כותבת בדיוק את מה שאני חושבת אבל לא מצליחה לנסח. כל גיליון זו תזכורת משהו חשוב.</p>
-          <div class="test-by">
-            <div class="test-av">נ</div>
-            <div>
-              <div class="test-nm">נוה ל.</div>
-              <div class="test-rl">שומרת קובץ של כולם</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="test reveal">
-          <p class="test-text">הפרומפט שקיבלתי בגיליון #35 שיניה את כל הדרך שלי בעבודה. זה באמת ערך.</p>
-          <div class="test-by">
-            <div class="test-av">מ</div>
-            <div>
-              <div class="test-nm">מירי ט.</div>
-              <div class="test-rl">יוצרת תוכן</div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   </section>
 
@@ -907,6 +791,18 @@
       const open = item.classList.toggle('open');
       a.style.maxHeight = open ? a.scrollHeight + 'px' : 0;
     });
+  });
+
+  // Rotating words
+  const rotators = document.querySelectorAll('.rotator');
+  rotators.forEach(rotator => {
+    const spans = rotator.querySelectorAll('span');
+    let current = 0;
+    setInterval(() => {
+      spans[current].classList.remove('active');
+      current = (current + 1) % spans.length;
+      spans[current].classList.add('active');
+    }, 2200);
   });
 </script>
 
