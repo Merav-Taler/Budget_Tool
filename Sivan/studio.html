@@ -295,96 +295,6 @@
       z-index: 2;
     }
 
-    /* ───────── FAQ ───────── */
-    .faq-section {
-      padding: 90px 40px;
-      background: var(--linen);
-      position: relative;
-    }
-
-    .faq-head {
-      text-align: center;
-      margin-bottom: 56px;
-      position: relative;
-      z-index: 2;
-    }
-
-    .faq-head h2 {
-      font-size: clamp(32px, 4.5vw, 48px);
-      font-weight: 800;
-      color: var(--text);
-      letter-spacing: -0.015em;
-    }
-
-    .faqs {
-      max-width: 700px;
-      margin: 0 auto;
-      position: relative;
-      z-index: 2;
-    }
-
-    .faq-item {
-      background: #fff;
-      border-radius: 16px;
-      margin-bottom: 14px;
-      border: 1px solid rgba(156,86,78,.08);
-      overflow: hidden;
-      transition: all .3s ease;
-    }
-
-    .faq-item.open {
-      border-color: var(--rose-soft);
-      box-shadow: 0 8px 24px rgba(156,86,78,.1);
-    }
-
-    .faq-q {
-      padding: 20px 24px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      cursor: pointer;
-      font-weight: 700;
-      font-size: 16px;
-      color: var(--text);
-      gap: 12px;
-      user-select: none;
-    }
-
-    .faq-q:hover { color: var(--terracotta); }
-
-    .faq-icon {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      background: var(--rose-soft);
-      color: var(--terracotta);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      transition: all .3s ease;
-      font-weight: 700;
-    }
-
-    .faq-item.open .faq-icon {
-      background: var(--terracotta);
-      color: #fff;
-      transform: rotate(45deg);
-    }
-
-    .faq-a {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height .4s ease;
-    }
-
-    .faq-a-text {
-      padding: 0 24px 20px;
-      font-size: 15px;
-      color: var(--gray-dark);
-      line-height: 1.8;
-    }
-
     /* ───────── WHY SECTION ───────── */
     .why {
       background: var(--terracotta);
@@ -544,7 +454,7 @@
 
       .cards { grid-template-columns: 1fr; }
 
-      .story, .inside, .form-section, .why, .faq-section { padding: 60px 24px; }
+      .story, .inside, .form-section, .why { padding: 60px 24px; }
       .story p { text-align: center; }
 
       .float-cta { bottom: 14px; left: 14px; padding: 12px 18px; font-size: 13px; }
@@ -669,56 +579,6 @@
     </div>
   </section>
 
-  <!-- ═══ FAQ ═══ -->
-  <section class="faq-section">
-    <div class="faq-head reveal">
-      <span class="section-label">שאלות נפוצות</span>
-      <h2>הכל מה שרצית לדעת</h2>
-    </div>
-
-    <div class="faqs">
-      <div class="faq-item reveal">
-        <div class="faq-q">
-          <span>זה באמת חינם?</span>
-          <span class="faq-icon">+</span>
-        </div>
-        <div class="faq-a">
-          <div class="faq-a-text">כן, חינם לגמרי. אין שלבי תשלום, אין "פרימיום", אין שום הפתעה. הניוזלטר נכתב מאהבה, ויהיה תמיד חינם.</div>
-        </div>
-      </div>
-
-      <div class="faq-item reveal">
-        <div class="faq-q">
-          <span>כמה פעמים בחודש?</span>
-          <span class="faq-icon">+</span>
-        </div>
-        <div class="faq-a">
-          <div class="faq-a-text">ניוזלטר אחת לחודש (ולפעמים פעמיים, כשיש משהו שווה באמת). קצב סביר, בלי להציף.</div>
-        </div>
-      </div>
-
-      <div class="faq-item reveal">
-        <div class="faq-q">
-          <span>יכולה להשיב?</span>
-          <span class="faq-icon">+</span>
-        </div>
-        <div class="faq-a">
-          <div class="faq-a-text">ועוד איך! אני קוראת כל מייל ועונה אישית. אז אם משהו נגע בך — תגידי לי.</div>
-        </div>
-      </div>
-
-      <div class="faq-item reveal">
-        <div class="faq-q">
-          <span>מה קורה אם אני רוצה להפסיק?</span>
-          <span class="faq-icon">+</span>
-        </div>
-        <div class="faq-a">
-          <div class="faq-a-text">לחיצה אחת בתחתית כל מייל ויצאת. בלי שאלות, בלי ניסיונות שכנוע. אני מאמינה בקשרים שמרגישים טובים לשניכם.</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <!-- ═══ WHY ═══ -->
   <section class="why">
     <div class="why-inner reveal">
@@ -737,10 +597,19 @@
   <section class="form-section" id="signup">
     <div class="reveal">
       <span class="section-label">הרשמה חינם</span>
-      <h2>הצטרפי לסטודיו</h2>
+      <h2>הצטרפי <span class="rotator">
+          <span class="active">לחלק מהקהילה</span>
+          <span>לסטודיו</span>
+          <span>למסע הניסויים</span>
+          <span>לדרך</span>
+        </span></h2>
       <p class="sub">
-        מיד עם הרישום ישלח אליך מייל אישור המכיל את הגיליון הראשון,
-        כדי שכבר עכשיו תוכלי ליהנות ממנו.
+        מיד עם הרישום ישלח אליך מייל אישור המכיל את הגיליון הראשון, כדי שכבר עכשיו תוכלי ליהנות ממנו.
+        <br /><br />
+        <strong>ניוזלטר אחת לחודש</strong> (ולפעמים פעמיים כשיש משהו שווה באמת).
+        <strong>חינמית לחלוטין</strong>, בלי הפתעות או "פרימיום".
+        <strong>ניתן להסיר בלחיצה אחת</strong> בתחתית כל מייל.
+        ואני קוראת כל מייל ועונה אישית.
       </p>
 
       <div class="ravmesser-embed">
@@ -781,16 +650,6 @@
   window.addEventListener('scroll', () => {
     if (window.scrollY > 600) floatCta.classList.add('visible');
     else floatCta.classList.remove('visible');
-  });
-
-  // FAQ accordion
-  document.querySelectorAll('.faq-q').forEach(q => {
-    q.addEventListener('click', () => {
-      const item = q.parentElement;
-      const a = item.querySelector('.faq-a');
-      const open = item.classList.toggle('open');
-      a.style.maxHeight = open ? a.scrollHeight + 'px' : 0;
-    });
   });
 
   // Rotating words
